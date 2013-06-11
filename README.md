@@ -85,6 +85,13 @@ Database.Create(mockObj);
 //or query out some existing objects
 var results = new Query<MockObject>().Where(mo => mo.Created > DateTime.Now.AddDays(-30)).OrderBy(mo => mo.Created).Limit(5).Execute();
 ```
+To run the following in a stored proc:
+```C#
+var results = new List<MockObject>();
+Execute.StoredProcedureReader("MyStoredProc_prc", (dr) => {
+  results = dr.ReadList<MockObject>();
+}, { Before = DateTime.Now.AddDays(-30) });
+```
 
 ###Pull Requests / Contributions###
 Keep them coming.
