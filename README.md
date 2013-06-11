@@ -92,6 +92,13 @@ Execute.StoredProcedureReader("MyStoredProc_prc", (dr) => {
   results = dr.ReadList<MockObject>();
 }, { Before = DateTime.Now.AddDays(-30) });
 ```
+You can also use lists in predicates, and the Expression Visitor will translate them into SQL "in" statements.
+```C#
+var list = new List<Int32>() { 1, 2, 3, 4 };
+var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)).Execute();
+
+//resulting sql is "WHERE [MockObjectId] in (1,2,3,4)"
+```
 
 ###Pull Requests / Contributions###
 Keep them coming.
