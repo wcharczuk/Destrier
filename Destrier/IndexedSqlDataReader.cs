@@ -13,31 +13,23 @@ namespace Destrier
         public IndexedSqlDataReader(SqlDataReader hostReader)
         {
             _dr = hostReader;
+            ColumnMap = _dr.GetColumnMap();
+            ColumnIndexMap = _dr.GetColumnIndexMap();
         }
 
         private SqlDataReader _dr = null;
+        public readonly string[] ColumnIndexMap;
 
-        private Dictionary<String, Int32> _columnMap = null;
-        public Dictionary<String, Int32> ColumnMap
-        {
-            get
-            {
-                if (_columnMap == null)
-                    _columnMap = _dr.GetColumnMap();
-
-                return _columnMap;
-            }
-            private set { _columnMap = value; }
-        }
+        public Dictionary<String, Int32> ColumnMap { get; set; }
 
         public Boolean HasColumn(String columnName)
         {
-            return ColumnMap.ContainsKey(columnName.ToLower());
+            return ColumnMap.ContainsKey(columnName.ToUpperInvariant());
         }
 
         public Int32? GetColumnIndex(String columnName)
         {
-            var columnNameLower = columnName.ToLower();
+            var columnNameLower = columnName.ToUpperInvariant();
             if (ColumnMap.ContainsKey(columnNameLower))
                 return ColumnMap[columnNameLower];
             else
@@ -97,7 +89,7 @@ namespace Destrier
 
         public int FieldCount
         {
-            get { return _dr.FieldCount; }
+            get { return ColumnIndexMap.Length; }
         }
 
         public bool GetBoolean(int i)

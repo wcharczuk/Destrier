@@ -15,11 +15,22 @@ namespace Destrier
             var hash = new Dictionary<String, Int32>();
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                var name = dr.GetName(i).ToLower();
+                var name = System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(dr.GetName(i));
                 if (!hash.ContainsKey(name))
                     hash.Add(name, i);
             }
             return hash;
+        }
+
+        public static string[] GetColumnIndexMap(this SqlDataReader dr)
+        {
+            String[] strings = new string[dr.FieldCount];
+            for (int i = 0; i < dr.FieldCount; i++)
+            {
+                var name = ReflectionCache.StandarizeCasing(dr.GetName(i)); //System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(dr.GetName(i));
+                strings[i] = name;
+            }
+            return strings;
         }
 
         public static dynamic ReadDynamic(this SqlDataReader dr)
