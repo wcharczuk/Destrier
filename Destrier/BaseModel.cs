@@ -125,7 +125,7 @@ namespace Destrier
             {
                 for (int x = 0; x < dr.ColumnIndexMap.Length; x++)
                 {
-                    var name = dr.GetName(x);//dr.ColumnIndexMap[x];
+                    var name = dr.ColumnIndexMap[x];
                     if (members.ContainsKey(name))
                     {
                         var member = members[name];
