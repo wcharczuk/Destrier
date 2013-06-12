@@ -13,23 +13,27 @@ namespace Destrier
 {
     public static class Execute
     {
-        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null)
+        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, Boolean standardizeCasing = true, dynamic procedureParams = null, String connectionString = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
 
-            using (SqlCommand cmd = CommandFactory.GetCommand(connectionString))
+            using (var conn = new SqlConnection(connectionString))
             {
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                cmd.CommandText = storedProcedure;
-
-                if (procedureParams != null)
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand())
                 {
-                    Utility.AddParametersToCommand(procedureParams, cmd);
-                }
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.CommandText = storedProcedure;
 
-                using (IndexedSqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
-                {
-                    action(reader);
+                    if (procedureParams != null)
+                    {
+                        Utility.AddParametersToCommand(procedureParams, cmd);
+                    }
+
+                    using (var dr = cmd.ExecuteReader(CommandBehavior.Default))
+                    {
+                        action(new IndexedSqlDataReader(dr, standardizeCasing));
+                    }
                 }
             }
         }
@@ -37,21 +41,25 @@ namespace Destrier
         public static void NonQuery(String statement, dynamic procedureParams = null, String connectionString = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
-            using (SqlCommand cmd = CommandFactory.GetCommand(connectionString))
+            using (var conn = new SqlConnection(connectionString))
             {
-                cmd.CommandType = System.Data.CommandType.Text;
-                cmd.CommandText = statement;
-
-                if (procedureParams != null)
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand())
                 {
-                    Utility.AddParametersToCommand(procedureParams, cmd);
-                }
+                    cmd.CommandType = System.Data.CommandType.Text;
+                    cmd.CommandText = statement;
 
-                cmd.ExecuteNonQuery();
+                    if (procedureParams != null)
+                    {
+                        Utility.AddParametersToCommand(procedureParams, cmd);
+                    }
+
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
 
-        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null)
+        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, Boolean standardizeCasing = true, String connectionString = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             using (var conn = new SqlConnection(connectionString))
@@ -68,9 +76,9 @@ namespace Destrier
                         Utility.AddParametersToCommand(procedureParams, cmd);
                     }
 
-                    using (IndexedSqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
+                    using (var dr = cmd.ExecuteReader(CommandBehavior.Default))
                     {
-                        action(reader);
+                        action(new IndexedSqlDataReader(dr, standardizeCasing));
                     }
                 }
                 conn.Close();

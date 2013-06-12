@@ -114,6 +114,11 @@ namespace Destrier
             return ReflectionCache.GetColumns(t);
         }
 
+        public static Dictionary<String, ColumnMember> ColumnMembersStandardized(Type t)
+        {
+            return ReflectionCache.GetColumnMembersStandardized(t);
+        }
+
         public static Dictionary<String, ColumnMember> ColumnMembers(Type t)
         {
             return ReflectionCache.GetColumnMembers(t);

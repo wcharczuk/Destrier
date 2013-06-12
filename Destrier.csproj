@@ -79,7 +79,6 @@
     <Compile Include="SchemaMetadataException.cs" />
     <Compile Include="SqlExpressionVisitor.cs" />
     <Compile Include="TableAttribute.cs" />
-    <Compile Include="CommandFactory.cs" />
     <Compile Include="DatabaseConfigurationContext.cs" />
     <Compile Include="Execute.cs" />
     <Compile Include="DateTimeExtensions.cs" />
