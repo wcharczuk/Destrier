@@ -20,6 +20,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsNonPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, ColumnAttribute[]> _columnAttributeCache = new ConcurrentDictionary<Type, ColumnAttribute[]>();
@@ -68,6 +69,21 @@ namespace Destrier
 
                     return columnProperties.ToArray();
                 });
+        }
+
+        public static Dictionary<String, ColumnMember> GetColumnMembers(Type type)
+        {
+            return _columnMemberCache.GetOrAdd(type, (t) =>
+            {
+                PropertyInfo[] columnProperties = GetColumns(type);
+                var members = new List<ColumnMember>();
+                foreach (var prop in columnProperties)
+                {
+                    members.Add(new ColumnMember(prop));
+                }
+
+                return members.ToDictionary(cm => cm.Name.ToLower());
+            });
         }
         
         public static PropertyInfo[] GetReferencedObjectProperties(Type type)

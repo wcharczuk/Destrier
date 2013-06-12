@@ -109,9 +109,8 @@ namespace Destrier
         /// <summary>
         /// Execute the query and gather the results.
         /// </summary>
-        /// <param name="readerAction">Optional custom gathering step.</param>
         /// <returns></returns>
-        public IEnumerable<T> Execute(Action<IndexedSqlDataReader> readerAction = null)
+        public IEnumerable<T> Execute()
         {
             var list = new List<T>();
             Destrier.Execute.StatementReader(this.QueryBody, (dr) =>
@@ -181,9 +180,6 @@ namespace Destrier
                             }, populateFullResults:true);
                        }
                    }
-
-                   if (readerAction != null)
-                       readerAction(dr);
 
                }, _parameters, Model.ConnectionString(typeof(T)));
             return list;

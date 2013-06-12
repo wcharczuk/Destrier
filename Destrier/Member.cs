@@ -22,6 +22,9 @@ namespace Destrier
             this.Type = pi.PropertyType;
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
+
+            this._setValueAction = pi.GetSetMethod();
+            this._getValueAction = pi.GetGetMethod();
         }
 
         public Member(Member member)
@@ -39,6 +42,18 @@ namespace Destrier
 
         public virtual Member Root { get; set; }
         public virtual Member Parent { get; set; }
+
+        private MethodInfo _getValueAction = null;
+        public virtual Object GetValue(object instance)
+        {
+            return _getValueAction.Invoke(instance, null);
+        }
+
+        private MethodInfo _setValueAction = null;
+        public virtual void SetValue(object instance, object value)
+        {
+            _setValueAction.Invoke(instance, new object[] { value });
+        }
 
         private String _fullyQualifiedName = null;
         public String FullyQualifiedName

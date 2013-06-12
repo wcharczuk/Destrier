@@ -245,10 +245,9 @@ namespace Destrier
             var columnIndex = GetColumnIndex(columnName);
             if (columnIndex != null)
             {
-                if (!this.IsDBNull(columnIndex.Value))
+                object value = this[columnIndex.Value];
+                if (!(value is DBNull))
                 {
-                    object value = this[columnIndex.Value];
-
                     if (effectiveType.IsEnum)
                         return Enum.ToObject(effectiveType, value);
                     else
@@ -256,6 +255,22 @@ namespace Destrier
                 }
             }
 
+            return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
+        }
+
+        public object Get(Type resultType, Int32 columnIndex)
+        {
+            Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
+            Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
+
+            object value = this[columnIndex];
+            if (!(value is DBNull))
+            {
+                if (effectiveType.IsEnum)
+                    return Enum.ToObject(effectiveType, value);
+                else
+                    return Convert.ChangeType(value, effectiveType);
+            }
             return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
         }
 
