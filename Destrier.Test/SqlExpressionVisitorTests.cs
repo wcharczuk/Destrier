@@ -146,6 +146,16 @@ namespace Destrier.Test
             regex = new System.Text.RegularExpressions.Regex(pattern);
             Assert.True(regex.IsMatch(sqlText));
 
+            //parameterless function calls.
+            string id = "Name";
+            var parameterLessFunctionVisitor = new SqlExpressionVisitor<MockObject>();
+            Expression<Func<MockObject, bool>> paramExp = (a) => a.MockObjectName == id.ToString();
+            parameterLessFunctionVisitor.Visit(paramExp);
+            sqlText = parameterLessFunctionVisitor.Buffer.ToString();
+            pattern = @"\[MockObjectName\] = @(.*)";
+            regex = new System.Text.RegularExpressions.Regex(pattern);
+            Assert.True(regex.IsMatch(sqlText));
+
             //can evaluate unary operations
             var garmentSizeVisitor = new SqlExpressionVisitor<MockObject>();
             Expression<Func<MockObject, bool>> gsExp = (gs) => gs.MockObjectId == 1 + 3;
