@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
 using System.Dynamic;
+using System.Data.Common;
 
 namespace Destrier
 {

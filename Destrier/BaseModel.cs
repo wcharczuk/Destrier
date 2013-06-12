@@ -14,7 +14,7 @@ namespace Destrier
     public abstract class BaseModel : IPopulate
     {
         public BaseModel() { }
-        
+
         public delegate void DatabaseActionHandler(object sender, EventArgs e);
 
         [field: NonSerialized]
@@ -86,34 +86,19 @@ namespace Destrier
         public virtual void PopulateFullResults(IndexedSqlDataReader dr, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
             var thisType = this.GetType();
-            foreach (PropertyInfo pi in Model.Columns(thisType))
-            {
-                ColumnAttribute ca = Model.ColumnAttribute(pi);
-                String columnName = Model.ColumnName(pi);
-
-                Boolean checkIfDbNull = ca.CanBeNull;
-
-                if (parentMember != null)
-                    columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, columnName);
-
-                pi.SetValue(this, dr.Get(pi.PropertyType, columnName), null);
-            }
-
-            if (objectLookups != null)
-            {
-                if (!objectLookups.ContainsKey(this.GetType()))
-                {
-                    objectLookups.Add(this.GetType(), new Dictionary<Object, Object>());
-                }
-                var pkv = Model.InstancePrimaryKeyValue(this.GetType(), this);
-                if (pkv != null && !objectLookups[this.GetType()].ContainsKey(pkv))
-                {
-                    objectLookups[this.GetType()].Add(pkv, this);
-                }
-            }
+            var members = Model.ColumnMembers(thisType);
 
             if (Model.HasReferencedObjects(thisType))
             {
+                foreach (ColumnMember col in members.Values)
+                {
+                    var columnName = col.Name;
+                    if (parentMember != null)
+                        columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, col.Name);
+
+                    col.SetValue(this, dr.Get(col.Type, columnName));
+                }
+
                 rootMember = rootMember ?? new RootMember(thisType);
                 foreach (ReferencedObjectMember rom in Model.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
                 {
@@ -134,6 +119,33 @@ namespace Destrier
                             objectLookups[rom.Type].Add(pkv, newObject);
                         }
                     }
+                }
+            }
+            else
+            {
+                //SPEEEEEEEEED.
+                for (int x = 0; x < dr.FieldCount; x++)
+                {
+                    var name = dr.GetName(x);
+                    if (members.ContainsKey(name))
+                    {
+                        var member = members[name];
+                        var value = dr.Get(member.Type, x);
+                        member.SetValue(this, value);
+                    }
+                }
+            }
+
+            if (Model.HasChildCollections(thisType) && objectLookups != null)
+            {
+                if (!objectLookups.ContainsKey(thisType))
+                {
+                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
+                }
+                var pkv = Model.InstancePrimaryKeyValue(thisType, this);
+                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
+                {
+                    objectLookups[thisType].Add(pkv, this);
                 }
             }
         }

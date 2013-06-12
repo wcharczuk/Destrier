@@ -47,6 +47,17 @@ namespace Destrier
                 return pi.Name;
         }
 
+        public static String ColumnName(ColumnAttribute ca, String propertyName)
+        {
+            if (ca == null)
+                return null;
+
+            if (!String.IsNullOrEmpty(ca.Name))
+                return ca.Name;
+
+            return propertyName;
+        }
+
         public static String ColumnNameForPropertyName(Type type, String propertyName)
         {
             var propertyInfo = ColumnPropertyForPropertyName(type, propertyName);
@@ -101,6 +112,11 @@ namespace Destrier
         public static PropertyInfo[] Columns(Type t)
         {
             return ReflectionCache.GetColumns(t);
+        }
+
+        public static Dictionary<String, ColumnMember> ColumnMembers(Type t)
+        {
+            return ReflectionCache.GetColumnMembers(t);
         }
 
         public static PropertyInfo[] ReferencedObjectProperties(Type t)

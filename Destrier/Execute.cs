@@ -27,7 +27,7 @@ namespace Destrier
                     Utility.AddParametersToCommand(procedureParams, cmd);
                 }
 
-                using (IndexedSqlDataReader reader = cmd.ExecuteReader())
+                using (IndexedSqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
                 {
                     action(reader);
                 }
@@ -54,20 +54,26 @@ namespace Destrier
         public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
-            using (SqlCommand cmd = CommandFactory.GetCommand(connectionString))
+            using (var conn = new SqlConnection(connectionString))
             {
-                cmd.CommandType = System.Data.CommandType.Text;
-                cmd.CommandText = statement;
-
-                if (procedureParams != null)
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand())
                 {
-                    Utility.AddParametersToCommand(procedureParams, cmd);
-                }
+                    cmd.Connection = conn;
+                    cmd.CommandType = System.Data.CommandType.Text;
+                    cmd.CommandText = statement;
 
-                using (IndexedSqlDataReader reader = cmd.ExecuteReader())
-                {
-                    action(reader);
+                    if (procedureParams != null)
+                    {
+                        Utility.AddParametersToCommand(procedureParams, cmd);
+                    }
+
+                    using (IndexedSqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default))
+                    {
+                        action(reader);
+                    }
                 }
+                conn.Close();
             }
         }
 
