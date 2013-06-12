@@ -21,6 +21,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
+        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberStandardizedCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsNonPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, ColumnAttribute[]> _columnAttributeCache = new ConcurrentDictionary<Type, ColumnAttribute[]>();
@@ -53,22 +54,37 @@ namespace Destrier
         public static PropertyInfo[] GetColumns(Type type)
         {
             return _columnCache.GetOrAdd(type, (t) =>
+            {
+                List<PropertyInfo> columnProperties = GetNewObject<List<PropertyInfo>>();
+
+                PropertyInfo[] properties = ReflectionCache.GetProperties(t);
+
+                foreach (PropertyInfo pi in properties)
                 {
-                    List<PropertyInfo> columnProperties = GetNewObject<List<PropertyInfo>>();
-
-                    PropertyInfo[] properties = ReflectionCache.GetProperties(t);
-
-                    foreach (PropertyInfo pi in properties)
+                    object[] attributes = pi.GetCustomAttributes(typeof(ColumnAttribute), false);
+                    if (attributes.Any())
                     {
-                        object[] attributes = pi.GetCustomAttributes(typeof(ColumnAttribute), false);
-                        if (attributes.Any())
-                        {
-                            columnProperties.Add(pi);
-                        }
+                        columnProperties.Add(pi);
                     }
+                }
 
-                    return columnProperties.ToArray();
-                });
+                return columnProperties.ToArray();
+            });
+        }
+
+        public static Dictionary<String, ColumnMember> GetColumnMembersStandardized(Type type)
+        {
+            return _columnMemberStandardizedCache.GetOrAdd(type, (t) =>
+            {
+                PropertyInfo[] columnProperties = GetColumns(type);
+                var members = new List<ColumnMember>();
+                foreach (var prop in columnProperties)
+                {
+                    members.Add(new ColumnMember(prop));
+                }
+
+                return members.ToDictionary(cm => ReflectionCache.StandardizeCasing(cm.Name));
+            });
         }
 
         public static Dictionary<String, ColumnMember> GetColumnMembers(Type type)
@@ -82,7 +98,7 @@ namespace Destrier
                     members.Add(new ColumnMember(prop));
                 }
 
-                return members.ToDictionary(cm => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(cm.Name));
+                return members.ToDictionary(cm => cm.Name);
             });
         }
         
@@ -392,14 +408,9 @@ namespace Destrier
             return members;
         }
 
-        public static Func<String, String> StandarizeCasing = _standardizeCasing();
-        private static Func<String, String> _standardizeCasing()
+        public static String StandardizeCasing(String input)
         {
-            Func<String, String> std = ((str) =>
-            {
-                return System.Globalization.CultureInfo.InstalledUICulture.TextInfo.ToUpper(str);
-            });
-            return std;
+            return input.ToLowerInvariant();
         }
     }
 }
