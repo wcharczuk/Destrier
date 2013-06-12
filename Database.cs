@@ -23,58 +23,54 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Execute.Command())
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+
+                command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
+
+                List<String> columnNames = new List<String>();
+                foreach (PropertyInfo pi in Model.Columns(myObjectType))
                 {
-                    cmd.CommandType = System.Data.CommandType.Text;
-
-                    command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
-
-                    List<String> columnNames = new List<String>();
-                    foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+                    String columnName = String.IsNullOrEmpty(column.Name) ? pi.Name.ToLowerCaseFirstLetter() : column.Name;
+                    if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
                     {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                        String columnName = String.IsNullOrEmpty(column.Name) ? pi.Name.ToLowerCaseFirstLetter() : column.Name;
-                        if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
-                        {
-                            columnNames.Add(columnName);
-                        }
+                        columnNames.Add(columnName);
                     }
+                }
 
-                    command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
-                    command.Append(") VALUES (");
+                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
+                command.Append(") VALUES (");
 
-                    command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
-                    command.Append(");");
+                command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
+                command.Append(");");
 
-                    foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                {
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+
+                    if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
                     {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-
-                        if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
-                        {
-                            AddColumnParameter(pi, column, myObject, cmd);
-                        }
+                        AddColumnParameter(pi, column, myObject, cmd);
                     }
+                }
 
-                    if (Model.HasAutoIncrementColumn(myObjectType))
+                if (Model.HasAutoIncrementColumn(myObjectType))
+                {
+                    command.Append("SELECT @@IDENTITY;");
+                    cmd.CommandText = command.ToString();
+
+                    object o = cmd.ExecuteScalar();
+                    if (o != null && !(o is DBNull))
                     {
-                        command.Append("SELECT @@IDENTITY;");
-                        cmd.CommandText = command.ToString();
-
-                        object o = cmd.ExecuteScalar();
-                        if (o != null && !(o is DBNull))
-                        {
-                            Model.AutoIncrementColumn(myObjectType).SetValue(myObject, Convert.ChangeType(o, Model.AutoIncrementColumn(myObjectType).PropertyType), null);
-                        }
+                        Model.AutoIncrementColumn(myObjectType).SetValue(myObject, Convert.ChangeType(o, Model.AutoIncrementColumn(myObjectType).PropertyType), null);
                     }
-                    else
-                    {
-                        cmd.CommandText = command.ToString();
-                        cmd.ExecuteNonQuery();
-                    }
+                }
+                else
+                {
+                    cmd.CommandText = command.ToString();
+                    cmd.ExecuteNonQuery();
                 }
             }
 
@@ -95,60 +91,57 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Execute.Command())
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+
+                command.Append("UPDATE ");
+                command.Append(Model.TableNameFullyQualified(myObjectType));
+                command.Append(" SET ");
+                //set
+                List<String> variables = new List<String>();
+                foreach (PropertyInfo pi in Model.ColumnsNonPrimaryKey(myObjectType))
                 {
-                    cmd.CommandType = System.Data.CommandType.Text;
-
-                    command.Append("UPDATE ");
-                    command.Append(Model.TableNameFullyQualified(myObjectType));
-                    command.Append(" SET ");
-                    //set
-                    List<String> variables = new List<String>();
-                    foreach (PropertyInfo pi in Model.ColumnsNonPrimaryKey(myObjectType))
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+                    if (!column.IsForReadOnly)
                     {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                        if (!column.IsForReadOnly)
-                        {
-                            if (!String.IsNullOrEmpty(column.Name))
-                                variables.Add(column.Name);
-                            else
-                                variables.Add(pi.Name.ToLowerCaseFirstLetter());
-                        }
-                    }
-
-                    command.Append(string.Join(", ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
-
-                    command.Append(" WHERE ");
-
-                    variables = new List<String>();
-                    foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
-                    {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
                         if (!String.IsNullOrEmpty(column.Name))
                             variables.Add(column.Name);
                         else
                             variables.Add(pi.Name.ToLowerCaseFirstLetter());
                     }
-                    command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
-
-                    //parameters
-                    foreach (PropertyInfo pi in Model.Columns(myObjectType))
-                    {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-
-                        if (!column.IsForReadOnly)
-                        {
-                            AddColumnParameter(pi, column, myObject, cmd);
-                        }
-                    }
-
-                    cmd.CommandText = command.ToString();
-                    cmd.ExecuteNonQuery();
                 }
+
+                command.Append(string.Join(", ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+
+                command.Append(" WHERE ");
+
+                variables = new List<String>();
+                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
+                {
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+                    if (!String.IsNullOrEmpty(column.Name))
+                        variables.Add(column.Name);
+                    else
+                        variables.Add(pi.Name.ToLowerCaseFirstLetter());
+                }
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+
+                //parameters
+                foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                {
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+
+                    if (!column.IsForReadOnly)
+                    {
+                        AddColumnParameter(pi, column, myObject, cmd);
+                    }
+                }
+
+                cmd.CommandText = command.ToString();
+                cmd.ExecuteNonQuery();
             }
+            
 
             myObject.OnPostUpdate(new EventArgs());
         }
@@ -166,36 +159,33 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Execute.Command())
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+                command.Append("DELETE FROM " + Model.TableNameFullyQualified(myObjectType) + " WHERE ");
+
+                List<String> variables = new List<String>();
+                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
                 {
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    command.Append("DELETE FROM " + Model.TableNameFullyQualified(myObjectType) + " WHERE ");
-
-                    List<String> variables = new List<String>();
-                    foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
-                    {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                        if (!String.IsNullOrEmpty(column.Name))
-                            variables.Add(column.Name);
-                        else
-                            variables.Add(pi.Name.ToLowerCaseFirstLetter());
-                    }
-                    command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
-
-                    foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
-                    {
-                        ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                        string columnName = String.IsNullOrEmpty(column.Name) ? pi.Name : column.Name;
-                        cmd.Parameters.AddWithValue("@" + columnName, pi.GetValue(myObject, null));
-                    }
-
-                    cmd.CommandText = command.ToString();
-                    cmd.ExecuteNonQuery();
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+                    if (!String.IsNullOrEmpty(column.Name))
+                        variables.Add(column.Name);
+                    else
+                        variables.Add(pi.Name.ToLowerCaseFirstLetter());
                 }
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+
+                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
+                {
+                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
+                    string columnName = String.IsNullOrEmpty(column.Name) ? pi.Name : column.Name;
+                    cmd.Parameters.AddWithValue("@" + columnName, pi.GetValue(myObject, null));
+                }
+
+                cmd.CommandText = command.ToString();
+                cmd.ExecuteNonQuery();
             }
+            
 
             myObject.OnPostRemove(new EventArgs());
         }
@@ -205,28 +195,24 @@ namespace Destrier
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Execute.Command())
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+                command.Append("DELETE FROM ");
+                command.Append(Model.TableNameFullyQualified(typeof(T)));
+
+                if (expression != null)
                 {
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    command.Append("DELETE FROM ");
-                    command.Append(Model.TableNameFullyQualified(typeof(T)));
-
-                    if (expression != null)
-                    {
-                        command.Append(" WHERE \n");
-                        var parameters = new Dictionary<String, object>();
-                        var visitor = new SqlExpressionVisitor<T>(command, parameters);
-                        var body = expression.Body;
-                        visitor.Visit(body);
-                        Execute.Utility.AddParametersToCommand(parameters, cmd);
-                    }
-
-                    cmd.CommandText = command.ToString();
-                    cmd.ExecuteNonQuery();
+                    command.Append(" WHERE \n");
+                    var parameters = new Dictionary<String, object>();
+                    var visitor = new SqlExpressionVisitor<T>(command, parameters);
+                    var body = expression.Body;
+                    visitor.Visit(body);
+                    Execute.Utility.AddParametersToCommand(parameters, cmd);
                 }
+
+                cmd.CommandText = command.ToString();
+                cmd.ExecuteNonQuery();
             }
         }
 
