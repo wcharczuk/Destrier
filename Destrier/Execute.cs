@@ -13,7 +13,7 @@ namespace Destrier
 {
     public static class Execute
     {
-        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, Boolean standardizeCasing = true, dynamic procedureParams = null, String connectionString = null)
+        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null, Boolean standardizeCasing = true)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
 
@@ -22,6 +22,7 @@ namespace Destrier
                 conn.Open();
                 using (SqlCommand cmd = new SqlCommand())
                 {
+                    cmd.Connection = conn;
                     cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.CommandText = storedProcedure;
 
@@ -46,6 +47,7 @@ namespace Destrier
                 conn.Open();
                 using (SqlCommand cmd = new SqlCommand())
                 {
+                    cmd.Connection = conn;
                     cmd.CommandType = System.Data.CommandType.Text;
                     cmd.CommandText = statement;
 
@@ -59,7 +61,7 @@ namespace Destrier
             }
         }
 
-        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, Boolean standardizeCasing = true, String connectionString = null)
+        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null, Boolean standardizeCasing = true)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             using (var conn = new SqlConnection(connectionString))
@@ -83,6 +85,28 @@ namespace Destrier
                 }
                 conn.Close();
             }
+        }
+
+        public static SqlCommand Command(String connectionString = null)
+        {
+            connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
+
+            SqlConnection conn = new SqlConnection(connectionString);
+            conn.Open();
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = conn;
+            cmd.Disposed += new EventHandler(cmd_Disposed);
+            return cmd;
+        }
+
+        private static void cmd_Disposed(object sender, EventArgs e)
+        {
+            try
+            {
+                ((SqlCommand)sender).Connection.Close();
+                ((SqlCommand)sender).Connection.Dispose();
+            }
+            catch { }
         }
 
         public static class Utility
