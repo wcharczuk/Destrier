@@ -123,10 +123,9 @@ namespace Destrier
             }
             else
             {
-                //SPEEEEEEEEED.
-                for (int x = 0; x < dr.FieldCount; x++)
+                for (int x = 0; x < dr.ColumnIndexMap.Length; x++)
                 {
-                    var name = dr.GetName(x).ToLower();
+                    var name = dr.GetName(x);//dr.ColumnIndexMap[x];
                     if (members.ContainsKey(name))
                     {
                         var member = members[name];

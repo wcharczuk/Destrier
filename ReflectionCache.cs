@@ -82,7 +82,7 @@ namespace Destrier
                     members.Add(new ColumnMember(prop));
                 }
 
-                return members.ToDictionary(cm => cm.Name.ToLower());
+                return members.ToDictionary(cm => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(cm.Name));
             });
         }
         
@@ -390,6 +390,16 @@ namespace Destrier
                 }
             }
             return members;
+        }
+
+        public static Func<String, String> StandarizeCasing = _standardizeCasing();
+        private static Func<String, String> _standardizeCasing()
+        {
+            Func<String, String> std = ((str) =>
+            {
+                return System.Globalization.CultureInfo.InstalledUICulture.TextInfo.ToUpper(str);
+            });
+            return std;
         }
     }
 }
