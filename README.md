@@ -13,6 +13,7 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 
 ###Speed###
 The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
+
 | ORM                   | Timing       |
 |-----------------------|--------------|
 |Raw Reader             | Avg: 1.126ms |
