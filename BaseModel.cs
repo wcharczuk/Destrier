@@ -126,7 +126,7 @@ namespace Destrier
                 //SPEEEEEEEEED.
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
-                    var name = dr.GetName(x);
+                    var name = dr.GetName(x).ToLower();
                     if (members.ContainsKey(name))
                     {
                         var member = members[name];
