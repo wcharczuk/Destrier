@@ -314,17 +314,20 @@ namespace Destrier
                 }
                 else
                 {
-                    var argumentType = Model.RootTypeForExpression(m.Arguments[0]);
-                    if (ReflectionCache.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
+                    if (m.Arguments.Any())
                     {
-                        evaluateCall = false;
-                        switch (m.Method.Name)
+                        var argumentType = Model.RootTypeForExpression(m.Arguments[0]);
+                        if (ReflectionCache.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
                         {
-                            case "Contains":
-                                Visit(m.Arguments[0]);
-                                Buffer.Append(" IN ");
-                                ListToSet(Evaluate(Reduce(m.Object)) as System.Collections.IList);
-                                break;
+                            evaluateCall = false;
+                            switch (m.Method.Name)
+                            {
+                                case "Contains":
+                                    Visit(m.Arguments[0]);
+                                    Buffer.Append(" IN ");
+                                    ListToSet(Evaluate(Reduce(m.Object)) as System.Collections.IList);
+                                    break;
+                            }
                         }
                     }
                 }
