@@ -68,13 +68,10 @@ namespace Destrier
         public virtual void Populate(IndexedSqlDataReader dr)
         {
             var thisType = this.GetType();
-            foreach (PropertyInfo pi in Model.Columns(thisType))
+            var members = Model.ColumnMembersStandardized(thisType);
+            foreach (ColumnMember col in members.Values)
             {
-                ColumnAttribute ca = Model.ColumnAttribute(pi);
-                String columnName = Model.ColumnName(pi);
-                Boolean checkIfDbNull = ca.CanBeNull;
-
-                pi.SetValue(this, dr.Get(pi.PropertyType, columnName), null);
+                col.SetValue(this, dr.Get(col.Type, col.Name));
             }
         }
 
@@ -123,7 +120,7 @@ namespace Destrier
             }
             else
             {
-                for (int x = 0; x < dr.ColumnIndexMap.Length; x++)
+                for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
                     if (members.ContainsKey(name))

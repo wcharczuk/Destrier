@@ -181,7 +181,7 @@ namespace Destrier
                        }
                    }
 
-               }, _parameters, Model.ConnectionString(typeof(T)));
+               }, procedureParams: _parameters, connectionString: Model.ConnectionString(typeof(T)), standardizeCasing: false);
             return list;
         }
 

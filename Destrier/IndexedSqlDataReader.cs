@@ -10,30 +10,48 @@ namespace Destrier
     public class IndexedSqlDataReader : IDataReader
     {
         public IndexedSqlDataReader() : base() { }
-        public IndexedSqlDataReader(SqlDataReader hostReader)
+
+        public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true)
         {
             _dr = hostReader;
-            ColumnMap = _dr.GetColumnMap();
-            ColumnIndexMap = _dr.GetColumnIndexMap();
+            ColumnMap = _dr.GetColumnMap(standardizeCasing);
+            ColumnIndexMap = _dr.GetColumnIndexMap(standardizeCasing);
+            StandardizeCasing = standardizeCasing;
         }
 
-        private SqlDataReader _dr = null;
-        public readonly string[] ColumnIndexMap;
+        public Boolean StandardizeCasing { get; set; }
 
+        private SqlDataReader _dr = null;
+        
         public Dictionary<String, Int32> ColumnMap { get; set; }
+        public string[] ColumnIndexMap { get; set; }
 
         public Boolean HasColumn(String columnName)
         {
-            return ColumnMap.ContainsKey(columnName.ToUpperInvariant());
+            if (this.StandardizeCasing)
+                return ColumnMap.ContainsKey(ReflectionCache.StandardizeCasing(columnName));
+            else
+                return ColumnMap.ContainsKey(columnName);
         }
 
         public Int32? GetColumnIndex(String columnName)
         {
-            var columnNameLower = columnName.ToUpperInvariant();
-            if (ColumnMap.ContainsKey(columnNameLower))
-                return ColumnMap[columnNameLower];
+            if (this.StandardizeCasing)
+            {
+                var columnNameLower = ReflectionCache.StandardizeCasing(columnName);
+                if (ColumnMap.ContainsKey(columnNameLower))
+                    return ColumnMap[columnNameLower];
+                else
+                    return null;
+            }
             else
-                return null;
+            {
+                if (ColumnMap.ContainsKey(columnName))
+                    return ColumnMap[columnName];
+                else
+                    return null;
+            }
+
         }
 
         public Boolean HasRows
@@ -68,7 +86,8 @@ namespace Destrier
         public bool NextResult()
         {
             var result = _dr.NextResult();
-            ColumnMap = _dr.GetColumnMap();
+            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
+            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
             return result;
         }
 
@@ -174,7 +193,7 @@ namespace Destrier
 
         public string GetName(int i)
         {
-            return _dr.GetName(i);
+            return ColumnIndexMap[i];
         }
 
         public int GetOrdinal(string name)

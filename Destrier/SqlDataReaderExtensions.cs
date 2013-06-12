@@ -10,25 +10,24 @@ namespace Destrier
 {
     public static class SqlDataReaderExtensions
     {
-        public static Dictionary<String, Int32> GetColumnMap(this SqlDataReader dr)
+        public static Dictionary<String, Int32> GetColumnMap(this SqlDataReader dr, Boolean standardizeCasing = false)
         {
             var hash = new Dictionary<String, Int32>();
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                var name = System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(dr.GetName(i));
+                var name = standardizeCasing ? ReflectionCache.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
                 if (!hash.ContainsKey(name))
                     hash.Add(name, i);
             }
             return hash;
         }
 
-        public static string[] GetColumnIndexMap(this SqlDataReader dr)
+        public static string[] GetColumnIndexMap(this SqlDataReader dr, Boolean standardizeCasing = false)
         {
             String[] strings = new string[dr.FieldCount];
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                var name = ReflectionCache.StandarizeCasing(dr.GetName(i)); //System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(dr.GetName(i));
-                strings[i] = name;
+                strings[i] = standardizeCasing ? ReflectionCache.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
             }
             return strings;
         }
