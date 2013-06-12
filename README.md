@@ -4,6 +4,24 @@ Destrier is a flexible yet minimal ORM for .net.
 It is designed to leverage both strong typing and model / schema relationships and push the developer towards
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
+###Features###
+* Speed: Very, Very fast:
+* Code first, minimal configuration, powerful annotations.
+ * Column key, datatype, string precision control
+ * "Referenced Objects" let you have associated objects (joined to specified properties)
+ * "Child Objects" let you have related sub collections.
+
+###Speed###
+The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
+
+| ORM                   | Timing       |
+|-----------------------|--------------|
+|Raw Reader             | Avg: 1.126ms |
+|Destrier               | Avg: 2.312ms |
+|Dapper                 | Avg: 3.981ms |
+|ServiceStack ORMLite   | Avg: 4.081ms |
+|EntityFramework        | Avg: 8.507ms |
+
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
 * BaseModel: Inherit from this to get more complicated relational functionality like child members and associated objects and query support.
