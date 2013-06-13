@@ -283,7 +283,7 @@ namespace Destrier
                 if (resultType.IsEnum)
                     return Enum.ToObject(resultType, value);
                 else
-                    return value; // Convert.ChangeType(value, resultType); //this might bite me in the ass.
+                    return Convert.ChangeType(value, resultType);
             }
 
             return isNullableType ? null : ReflectionCache.GetDefault(resultType);
