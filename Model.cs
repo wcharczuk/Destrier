@@ -231,12 +231,12 @@ namespace Destrier
 
         public static Boolean HasReferencedObjects(Type t)
         {
-            return ReflectionCache.GetReferencedObjectProperties(t).Any();
+            return ReflectionCache.HasReferencedObjectProperties(t);
         }
 
         public static Boolean HasChildCollections(Type t)
         {
-            return ReflectionCache.GetChildCollectionProperties(t).Any();
+            return ReflectionCache.HasChildCollectionProperties(t);
         }
 
         public static PropertyInfo AutoIncrementColumn(Type t)
@@ -467,6 +467,78 @@ namespace Destrier
                 objPrimaryKeyValue = value != null ? value.ToString() : null;
             }
             return objPrimaryKeyValue;
+        }
+
+        public static String StandardizeCasing(String input)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
+        }
+
+        public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+        {
+            var members = Model.ColumnMembers(thisType);
+
+            if (Model.HasReferencedObjects(thisType))
+            {
+                foreach (ColumnMember col in members.Values)
+                {
+                    var columnName = col.Name;
+                    if (parentMember != null)
+                        columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, col.Name);
+
+                    col.SetValue(instance, dr.Get(col.Type, columnName));
+                }
+
+                rootMember = rootMember ?? new RootMember(thisType);
+                foreach (ReferencedObjectMember rom in Model.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
+                {
+                    var type = rom.Type;
+                    var newObject = ReflectionCache.GetNewObject(type);
+                    PopulateFullResults((newObject as BaseModel), dr, type, rootMember, rom);
+                    rom.Property.SetValue(instance, newObject);
+
+                    if (objectLookups != null)
+                    {
+                        if (!objectLookups.ContainsKey(rom.Type))
+                        {
+                            objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
+                        }
+                        var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
+                        if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
+                        {
+                            objectLookups[rom.Type].Add(pkv, newObject);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int x = 0; x < dr.FieldCount; x++)
+                {
+                    var name = dr.ColumnIndexMap[x];
+                    ColumnMember member = null;
+                    members.TryGetValue(name, out member);
+                    if (member != null)
+                    {
+                        var value = dr.Get(member.Type, x);
+                        if (!(value is DBNull))
+                            member.SetValue(instance, value);
+                    }
+                }
+            }
+
+            if (Model.HasChildCollections(thisType) && objectLookups != null)
+            {
+                if (!objectLookups.ContainsKey(thisType))
+                {
+                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
+                }
+                var pkv = Model.InstancePrimaryKeyValue(thisType, instance);
+                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
+                {
+                    objectLookups[thisType].Add(pkv, instance);
+                }
+            }
         }
     }
 }
