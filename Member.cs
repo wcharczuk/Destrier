@@ -56,6 +56,9 @@ namespace Destrier
         }
 
         private String _fullyQualifiedName = null;
+        /// <summary>
+        /// Returns the fully qualified name of a member.
+        /// </summary>
         public String FullyQualifiedName
         {
             get 
@@ -65,8 +68,10 @@ namespace Destrier
 
                 if (Parent != null)
                     _fullyQualifiedName = String.Format("{0}.{1}", Parent.FullyQualifiedName, Name);
+                else if (this.DeclaringType != null)
+                    _fullyQualifiedName = String.Format("{1}", this.DeclaringType.Name, Name);
                 else
-                    _fullyQualifiedName =  String.Format("{1}", this.DeclaringType.Name, Name);
+                    _fullyQualifiedName = Name;
 
                 return _fullyQualifiedName;
             }
