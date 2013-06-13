@@ -460,15 +460,7 @@ namespace Destrier
         {
             var members = new List<Member>();
             rootMember = rootMember ?? new RootMember(type);
-
-            if (String.IsNullOrEmpty(rootMember.OutputTableName))
-            {
-                rootMember.OutputTableName = Model.GenerateTableAlias();
-            }
-            if (String.IsNullOrEmpty(rootMember.TableAlias))
-            {
-                rootMember.TableAlias = Model.GenerateTableAlias();
-            }
+            
             members.Add(rootMember);
             GenerateMembersImpl(type, members, rootMember, parent);
             return members.ToList();

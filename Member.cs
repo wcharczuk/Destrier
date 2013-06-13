@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Destrier
 {
-    public abstract class Member
+    public abstract class Member : ICloneable
     {
         public Member() { }
 
@@ -89,10 +89,12 @@ namespace Destrier
         {
             if (this.Parent == null && this.Root != null)
                 return test(this.Root);
-            else if (test(this.Parent))
+            else if (this.Parent != null && test(this.Parent))
                 return true;
-            else
+            else if (this.Parent != null)
                 return this.Parent.ParentAny(test);
+            else
+                return false;
         }
 
         public override int GetHashCode()
@@ -110,6 +112,11 @@ namespace Destrier
         public override string ToString()
         {
             return this.FullyQualifiedName;
+        }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

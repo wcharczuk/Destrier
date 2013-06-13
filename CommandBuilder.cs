@@ -209,21 +209,24 @@ namespace Destrier
         {
             this.Members = new Dictionary<string, Member>();
             this.SelectMembers = new List<Member>();
-            
+
             var memberList = Model.MembersRecursive(_t);
 
-            foreach (var m in memberList)
+            foreach (var m in memberList.ToList())
             {
-                if (m is RootMember)
+                var ref_m = m.Clone() as Member;
+
+                if (ref_m is RootMember)
                 {
-                    RootMember = m;
+                    ref_m.OutputTableName = Model.GenerateTableAlias();
+                    RootMember = ref_m;
                 }
                 else
                 {
-                    this.Members.Add(m.FullyQualifiedName, m);
+                    this.Members.Add(ref_m.FullyQualifiedName, ref_m);
 
-                    if (m.Parent == null)
-                        this.SelectMembers.Add(m);
+                    if (ref_m.Parent == null)
+                        this.SelectMembers.Add(ref_m);
                 }
             }
 
