@@ -5,7 +5,7 @@ It is designed to leverage both strong typing and model / schema relationships a
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
 ###Features###
-* Speed: Very, Very fast:
+* Speed: It's kinda fast, not the fastest yet but pretty fast considering the type safety and expressiveness.
 * Code first, minimal configuration, powerful annotations.
  * Column key, datatype, string precision control
  * "Referenced Objects" let you have associated objects (joined to specified properties)
@@ -14,13 +14,14 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Speed###
 The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
 
-| ORM                   | Timing       |
-|-----------------------|--------------|
-|Raw Reader             | Avg: 1.126ms |
-|ServiceStack ORMLite   | Avg: 4.094ms |
-|Dapper                 | Avg: 4.156ms |
-|Destrier               | Avg: 7.140ms |
-|EntityFramework        | Avg:18.507ms |
+| ORM                   | Timing        |
+|-----------------------|---------------|
+|Raw Reader             | Avg:  1.126ms |
+|Dapper                 | Avg:  4.480ms |
+|ServiceStack ORMLite   | Avg:  5.210ms |
+|Destrier               | Avg:  6.570ms |
+|EntityFramework        | Avg: 18.040ms |
+
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.

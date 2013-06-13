@@ -73,16 +73,14 @@ namespace ORMComparison
     public class Program
     {
         public const String ConnectionString = "Server=localhost;Database=clotheshorse;Trusted_Connection=true";
-        public const int TRIALS = 1;
-        public const int LIMIT = 2000;
+        public const int TRIALS = 100;
+        public const int LIMIT = 1000;
 
         public static void Main(string[] args)
         {
             Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
             Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "ClothesHorse";
-
-            var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
 
             var results = new List<Int64>();
 
@@ -125,6 +123,7 @@ namespace ORMComparison
 
             Action ormLiteAction = () =>
             {
+                var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
                     var garments = db.Select<Garment>(q => q.Limit(LIMIT));
@@ -142,7 +141,7 @@ namespace ORMComparison
 
             Action destrierAction = () =>
             {
-                var destrierResults = new Destrier.Query<Garment>().Limit(LIMIT).Execute();
+                var destrierResults = new Destrier.Query<Garment>().Execute();
             };
 
             Action dapperAction = () =>
@@ -173,8 +172,8 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
-                //{ "ServiceStack ORMLite", ormLiteAction },
-                //{ "Dapper", dapperAction },
+                { "ServiceStack ORMLite", ormLiteAction },
+                { "Dapper", dapperAction },
                 { "EntityFramework", entityFrameworkAction }
             };
 

@@ -312,80 +312,6 @@ namespace Destrier
                 return true;
         }
 
-        public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
-        {
-            List<Member> members = new List<Member>();
-            foreach (var cpi in Columns(type))
-            {
-                var columnMember = new ColumnMember(cpi) { Parent = parentMember, Root = rootMember };
-                if (!columnMember.Skip)
-                    members.Add(columnMember);
-            }
-            if (HasReferencedObjects(type))
-            {
-                foreach (var referencedObjectProperty in ReferencedObjectProperties(type))
-                {
-                    var referencedObjectMember = new ReferencedObjectMember(referencedObjectProperty) { Parent = parentMember, Root = rootMember };
-                    members.Add(referencedObjectMember);
-                }
-            }
-            if (HasChildCollections(type))
-            {
-                foreach (var childCollectionProperty in ChildCollectionProperties(type))
-                {
-                    var childCollectionMember = new ChildCollectionMember(childCollectionProperty) { Parent = parentMember, Root = rootMember};
-                    members.Add(childCollectionMember);
-                }
-            }
-            return members;
-        }
-
-        public static List<Member> MembersRecursive(Type type, Member rootMember = null, Member parent = null)
-        {
-            var members = new List<Member>();
-            rootMember = rootMember ?? new RootMember(type);
-            MembersImpl(type, members, rootMember, parent);
-            return members.ToList();
-        }
-
-        private static void MembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
-        {
-            foreach (var cpi in Columns(type))
-            {
-                var columnMember = new ColumnMember(cpi) { Parent = parentMember, Root = rootMember };
-                if (!columnMember.Skip)
-                    members.Add(columnMember);
-            }
-
-            if (HasReferencedObjects(type))
-            {
-                foreach (var referencedObjectProperty in ReferencedObjectProperties(type))
-                {
-                    var referencedObjectMember = new ReferencedObjectMember(referencedObjectProperty) { Parent = parentMember, Root = rootMember };
-
-                    if (!referencedObjectMember.HasCycle)
-                    {
-                        members.Add(referencedObjectMember);
-                        MembersImpl(referencedObjectMember.Type, members, rootMember, referencedObjectMember);
-                    }
-                }
-            }
-
-            if (HasChildCollections(type))
-            {
-                foreach (var childCollectionProperty in ChildCollectionProperties(type))
-                {
-                    var childCollectionMember = new ChildCollectionMember(childCollectionProperty) { Parent = parentMember, Root = rootMember};
-
-                    if (!childCollectionMember.HasCycle)
-                    {
-                        members.Add(childCollectionMember);
-                        MembersImpl(childCollectionMember.CollectionType, members, rootMember, childCollectionMember);
-                    }
-                }
-            }
-        }
-
         public static Type RootTypeForExpression(Expression exp)
         {
             if (exp.NodeType == ExpressionType.MemberAccess)
@@ -474,6 +400,28 @@ namespace Destrier
             return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
         }
 
+        public static String GenerateTableAlias()
+        {
+            return System.Guid.NewGuid().ToString("N");
+        }
+
+        public static List<Member> Members(Type type, Member root = null, Member parent = null)
+        {
+            return ReflectionCache.GetMembers(type, root, parent);
+        }
+
+        public static List<Member> MembersRecursive(Type type, RootMember applyRootMember = null, Member applyParentMember = null)
+        {
+            if (applyRootMember == null && applyParentMember == null)
+            {
+                return ReflectionCache.GetMembersRecursive(type);
+            }
+            else
+            {
+                return ReflectionCache.GenerateMembersRecursive(type, applyRootMember, applyParentMember);
+            }
+        }
+
         public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
             var members = Model.ColumnMembers(thisType);
@@ -490,7 +438,7 @@ namespace Destrier
                 }
 
                 rootMember = rootMember ?? new RootMember(thisType);
-                foreach (ReferencedObjectMember rom in Model.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
+                foreach (ReferencedObjectMember rom in Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
                 {
                     var type = rom.Type;
                     var newObject = ReflectionCache.GetNewObject(type);

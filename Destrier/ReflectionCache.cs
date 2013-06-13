@@ -36,6 +36,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
+        private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
@@ -256,10 +257,7 @@ namespace Destrier
 
         public static object GetNewObject(Type toConstruct)
         {
-            var neededType = toConstruct;
-            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
-
-            return ctor();
+            return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
         }
 
         public static T GetNewObject<T>() where T : class
@@ -422,7 +420,7 @@ namespace Destrier
             return lambda.Compile();
         }
 
-        public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
+        public static List<Member> GetMembers(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
             foreach (var cpi in GetColumns(type))
@@ -431,7 +429,7 @@ namespace Destrier
                 if (!columnMember.Skip)
                     members.Add(columnMember);
             }
-            if (GetReferencedObjectProperties(type).Any())
+            if (HasReferencedObjectProperties(type))
             {
                 foreach (var referencedObjectProperty in GetReferencedObjectProperties(type))
                 {
@@ -439,7 +437,7 @@ namespace Destrier
                     members.Add(referencedObjectMember);
                 }
             }
-            if (GetChildCollectionProperties(type).Any())
+            if (HasChildCollectionProperties(type))
             {
                 foreach (var childCollectionProperty in GetChildCollectionProperties(type))
                 {
@@ -448,6 +446,70 @@ namespace Destrier
                 }
             }
             return members;
+        }
+
+        public static List<Member> GetMembersRecursive(Type type)
+        {
+            return _recursiveMemberCache.GetOrAdd(type, (t) =>
+            {
+                return GenerateMembersRecursive(t);
+            });
+        }
+
+        public static List<Member> GenerateMembersRecursive(Type type, Member rootMember = null, Member parent = null)
+        {
+            var members = new List<Member>();
+            rootMember = rootMember ?? new RootMember(type);
+
+            if (String.IsNullOrEmpty(rootMember.OutputTableName))
+            {
+                rootMember.OutputTableName = Model.GenerateTableAlias();
+            }
+            if (String.IsNullOrEmpty(rootMember.TableAlias))
+            {
+                rootMember.TableAlias = Model.GenerateTableAlias();
+            }
+            members.Add(rootMember);
+            GenerateMembersImpl(type, members, rootMember, parent);
+            return members.ToList();
+        }
+
+        private static void GenerateMembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
+        {
+            foreach (var cpi in GetColumns(type))
+            {
+                var columnMember = new ColumnMember(cpi) { Parent = parentMember, Root = rootMember };
+                if (!columnMember.Skip)
+                    members.Add(columnMember);
+            }
+
+            if (HasReferencedObjectProperties(type))
+            {
+                foreach (var referencedObjectProperty in GetReferencedObjectProperties(type))
+                {
+                    var referencedObjectMember = new ReferencedObjectMember(referencedObjectProperty) { Parent = parentMember, Root = rootMember };
+
+                    if (!referencedObjectMember.HasCycle)
+                    {
+                        members.Add(referencedObjectMember);
+                        GenerateMembersImpl(referencedObjectMember.Type, members, rootMember, referencedObjectMember);
+                    }
+                }
+            }
+
+            if (HasChildCollectionProperties(type))
+            {
+                foreach (var childCollectionProperty in GetChildCollectionProperties(type))
+                {
+                    var childCollectionMember = new ChildCollectionMember(childCollectionProperty) { Parent = parentMember, Root = rootMember };
+
+                    if (!childCollectionMember.HasCycle)
+                    {
+                        members.Add(childCollectionMember);
+                        GenerateMembersImpl(childCollectionMember.CollectionType, members, rootMember, childCollectionMember);
+                    }
+                }
+            }
         }
     }
 }
