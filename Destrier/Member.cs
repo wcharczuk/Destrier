@@ -23,8 +23,8 @@ namespace Destrier
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
 
-            this._setValueAction = pi.GetSetMethod();
-            this._getValueAction = pi.GetGetMethod();
+            this._setValueCompiled = ReflectionCache.GetSetAction(pi);
+            this._getValueMethod = pi.GetGetMethod();
         }
 
         public Member(Member member)
@@ -43,16 +43,16 @@ namespace Destrier
         public virtual Member Root { get; set; }
         public virtual Member Parent { get; set; }
 
-        private MethodInfo _getValueAction = null;
+        private MethodInfo _getValueMethod = null;
         public virtual Object GetValue(object instance)
         {
-            return _getValueAction.Invoke(instance, null);
+            return _getValueMethod.Invoke(instance, null);
         }
 
-        private MethodInfo _setValueAction = null;
+        private readonly Action<Object, Object> _setValueCompiled = null;
         public virtual void SetValue(object instance, object value)
         {
-            _setValueAction.Invoke(instance, new object[] { value });
+            _setValueCompiled(instance, value);
         }
 
         private String _fullyQualifiedName = null;

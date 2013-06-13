@@ -29,7 +29,7 @@ namespace Destrier
         public Boolean HasColumn(String columnName)
         {
             if (this.StandardizeCasing)
-                return ColumnMap.ContainsKey(ReflectionCache.StandardizeCasing(columnName));
+                return ColumnMap.ContainsKey(Model.StandardizeCasing(columnName));
             else
                 return ColumnMap.ContainsKey(columnName);
         }
@@ -38,7 +38,7 @@ namespace Destrier
         {
             if (this.StandardizeCasing)
             {
-                var columnNameLower = ReflectionCache.StandardizeCasing(columnName);
+                var columnNameLower = Model.StandardizeCasing(columnName);
                 if (ColumnMap.ContainsKey(columnNameLower))
                     return ColumnMap[columnNameLower];
                 else
@@ -272,17 +272,21 @@ namespace Destrier
         public object Get(Type resultType, Int32 columnIndex)
         {
             Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
+            if (isNullableType)
+            {
+                resultType = ReflectionCache.GetUnderlyingTypeForNullable(resultType);
+            }
 
-            object value = this[columnIndex];
+            object value = _dr.GetValue(columnIndex);
             if (!(value is DBNull))
             {
-                if (effectiveType.IsEnum)
-                    return Enum.ToObject(effectiveType, value);
+                if (resultType.IsEnum)
+                    return Enum.ToObject(resultType, value);
                 else
-                    return Convert.ChangeType(value, effectiveType);
+                    return Convert.ChangeType(value, resultType);
             }
-            return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
+
+            return isNullableType ? null : ReflectionCache.GetDefault(resultType);
         }
 
         public dynamic ReadDynamic()
@@ -434,7 +438,7 @@ namespace Destrier
 
                     if (populateFullResults && newObject is BaseModel)
                     {
-                        ((BaseModel)newObject).PopulateFullResults(this);
+                        Model.PopulateFullResults((BaseModel)newObject, this, type);
                     }
                     else
                         newObject.Populate(this);
