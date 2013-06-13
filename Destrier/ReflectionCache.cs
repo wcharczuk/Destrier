@@ -311,7 +311,7 @@ namespace Destrier
         {
             if (type.IsValueType)
             {
-                return ReflectionCache.GetNewObject(type);
+                return Activator.CreateInstance(type); //ReflectionCache.GetNewObject(type);
             }
             return null;
         }
