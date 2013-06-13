@@ -123,13 +123,14 @@ namespace Destrier
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
-                    
-                    if (members.ContainsKey(name))
+                    ColumnMember member = null;
+                    members.TryGetValue(name, out member);
+                    if (member != null)
                     {
-                        var member = members[name];
                         var value = dr.Get(member.Type, x);
-                        member.SetValue(this, value);
-                    }
+                        if(!(value is DBNull))
+                            member.SetValue(this, value);
+                    }    
                 }
             }
 
