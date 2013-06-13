@@ -33,6 +33,9 @@ namespace Destrier
         private static ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute> _childCollectionAttributeCache = new ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute>();
         private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
         private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
+        private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
+        private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
+
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
@@ -83,7 +86,7 @@ namespace Destrier
                     members.Add(new ColumnMember(prop));
                 }
 
-                return members.ToDictionary(cm => ReflectionCache.StandardizeCasing(cm.Name));
+                return members.ToDictionary(cm => Model.StandardizeCasing(cm.Name));
             });
         }
 
@@ -101,7 +104,15 @@ namespace Destrier
                 return members.ToDictionary(cm => cm.Name);
             });
         }
-        
+
+        public static Boolean HasReferencedObjectProperties(Type type)
+        {
+            return _hasReferencedObjectPropertiesCache.GetOrAdd(type, (t) =>
+            {
+                return GetReferencedObjectProperties(t).Any();
+            });
+        }
+
         public static PropertyInfo[] GetReferencedObjectProperties(Type type)
         {
             return _referencedObjectCache.GetOrAdd(type, (t) =>
@@ -119,6 +130,14 @@ namespace Destrier
                 }
 
                 return referencedObjectProperties.ToArray();
+            });
+        }
+
+        public static Boolean HasChildCollectionProperties(Type type)
+        {
+            return _hasChildCollectionPropertiesCache.GetOrAdd(type, (t) =>
+            {
+                return GetChildCollectionProperties(t).Any();
             });
         }
 
@@ -292,7 +311,7 @@ namespace Destrier
         {
             if (type.IsValueType)
             {
-                return Activator.CreateInstance(type);
+                return ReflectionCache.GetNewObject(type);
             }
             return null;
         }
@@ -380,6 +399,21 @@ namespace Destrier
             }
         }
 
+        public static Action<Object, Object> GenerateSetAction(PropertyInfo property)
+        {
+            var instanceParameter = Expression.Parameter(typeof(object), "instance");
+            var valueParameter = Expression.Parameter(typeof(object), "value");
+            var lambda = Expression.Lambda<Action<object, object>>(
+                Expression.Assign(
+                    Expression.Property(Expression.Convert(instanceParameter, property.DeclaringType), property),
+                    Expression.Convert(valueParameter, property.PropertyType)),
+                instanceParameter,
+                valueParameter
+            );
+
+            return lambda.Compile();
+        }
+
         public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
@@ -406,11 +440,6 @@ namespace Destrier
                 }
             }
             return members;
-        }
-
-        public static String StandardizeCasing(String input)
-        {
-            return input.ToLowerInvariant();
         }
     }
 }

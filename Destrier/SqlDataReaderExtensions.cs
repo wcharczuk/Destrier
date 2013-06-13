@@ -15,7 +15,7 @@ namespace Destrier
             var hash = new Dictionary<String, Int32>();
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                var name = standardizeCasing ? ReflectionCache.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
+                var name = standardizeCasing ? Model.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
                 if (!hash.ContainsKey(name))
                     hash.Add(name, i);
             }
@@ -27,7 +27,7 @@ namespace Destrier
             String[] strings = new string[dr.FieldCount];
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                strings[i] = standardizeCasing ? ReflectionCache.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
+                strings[i] = standardizeCasing ? Model.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
             }
             return strings;
         }
@@ -181,7 +181,7 @@ namespace Destrier
 
                     if (populateFullResults && newObject is BaseModel)
                     {
-                        ((BaseModel)newObject).PopulateFullResults(dr);
+                        Model.PopulateFullResults((BaseModel)newObject, dr, type);
                     }
                     else
                         newObject.Populate(dr);

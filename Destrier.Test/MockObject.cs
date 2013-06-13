@@ -34,6 +34,9 @@ namespace Destrier.Test
         [Column]
         public Int32 SubObjectId { get; set; }
 
+        [Column]
+        public Int32? NullableId { get; set; }
+
         [ReferencedObject("SubObjectId")]
         public SubObject ReferencedSubObject { get; set; }
 

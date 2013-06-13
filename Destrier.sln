@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier", "Destrier\Destri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Test", "Destrier.Test\Destrier.Test.csproj", "{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORMComparison", "ORMComparison\ORMComparison.csproj", "{C51E3F04-21D3-4B51-8768-7876BAA0D292}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
