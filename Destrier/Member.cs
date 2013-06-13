@@ -23,7 +23,7 @@ namespace Destrier
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
 
-            this._setValueCompiled = ReflectionCache.GenerateSetAction(pi);
+            this._setValueCompiled = ReflectionCache.GetSetAction(pi);
             this._getValueMethod = pi.GetGetMethod();
         }
 

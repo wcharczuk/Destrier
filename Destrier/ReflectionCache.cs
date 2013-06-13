@@ -35,6 +35,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
+        private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
 
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
@@ -397,6 +398,14 @@ namespace Destrier
                 }
                 return first != null;
             }
+        }
+
+        public static Action<Object, Object> GetSetAction(PropertyInfo property)
+        {
+            return _compiledSetFunctions.GetOrAdd(property, (p) =>
+            {
+                return GenerateSetAction(p);
+            });
         }
 
         public static Action<Object, Object> GenerateSetAction(PropertyInfo property)
