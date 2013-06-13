@@ -231,12 +231,12 @@ namespace Destrier
 
         public static Boolean HasReferencedObjects(Type t)
         {
-            return ReflectionCache.GetReferencedObjectProperties(t).Any();
+            return ReflectionCache.HasReferencedObjectProperties(t);
         }
 
         public static Boolean HasChildCollections(Type t)
         {
-            return ReflectionCache.GetChildCollectionProperties(t).Any();
+            return ReflectionCache.HasChildCollectionProperties(t);
         }
 
         public static PropertyInfo AutoIncrementColumn(Type t)
@@ -467,6 +467,11 @@ namespace Destrier
                 objPrimaryKeyValue = value != null ? value.ToString() : null;
             }
             return objPrimaryKeyValue;
+        }
+
+        public static String StandardizeCasing(String input)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
         }
     }
 }

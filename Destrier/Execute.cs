@@ -31,11 +31,12 @@ namespace Destrier
                         Utility.AddParametersToCommand(procedureParams, cmd);
                     }
 
-                    using (var dr = cmd.ExecuteReader(CommandBehavior.Default))
+                    using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
                     {
                         action(new IndexedSqlDataReader(dr, standardizeCasing));
                     }
                 }
+                conn.Close();
             }
         }
 
@@ -58,6 +59,7 @@ namespace Destrier
 
                     cmd.ExecuteNonQuery();
                 }
+                conn.Close();
             }
         }
 
@@ -78,7 +80,7 @@ namespace Destrier
                         Utility.AddParametersToCommand(procedureParams, cmd);
                     }
 
-                    using (var dr = cmd.ExecuteReader(CommandBehavior.Default))
+                    using (var dr = cmd.ExecuteReader())
                     {
                         action(new IndexedSqlDataReader(dr, standardizeCasing));
                     }
