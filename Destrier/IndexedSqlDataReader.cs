@@ -272,17 +272,21 @@ namespace Destrier
         public object Get(Type resultType, Int32 columnIndex)
         {
             Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
-
-            if (!IsDBNull(columnIndex))
+            if (isNullableType)
             {
-                object value = this.GetValue(columnIndex);
+                resultType = ReflectionCache.GetUnderlyingTypeForNullable(resultType);
+            }
+
+            object value = _dr.GetValue(columnIndex);
+            if (!(value is DBNull))
+            {
                 if (resultType.IsEnum)
                     return Enum.ToObject(resultType, value);
                 else
-                    return Convert.ChangeType(value, effectiveType);
+                    return value; // Convert.ChangeType(value, resultType); //this might bite me in the ass.
             }
-            return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
+
+            return isNullableType ? null : ReflectionCache.GetDefault(resultType);
         }
 
         public dynamic ReadDynamic()

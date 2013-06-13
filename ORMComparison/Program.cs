@@ -73,14 +73,15 @@ namespace ORMComparison
     public class Program
     {
         public const String ConnectionString = "Server=localhost;Database=clotheshorse;Trusted_Connection=true";
-        public const int TRIALS = 500;
-        public const int LIMIT = 1000;
+        public const int TRIALS = 100;
+        public const int LIMIT = 2000;
 
 
         public static void Main(string[] args)
         {
             Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
             Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
+            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "ClothesHorse";
 
             var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
 

@@ -124,7 +124,7 @@ namespace Destrier
 
                 while (dr.Read())
                 {
-                    T newObject = ReflectionCache.GetNewObject<T>();
+                    T newObject = ReflectionCache.GetNewObject(type) as T;
                     newObject.PopulateFullResults(dr, objectLookups: objectLookups);
                     list.Add(newObject);
                 }
