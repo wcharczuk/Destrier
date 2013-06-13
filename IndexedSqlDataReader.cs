@@ -29,7 +29,7 @@ namespace Destrier
         public Boolean HasColumn(String columnName)
         {
             if (this.StandardizeCasing)
-                return ColumnMap.ContainsKey(ReflectionCache.StandardizeCasing(columnName));
+                return ColumnMap.ContainsKey(Model.StandardizeCasing(columnName));
             else
                 return ColumnMap.ContainsKey(columnName);
         }
@@ -38,7 +38,7 @@ namespace Destrier
         {
             if (this.StandardizeCasing)
             {
-                var columnNameLower = ReflectionCache.StandardizeCasing(columnName);
+                var columnNameLower = Model.StandardizeCasing(columnName);
                 if (ColumnMap.ContainsKey(columnNameLower))
                     return ColumnMap[columnNameLower];
                 else
@@ -274,11 +274,11 @@ namespace Destrier
             Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
             Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
 
-            object value = this[columnIndex];
-            if (!(value is DBNull))
+            if (!IsDBNull(columnIndex))
             {
-                if (effectiveType.IsEnum)
-                    return Enum.ToObject(effectiveType, value);
+                object value = this.GetValue(columnIndex);
+                if (resultType.IsEnum)
+                    return Enum.ToObject(resultType, value);
                 else
                     return Convert.ChangeType(value, effectiveType);
             }

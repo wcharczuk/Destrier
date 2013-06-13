@@ -123,6 +123,7 @@ namespace Destrier
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
+                    
                     if (members.ContainsKey(name))
                     {
                         var member = members[name];
