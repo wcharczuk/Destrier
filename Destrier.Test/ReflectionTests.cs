@@ -16,6 +16,18 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void Core_Tests()
+        {
+            var members = Model.ColumnMembers(typeof(MockObject));
+
+            var notNullable = members["MockObjectId"];
+            var nullable = members["NullableId"];
+
+            Assert.False(ReflectionCache.IsNullableType(notNullable.Type));
+            Assert.True(ReflectionCache.IsNullableType(nullable.Type));
+        }
+
+        [Fact]
         public void TableName_Test()
         {
             var tableAttribute = ReflectionCache.GetTableAttribute(typeof(MockObject));
