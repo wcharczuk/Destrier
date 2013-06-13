@@ -37,7 +37,6 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
 
-
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
         public static Type GetTypeFromName(String fullTypeName)
@@ -312,8 +311,8 @@ namespace Destrier
         {
             if (type.IsValueType)
             {
-                return Activator.CreateInstance(type); //ReflectionCache.GetNewObject(type);
-            }
+                return Activator.CreateInstance(type);
+			}
             return null;
         }
 
