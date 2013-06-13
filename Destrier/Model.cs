@@ -19,7 +19,13 @@ namespace Destrier
 
         public static String TableNameFullyQualified(Type t)
         {
-            return String.Format("{0}.{1}.{2}", DatabaseName(t), SchemaName(t), TableName(t));
+            var databaseName = DatabaseName(t);
+            if (!String.IsNullOrEmpty(databaseName))
+            {
+                return String.Format("{0}.{1}.{2}", databaseName, SchemaName(t), TableName(t));
+            }
+            else
+                return String.Format("{0}.{1}", SchemaName(t), TableName(t));
         }
 
         public static String DatabaseName(Type t)
