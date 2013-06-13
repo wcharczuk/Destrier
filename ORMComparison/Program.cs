@@ -73,9 +73,8 @@ namespace ORMComparison
     public class Program
     {
         public const String ConnectionString = "Server=localhost;Database=clotheshorse;Trusted_Connection=true";
-        public const int TRIALS = 100;
+        public const int TRIALS = 1;
         public const int LIMIT = 2000;
-
 
         public static void Main(string[] args)
         {
@@ -174,9 +173,9 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
-                { "ServiceStack ORMLite", ormLiteAction },
+                //{ "ServiceStack ORMLite", ormLiteAction },
                 //{ "Dapper", dapperAction },
-                //{ "EntityFramework", entityFrameworkAction }
+                { "EntityFramework", entityFrameworkAction }
             };
 
             foreach (var kvp in testSteps)

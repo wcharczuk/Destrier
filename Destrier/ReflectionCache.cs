@@ -311,11 +311,7 @@ namespace Destrier
         {
             if (type.IsValueType)
             {
-<<<<<<< HEAD
-                return Activator.CreateInstance(type); //ReflectionCache.GetNewObject(type);
-=======
-                return ReflectionCache.GetNewObject(type);
->>>>>>> 3cf741991c4dc151c18eb86963f7453d6cbd9c56
+                return Activator.CreateInstance(type);
             }
             return null;
         }
