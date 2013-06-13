@@ -478,7 +478,7 @@ namespace Destrier
         {
             var members = Model.ColumnMembers(thisType);
 
-            if (Model.HasReferencedObjects(thisType))
+            if (Model.HasReferencedObjects(thisType) || parentMember != null)
             {
                 foreach (ColumnMember col in members.Values)
                 {
