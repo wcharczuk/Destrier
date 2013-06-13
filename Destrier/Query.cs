@@ -120,16 +120,14 @@ namespace Destrier
                 var parentDict = new Dictionary<Object, Object>();
                 objectLookups.Add(type, parentDict);
 
-                var hasChildCollections = _builder.ChildCollections.Any();
-
                 while (dr.Read())
                 {
                     T newObject = ReflectionCache.GetNewObject(type) as T;
-                    newObject.PopulateFullResults(dr, objectLookups: objectLookups);
+                    Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: type);
                     list.Add(newObject);
                 }
 
-                if (hasChildCollections)
+                if (_builder.ChildCollections.Any())
                 {
                     dr.NextResult();
 

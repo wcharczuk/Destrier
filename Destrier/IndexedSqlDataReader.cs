@@ -438,7 +438,7 @@ namespace Destrier
 
                     if (populateFullResults && newObject is BaseModel)
                     {
-                        ((BaseModel)newObject).PopulateFullResults(this);
+                        Model.PopulateFullResults((BaseModel)newObject, this, type);
                     }
                     else
                         newObject.Populate(this);
