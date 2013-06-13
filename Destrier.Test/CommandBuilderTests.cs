@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -87,6 +88,18 @@ namespace Destrier.Test
             Assert.NotNull(commandText);
             Assert.NotEmpty(commandText);
             Assert.True(commandBuilder.ChildCollections.Count() == 3);
+        }
+
+        [Fact]
+        public void CommandBuilder_Cache_Test()
+        {
+            var commandBuilder = new CommandBuilder<MockObject>();
+
+            var visitor = new SqlExpressionVisitor<MockObject>();
+            Expression<Func<MockObject, bool>> exp = (u) => u.MockObjectId == 1;
+            visitor.Visit(exp);
+            var sqlText = visitor.Buffer.ToString();
+            Assert.Equal(sqlText, String.Format("[MockObjectId] = @{0}", visitor.Parameters.First().Key));
         }
     }
 }

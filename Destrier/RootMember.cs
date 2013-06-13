@@ -8,7 +8,12 @@ namespace Destrier
     public class RootMember : Member    
     {
         public RootMember() : base() { }
-        public RootMember(Type type) : base(type) { }
-        public RootMember(Member member) : base(member) { }
+        
+        public RootMember(Type type) : base(type) 
+        {
+            this.TableAlias = Model.GenerateTableAlias();
+        }
+
+        public RootMember(Member member) : base(member)  { }
     }
 }
