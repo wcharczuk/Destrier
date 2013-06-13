@@ -20,7 +20,7 @@ The following test was performed on 1000 iterations for each orm, selecting an o
 |ServiceStack ORMLite   | Avg: 4.094ms |
 |Dapper                 | Avg: 4.156ms |
 |Destrier               | Avg: 7.140ms |
-|EntityFramework        | Avg: 8.507ms |
+|EntityFramework        | Avg:18.507ms |
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
