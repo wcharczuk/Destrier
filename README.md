@@ -19,7 +19,7 @@ The following test was performed on 1000 iterations for each orm, selecting an o
 |Raw Reader             | Avg:  2.11ms |
 |Dapper                 | Avg:  4.20ms |
 |ServiceStack ORMLite   | Avg:  4.77ms |
-|Destrier               | Avg:  6.11ms |
+|Destrier               | Avg:  5.60ms |
 |EntityFramework        | Avg: 17.63ms |
 
 
