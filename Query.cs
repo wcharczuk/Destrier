@@ -229,11 +229,7 @@ namespace Destrier
         /// <returns></returns>
         public IEnumerable<T> Execute()
         {
-            var results = this.StreamResults();
-            if (results is List<T>)
-                return results;
-            else
-                return results.ToList();
+            return StreamResults().ToList();
         }
 
         private String _queryBody = null;
