@@ -11,7 +11,7 @@ using System.Collections.Specialized;
 namespace Destrier
 {
     /// <summary>
-    /// Set of utility functions used for reflection heavy operations in the content cache.
+    /// Set of utility functions used for reflection heavy operations.
     /// </summary>
     public class ReflectionCache
     {
