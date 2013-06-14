@@ -14,7 +14,7 @@ namespace Destrier
     {
         public static String TableName(Type t)
         {
-            return TableAttribute(t).TableName;
+            return ReflectionCache.GetTableAttribute(t).TableName;
         }
 
         public static String TableNameFullyQualified(Type t)
@@ -24,19 +24,19 @@ namespace Destrier
 
         public static String DatabaseName(Type t)
         {
-            var databaseName = TableAttribute(t).DatabaseName;
+            var databaseName = ReflectionCache.GetTableAttribute(t).DatabaseName;
             return !String.IsNullOrEmpty(databaseName) ? databaseName : DatabaseConfigurationContext.DefaultDatabaseName;
         }
 
         public static String SchemaName(Type t)
         {
-            var schemaName = TableAttribute(t).SchemaName;
+            var schemaName = ReflectionCache.GetTableAttribute(t).SchemaName;
             return !String.IsNullOrEmpty(schemaName) ? schemaName : DatabaseConfigurationContext.DefaultSchemaName;
         }
 
         public static String ColumnName(PropertyInfo pi)
         {
-            ColumnAttribute ca = ColumnAttribute(pi);
+            ColumnAttribute ca = ReflectionCache.GetColumnAttribute(pi);
 
             if (ca == null) //it's not a column!
                 return null;
@@ -47,56 +47,14 @@ namespace Destrier
                 return pi.Name;
         }
 
-        public static String ColumnName(ColumnAttribute ca, String propertyName)
+        public static ColumnMember ColumnMemberForPropertyName(Type type, String propertyName)
         {
-            if (ca == null)
-                return null;
-
-            if (!String.IsNullOrEmpty(ca.Name))
-                return ca.Name;
-
-            return propertyName;
-        }
-
-        public static String ColumnNameForPropertyName(Type type, String propertyName)
-        {
-            var propertyInfo = ColumnPropertyForPropertyName(type, propertyName);
-
-            if (propertyInfo == null)
-                return null;
-
-            return ColumnName(propertyInfo);
-        }
-
-        public static ColumnAttribute ColumnAttributeForPropertyName(Type type, String propertyName)
-        {
-            var propertyInfo = ColumnPropertyForPropertyName(type, propertyName);
-
-            if (propertyInfo == null)
-                return null;
-
-            return ColumnAttribute(propertyInfo);
-        }
-
-        public static PropertyInfo ColumnPropertyForPropertyName(Type type, String propertyName)
-        {
-            var propertyInfo = ReflectionCache.GetColumns(type).Where(p => p.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-            return propertyInfo;
-        }
-
-        public static ColumnAttribute ColumnAttribute(PropertyInfo pi)
-        {
-            return ReflectionCache.GetColumnAttribute(pi);
-        }
-
-        public static TableAttribute TableAttribute(Type t)
-        {
-            return ReflectionCache.GetTableAttribute(t);
+            return ReflectionCache.GetColumnMemberStandardizedLookup(type)[Model.StandardizeCasing(propertyName)];
         }
 
         public static String ConnectionString(Type t)
         {
-            TableAttribute ta = TableAttribute(t);
+            TableAttribute ta = ReflectionCache.GetTableAttribute(t);
 
             if (ta == null)
                 throw new InvalidOperationException("Base Model classes must have a 'Table' attribute specifying the relation in the database to interact with!");
@@ -109,142 +67,21 @@ namespace Destrier
                 throw new InvalidOperationException("No connection string for object.");
         }
 
-        public static PropertyInfo[] Columns(Type t)
+        public static ColumnMember[] ColumnsNonPrimaryKey(Type t)
         {
-            return ReflectionCache.GetColumns(t);
+            return ReflectionCache.GetColumnMembers(t).Where(cm => !cm.IsPrimaryKey).ToArray();
         }
 
-        public static Dictionary<String, ColumnMember> ColumnMembersStandardized(Type t)
+        public static ColumnMember[] ColumnsPrimaryKey(Type t)
         {
-            return ReflectionCache.GetColumnMembersStandardized(t);
+            return ReflectionCache.GetColumnMembers(t).Where(cm => cm.IsPrimaryKey).ToArray();
         }
 
-        public static Dictionary<String, ColumnMember> ColumnMembers(Type t)
+        public static ColumnMember AutoIncrementColumn(Type t)
         {
-            return ReflectionCache.GetColumnMembers(t);
-        }
-
-        public static PropertyInfo[] ReferencedObjectProperties(Type t)
-        {
-            return ReflectionCache.GetReferencedObjectProperties(t);
-        }
-
-        public static PropertyInfo[] ChildCollectionProperties(Type t)
-        {
-            return ReflectionCache.GetChildCollectionProperties(t);
-        }
-
-        public static ColumnAttribute[] ColumnAttributes(Type t)
-        {
-            return ReflectionCache.GetColumnAttributes(t);
-        }
-
-        public static PropertyInfo[] ColumnsNonPrimaryKey(Type t)
-        {
-            return ReflectionCache.GetColumnsNonPrimaryKey(t);
-        }
-
-        public static PropertyInfo[] ColumnsPrimaryKey(Type t)
-        {
-            return ReflectionCache.GetColumnsPrimaryKey(t);
-        }
-
-        public static List<String> DatabaseColumnNames(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in Columns(t))
+            foreach (ColumnMember pi in ColumnsPrimaryKey(t))
             {
-                dbColumnNames.Add("[" + ColumnName(pi) + "]");
-            }
-            return dbColumnNames;
-        }
-
-        public static List<String> DatabaseColumnNamesPrimaryKey(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in ColumnsPrimaryKey(t))
-            {
-                dbColumnNames.Add("[" + ColumnName(pi) + "]");
-            }
-            return dbColumnNames;
-        }
-
-        public static List<String> DatabaseColumNamesNonPrimaryKey(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in ColumnsNonPrimaryKey(t))
-            {
-                dbColumnNames.Add("[" + ColumnName(pi) + "]");
-            }
-            return dbColumnNames;
-        }
-
-        public static List<String> DatabaseParameterNames(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in Columns(t))
-            {
-                dbColumnNames.Add(ColumnName(pi));
-            }
-            return dbColumnNames;
-        }
-
-        public static List<String> DatabaseParameterNamesPrimaryKey(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in ColumnsPrimaryKey(t))
-            {
-                dbColumnNames.Add(ColumnName(pi));
-            }
-            return dbColumnNames;
-        }
-
-        public static List<String> DatabaseParameterNamesNonPrimaryKey(Type t)
-        {
-            List<String> dbColumnNames = new List<String>();
-            foreach (PropertyInfo pi in ColumnsNonPrimaryKey(t))
-            {
-                dbColumnNames.Add(ColumnName(pi));
-            }
-            return dbColumnNames;
-        }
-
-        public static String ReferencedObjectColumnName(PropertyInfo pi)
-        {
-            var roca = ReferencedObjectAttribute(pi);
-
-            if (roca == null)
-                return null;
-
-            return roca.PropertyName.ToLowerCaseFirstLetter();
-        }
-
-        public static ReferencedObjectAttribute ReferencedObjectAttribute(PropertyInfo pi)
-        {
-            return ReflectionCache.GetReferencedObjectAttribute(pi);
-        }
-
-        public static ChildCollectionAttribute ChildCollectionAttribute(PropertyInfo pi)
-        {
-            return ReflectionCache.GetChildCollectionAttribute(pi);
-        }
-
-        public static Boolean HasReferencedObjects(Type t)
-        {
-            return ReflectionCache.HasReferencedObjectProperties(t);
-        }
-
-        public static Boolean HasChildCollections(Type t)
-        {
-            return ReflectionCache.HasChildCollectionProperties(t);
-        }
-
-        public static PropertyInfo AutoIncrementColumn(Type t)
-        {
-            foreach (PropertyInfo pi in ColumnsPrimaryKey(t))
-            {
-                var ca = ColumnAttribute(pi);
-                if (ca.IsAutoIdentity)
+                if (pi.IsAutoIdentity)
                     return pi;
             }
             return null;
@@ -263,20 +100,20 @@ namespace Destrier
         public static void CheckColumns(Type t)
         {
             var databaseColumns = Schema.GetColumnsForTable(Model.TableName(t), Model.DatabaseName(t), Model.ConnectionString(t));
-            var columnProperties = Model.Columns(t);
+            var columnMembers = ReflectionCache.GetColumnMembers(t);
 
-            foreach (var columnProperty in columnProperties)
+            foreach (var cm in columnMembers)
             {
-                var modelColumn = Model.ColumnAttribute(columnProperty);
+                var modelColumn = cm.ColumnAttribute;
                 if (!modelColumn.IsForReadOnly)
                 {
-                    if (!databaseColumns.Any(c => c.Name.Equals(Model.ColumnName(columnProperty), StringComparison.InvariantCultureIgnoreCase)))
-                        throw new ColumnMissingException(String.Format("\'{0}\' : Column in the model doesn't map to the schema.", Model.ColumnName(columnProperty)));
+                    if (!databaseColumns.Any(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase)))
+                        throw new ColumnMissingException(String.Format("\'{0}\' : Column in the model doesn't map to the schema.", cm.Name));
 
-                    var databaseColumn = databaseColumns.FirstOrDefault(c => c.Name.Equals(Model.ColumnName(columnProperty), StringComparison.InvariantCultureIgnoreCase));
+                    var databaseColumn = databaseColumns.FirstOrDefault(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase));
 
                     if (!databaseColumn.CanBeNull && !modelColumn.IsPrimaryKey && modelColumn.CanBeNull)
-                        throw new ColumnNullabilityException(String.Format("{4} DBColumn: {0} {2} ModelColumn: {1} {3}", databaseColumn.Name, Model.ColumnName(columnProperty), databaseColumn.CanBeNull.ToString(), modelColumn.CanBeNull.ToString(), Model.TableName(t)));
+                        throw new ColumnNullabilityException(String.Format("{4} DBColumn: {0} {2} ModelColumn: {1} {3}", databaseColumn.Name, cm.Name, databaseColumn.CanBeNull.ToString(), modelColumn.CanBeNull.ToString(), Model.TableName(t)));
                 }
             }
 
@@ -284,91 +121,29 @@ namespace Destrier
             {
                 if (!column.IsForReadOnly)
                 {
-                    if (!columnProperties.Any(c => Model.ColumnName(c).Equals(column.Name, StringComparison.InvariantCultureIgnoreCase)))
+                    if (!columnMembers.Any(c => c.Name.Equals(column.Name, StringComparison.InvariantCultureIgnoreCase)))
                         throw new ColumnMissingException(String.Format("\'{0}\' : Column in the schema ({1}) doesn't map to the model.", column.Name, Model.TableName(t)));
-
-                    var matchingColumn = columnProperties.FirstOrDefault(c => Model.ColumnName(c).Equals(column.Name, StringComparison.InvariantCultureIgnoreCase));
-                    var ca = Model.ColumnAttribute(matchingColumn);
                 }
             }
         }
 
-        public static Boolean CheckNullStateForColumn(ColumnAttribute column, object value)
+        public static Boolean CheckNullStateForColumn(ColumnMember cm, object value)
         {
-            if (!column.CanBeNull)
+            if (!cm.ColumnAttribute.CanBeNull)
                 return ReflectionCache.IsSet(value);
             else
                 return true;
         }
 
-        public static Boolean CheckLengthForColumn(ColumnAttribute column, object value)
+        public static Boolean CheckLengthForColumn(ColumnMember cm, object value)
         {
             if (value == null)
                 return true;
 
-            if (value is String && column.MaxStringLength != default(Int32))
-                return value.ToString().Length <= column.MaxStringLength;
+            if (value is String && cm.ColumnAttribute.MaxStringLength != default(Int32))
+                return value.ToString().Length <= cm.ColumnAttribute.MaxStringLength;
             else
                 return true;
-        }
-
-        public static Type RootTypeForExpression(Expression exp)
-        {
-            if (exp.NodeType == ExpressionType.MemberAccess)
-            {
-                var visitedMemberExp = exp as MemberExpression;
-                if (visitedMemberExp.Expression != null)
-                {
-                    while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
-                    {
-                        if (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
-                        {
-                            visitedMemberExp = visitedMemberExp.Expression as MemberExpression;
-                        }
-                    }
-
-                    if (visitedMemberExp.Expression.NodeType == ExpressionType.Parameter)
-                    {
-                        return visitedMemberExp.Expression.Type;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-            }
-            else if (exp.NodeType == ExpressionType.Parameter || exp.NodeType == ExpressionType.Constant)
-            {
-                return exp.Type;
-            }
-
-            return null;
-        }
-
-        public static Member MemberForExpression(MemberExpression memberExp, Dictionary<String, Member> members)
-        {
-            List<String> visitedNames = new List<String>();
-
-            var com = new ColumnMember(memberExp.Member as PropertyInfo);
-
-            visitedNames.Add(com.Name);
-
-            var visitedMemberExp = memberExp;
-            while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
-            {
-                visitedMemberExp = memberExp.Expression as MemberExpression;
-                if (visitedMemberExp.Member is PropertyInfo)
-                {
-                    ReferencedObjectMember rom = new ReferencedObjectMember(visitedMemberExp.Member as PropertyInfo);
-                    visitedNames.Add(rom.Name);
-                }
-                else
-                    return null; //abort!
-            }
-
-            visitedNames.Reverse();
-            var fullName = String.Join(".", visitedNames);
-            return members[fullName];
         }
 
         public static String InstancePrimaryKeyValue(Type t, Object instance)
@@ -402,11 +177,10 @@ namespace Destrier
 
         public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
-            var members = Model.ColumnMembers(thisType);
-
-            if (Model.HasReferencedObjects(thisType) || parentMember != null)
+            if (ReflectionCache.HasReferencedObjectMembers(thisType) || parentMember != null)
             {
-                foreach (ColumnMember col in members.Values)
+                var members = ReflectionCache.GetColumnMembers(thisType);
+                foreach (ColumnMember col in members)
                 {
                     var columnName = col.Name;
                     if (parentMember != null)
@@ -439,6 +213,7 @@ namespace Destrier
             }
             else
             {
+                var members = ReflectionCache.GetColumnMemberLookup(thisType);
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
@@ -453,7 +228,7 @@ namespace Destrier
                 }
             }
 
-            if (Model.HasChildCollections(thisType) && objectLookups != null)
+            if (ReflectionCache.HasChildCollectionMembers(thisType) && objectLookups != null)
             {
                 if (!objectLookups.ContainsKey(thisType))
                 {

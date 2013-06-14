@@ -135,7 +135,7 @@ namespace Destrier
                     {
                         var root = cm.Root;
                         var parent = cm.Parent ?? cm.Root;
-                        var parentPrimaryKeyReference = cm.ReferenceProperty;
+                        var parentPrimaryKeyReference = cm.ReferencedProperty;
 
                         if (!objectLookups.ContainsKey(cm.CollectionType))
                         {

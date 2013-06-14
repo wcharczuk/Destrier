@@ -47,10 +47,10 @@ namespace Destrier
                 return;
 
             //build a property name dictionary for mapTo
-            var toProps = ReflectionCache.GetProperties(mapTo.GetType()).ToDictionary(prop => prop.Name);
+            var toProps = mapTo.GetType().GetProperties().ToDictionary(prop => prop.Name);
 
             //build a property name dictionary for mapFrom
-            var fromProps = ReflectionCache.GetProperties(mapFrom.GetType()).ToDictionary(prop => prop.Name);
+            var fromProps = mapFrom.GetType().GetProperties().ToDictionary(prop => prop.Name);
 
             //iterate over mapFrom names, see if they exist in mapTo, see if mapTo supports set, set.
             foreach (var propertyName in fromProps.Keys)

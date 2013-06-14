@@ -68,7 +68,7 @@ namespace Destrier
         public virtual void Populate(IndexedSqlDataReader dr)
         {
             var thisType = this.GetType();
-            var members = Model.ColumnMembersStandardized(thisType);
+            var members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
             foreach (ColumnMember col in members.Values)
             {
                 col.SetValue(this, dr.Get(col.Type, col.Name));
