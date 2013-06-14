@@ -46,7 +46,7 @@ namespace Destrier
         protected Dictionary<String, String> _tableAliases = new Dictionary<String, String>();
         
         protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
-        protected List<Member> _outputMembers { get; set; }
+        protected List<Member> _outputMembers = new List<Member>();
 
         public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => Model.HasChildCollections(cm.CollectionType)); } }
 
@@ -56,7 +56,6 @@ namespace Destrier
 
         public Dictionary<String, Member> Members { get; set; }
         
-
         public String FullyQualifiedTableName { get; private set; }
         public String TableAlias { get; set; }
         public String OutputTableName { get; set; }
@@ -220,6 +219,7 @@ namespace Destrier
 
         private void DiscoverMembers()
         {
+            this.Members = new Dictionary<String, Member>();
             var memberList = ReflectionCache.MembersRecursive(_t, rootMember: this.AsRootMember);
 
             foreach (var m in memberList)
@@ -392,7 +392,7 @@ namespace Destrier
                 var tableAliases = new Dictionary<String, String>();
                 SetupTableAliases(subMembers, tableAliases);
 
-                var outputColumns = GetOutputColumns(subMembers);
+                var outputColumns = GetOutputColumns(subMembers.Where(m => m is ColumnMember && !m.ParentAny(p => p is ChildCollectionMember)));
 
                 var subColumnList = String.Join("\n\t, ", outputColumns);
                 Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);
