@@ -145,7 +145,7 @@ namespace ORMComparison
 
             Func<List<Garment>> destrierAction = () =>
             {
-                return new Destrier.Query<Garment>().Limit(LIMIT).Execute().ToList();
+                return new Destrier.Query<Garment>().Limit(LIMIT).Evaluate().ToList();
             };
 
             Func<List<Garment>> dapperAction = () =>
