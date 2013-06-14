@@ -236,22 +236,14 @@ namespace Destrier
                 return results.ToList();
         }
 
-        public Query<T> Sql(String sql, object parameters)
-        {
-            QueryBody = sql;
-            this._parameters = Destrier.Execute.Utility.DecomposeObject(parameters);
-            return this;
-        }
-
         private String _queryBody = null;
         private String QueryBody
         {
             get
             {
-                if (!String.IsNullOrEmpty(_queryBody))
-                    return _queryBody;
+                if (String.IsNullOrEmpty(_queryBody))
+                    _queryBody = _builder.GenerateSelect();
 
-                _queryBody = _builder.GenerateSelect();
                 return _queryBody;
             }
             set
