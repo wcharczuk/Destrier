@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ServiceStack.OrmLite;
 using Dapper;
 
 namespace ORMComparison
@@ -126,7 +125,7 @@ namespace ORMComparison
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
-                    var garments = db.Select<Garment>(q => q.Limit(LIMIT));
+                    var garments = ServiceStack.OrmLite.ReadConnectionExtensions.Select<Garment>(db, q => q.Limit(LIMIT));
                 }
             };
 
