@@ -1,12 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Destrier.Test
 {
+    public class PropertyTestClass
+    {
+        public Single Single { get; set; }
+        public Int32 AnInt { get; set; }
+        public Int64 ALong { get; set; }
+        public Int32? NullableInt32 { get; set; }
+        public DateTime DateTime { get; set; }
+    }
+
     public class ReflectionTests
     {
         public ReflectionTests()
@@ -59,6 +69,27 @@ namespace Destrier.Test
             Assert.True(members.Any(m => m is ColumnMember));
             Assert.True(members.Any(m => m is ReferencedObjectMember));
             Assert.True(members.Any(m => m is ChildCollectionMember));
+        }
+
+        
+        [Fact]
+        public void SetPropertyValue_Test()
+        {
+            var properties = typeof(PropertyTestClass).GetProperties();
+            
+            var setFunctions = new Dictionary<string, Action<object, object>>();
+            var propertiesByName = new Dictionary<string, PropertyInfo>();
+            
+            foreach (var prop in properties)
+            {
+                setFunctions.Add(prop.Name, ReflectionCache.GenerateSetAction(prop));
+                propertiesByName.Add(prop.Name, prop);
+            }            
+
+            var myObj = new PropertyTestClass();
+            myObj.AnInt = 2;
+
+            setFunctions["Single"](myObj, ReflectionCache.ChangeType(2.0d, propertiesByName["Single"].PropertyType));
         }
     }
 }
