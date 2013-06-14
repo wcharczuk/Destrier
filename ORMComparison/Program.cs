@@ -72,7 +72,7 @@ namespace ORMComparison
     public class Program
     {
         public const String ConnectionString = "Server=localhost;Database=clotheshorse;Trusted_Connection=true";
-        public const int TRIALS = 100;
+        public const int TRIALS = 1000;
         public const int LIMIT = 1000;
 
         public static void Main(string[] args)
@@ -82,6 +82,8 @@ namespace ORMComparison
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "ClothesHorse";
 
             var results = new List<Int64>();
+
+            string QUERY = String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT);
 
             Func<List<Garment>> rawAction = () =>
             {
@@ -93,7 +95,7 @@ namespace ORMComparison
                     {
                         cmd.Connection = conn;
 
-                        cmd.CommandText = String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT);
+                        cmd.CommandText = QUERY;
                         cmd.CommandType = System.Data.CommandType.Text;
 
                         using (var dr = cmd.ExecuteReader(System.Data.CommandBehavior.Default))
@@ -148,12 +150,23 @@ namespace ORMComparison
                 return new Destrier.Query<Garment>().Limit(LIMIT).StreamResults().ToList();
             };
 
+            var destrierRawQuery = new Destrier.Query<Garment>().Limit(LIMIT);
+            Func<List<Garment>> destrierReuseAction = () =>
+            {
+                return destrierRawQuery.StreamResults().ToList();
+            };
+
+            Func<List<Garment>> destrierRawAction = () =>
+            {
+                return new Destrier.Query<Garment>(QUERY).StreamResults().ToList();
+            };
+
             Func<List<Garment>> dapperAction = () =>
             {
                 using (var conn = new SqlConnection(ConnectionString))
                 {
                     conn.Open();
-                    return conn.Query<Garment>(String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT)).ToList();
+                    return conn.Query<Garment>(QUERY).ToList();
                 }
             };
 
@@ -176,6 +189,8 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
+                { "Destrier (Re-use Query)", destrierReuseAction },
+                { "Destrier (Raw Query)", destrierReuseAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
                 { "EntityFramework", entityFrameworkAction }
@@ -194,9 +209,6 @@ namespace ORMComparison
 
                     if (!queryResults.Any())
                         throw new Exception("No results.");
-
-                    if (queryResults.Last().BrandId != 230)
-                        throw new Exception("Suspect results.");
                 }
                 
                 Console.Write(kvp.Key);
@@ -204,7 +216,8 @@ namespace ORMComparison
                 for (int x = 0; x < spaces; x++)
                     Console.Write(" ");
 
-                Console.WriteLine(String.Format("Avg: {0}ms", results.Average()));
+                Console.Write(String.Format("\tFirst Result: {0}ms", results.First()));
+                Console.WriteLine(String.Format("\tAvg: {0}ms", results.Average()));
             }
             Console.WriteLine();
             Console.ReadKey();

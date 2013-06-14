@@ -24,6 +24,19 @@ namespace Destrier
             _t = typeof(T);
         }
 
+        public Query(String query)
+        {
+            _command = new StringBuilder();
+            _parameters = new Dictionary<String, Object>();
+            _t = typeof(T);
+            _queryBody = query;
+        }
+
+        public Query(String query, IDictionary<String, Object> parameters) : this(query)
+        {
+            _parameters = parameters;
+        }
+
         private IDictionary<String, Object> _parameters = null;
         private List<Member> _members = new List<Member>();
         private StringBuilder _command = null;
@@ -115,7 +128,7 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            if (_builder.ChildCollections.Any())
+            if (_builder != null && _builder.ChildCollections.Any())
                 return _slowPipeline();  
             else
                 return _fastPipeline();
