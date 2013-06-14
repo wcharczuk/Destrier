@@ -110,7 +110,7 @@ namespace Destrier
         /// Evaluate the query and return an enumerable for streaming results.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<T> Evaluate()
+        public IEnumerable<T> StreamResults()
         {
             var type = typeof(T);
             if (ReflectionCache.HasReferencedObjectMembers(type) || ReflectionCache.HasChildCollectionMembers(type))
@@ -213,7 +213,7 @@ namespace Destrier
         /// <returns></returns>
         public IEnumerable<T> Execute()
         {
-            return this.Evaluate().ToList();
+            return this.StreamResults().ToList();
         }
 
         private String _queryBody = null;
