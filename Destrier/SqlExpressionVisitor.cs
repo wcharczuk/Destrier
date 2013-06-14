@@ -22,7 +22,7 @@ namespace Destrier
             this.Buffer = new StringBuilder();
             this.Parameters = new Dictionary<string, object>();
             this.Type = typeof(T);
-            this.Members = ReflectionCache.MembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
+            this.Members = ReflectionCache.GenerateMembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
         }
 
         public SqlExpressionVisitor(StringBuilder buffer) : this()
@@ -182,51 +182,29 @@ namespace Destrier
             var memberType = memberExp.Member.ReflectedType;
 
             Member member = null;
+            var rootType = ReflectionCache.RootTypeForExpression(memberExp);
 
-            if (Members != null && Members.Any())
+            if (rootType != null && rootType.Equals(this.Type))
             {
-                var rootType = Model.RootTypeForExpression(memberExp);
+                member = ReflectionCache.MemberForExpression(memberExp, this.Members) as ColumnMember;
 
-                if (rootType != null && rootType.Equals(this.Type))
+                if (member == null)
+                    throw new Exception("Invalid Column.");
+
+                WriteColumn(member as ColumnMember);
+
+                var isDirectBooleanAccess = memberExp.Type.Equals(typeof(Boolean))
+                    && (parentNodeType == null || (parentNodeType != null && parentNodeType.Value != ExpressionType.Equal && parentNodeType.Value != ExpressionType.NotEqual));
+
+                if (isDirectBooleanAccess)
                 {
-                    member = Model.MemberForExpression(memberExp, this.Members) as ColumnMember;
-
-                    if (member == null)
-                        throw new Exception("Invalid Column.");
-
-                    WriteColumn(member as ColumnMember);
-
-                    //isDirectBooleanAccess ??
-                    var isDirectBooleanAccess = memberExp.Type.Equals(typeof(Boolean))
-                        && (parentNodeType == null || (parentNodeType != null && parentNodeType.Value != ExpressionType.Equal && parentNodeType.Value != ExpressionType.NotEqual));
-
-                    if (isDirectBooleanAccess)
-                    {
-                        Buffer.Append(" = 1");
-                    }
-                }
-                else
-                {
-                    var reduced = Reduce(memberExp);
-                    WriteParameter(Evaluate(reduced));
+                    Buffer.Append(" = 1");
                 }
             }
-            else //this is legacy code. you should use the member list computed by the commandbuilder
+            else
             {
-                if (memberType == this.Type)
-                {
-                    var name = Model.ColumnNameForPropertyName(this.Type, memberExp.Member.Name);
-
-                    if (String.IsNullOrEmpty(name))
-                        throw new Exception("Invalid Column Name");
-
-                    WriteName(name);
-                }
-                else
-                {
-                    var reduced = Reduce(memberExp);
-                    WriteParameter(Evaluate(reduced));
-                }
+                var reduced = Reduce(memberExp);
+                WriteParameter(Evaluate(reduced));
             }
         }
 
@@ -257,7 +235,7 @@ namespace Destrier
             if (Members != null && Members.Any() && m.Object is MemberExpression)
             {
                 var memberExp = m.Object as MemberExpression;
-                var rootType = Model.RootTypeForExpression(memberExp);
+                var rootType = ReflectionCache.RootTypeForExpression(memberExp);
                 if (rootType != null && rootType.Equals(this.Type))
                 {
                     if (m.Method.DeclaringType == typeof(string))
@@ -316,7 +294,7 @@ namespace Destrier
                 {
                     if (m.Arguments.Any())
                     {
-                        var argumentType = Model.RootTypeForExpression(m.Arguments[0]);
+                        var argumentType = ReflectionCache.RootTypeForExpression(m.Arguments[0]);
                         if (ReflectionCache.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
                         {
                             evaluateCall = false;

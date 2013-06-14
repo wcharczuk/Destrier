@@ -14,16 +14,24 @@ namespace Destrier
         public ColumnMember(PropertyInfo pi)
             : base(pi)
         {
-            var ca = Model.ColumnAttribute(pi);
-            if (ca != null)
+            this.ColumnAttribute = ReflectionCache.GetColumnAttribute(pi);
+            if (ColumnAttribute != null)
             {
-                this.IsPrimaryKey = ca.IsPrimaryKey;
-                this.Name = ca.Name ?? pi.Name;
-                this.Skip = ca.IsForReadOnly;
+                //these are commonly accessed properties
+                this.IsPrimaryKey = ColumnAttribute.IsPrimaryKey;
+                this.IsAutoIdentity = ColumnAttribute.IsAutoIdentity;
+                this.IsForReadOnly = ColumnAttribute.IsForReadOnly;
+
+                this.Name = ColumnAttribute.Name ?? pi.Name;
+                this.Skip = ColumnAttribute.IsForReadOnly;
             }
         }
 
+        public ColumnAttribute ColumnAttribute { get; set; }
+
         public Boolean IsPrimaryKey { get; set; }
+        public Boolean IsAutoIdentity { get; set; }
+        public Boolean IsForReadOnly { get; set; }
 
         public Boolean Skip { get; set; }
 

@@ -13,34 +13,32 @@ namespace Destrier
         public ChildCollectionMember(PropertyInfo pi)
             : base(pi)
         {
-            var attribute = Model.ChildCollectionAttribute(pi);
+            var attribute = ReflectionCache.GetChildCollectionAttribute(pi);
             AlwaysInclude = attribute.AlwaysInclude;
-            
-            this.ParentPrimaryKeyProperty = Model.ColumnsPrimaryKey(pi.DeclaringType).FirstOrDefault();
-            this.ParentPrimaryKeyColumnName = Model.ColumnName(ParentPrimaryKeyProperty);
+
+            this.ParentPrimaryKey = Model.ColumnsPrimaryKey(pi.DeclaringType).FirstOrDefault();
 
             this.ReferencedColumnName = attribute.ColumnName ?? ParentPrimaryKeyColumnName;
             
             this.CollectionType = ReflectionCache.GetUnderlyingTypeForCollection(this.Type);
-            this.ReferenceProperty = Model.ColumnPropertyForPropertyName(this.CollectionType, this.ReferencedColumnName);
+            this.ReferencedColumn = Model.ColumnMemberForPropertyName(this.CollectionType, this.ReferencedColumnName);
 
             this.TableName = Model.TableName(this.CollectionType); 
             this.DatabaseName = Model.DatabaseName(this.CollectionType);
             this.SchemaName = Model.SchemaName(this.CollectionType);
         }
 
-        public PropertyInfo ParentPrimaryKeyProperty { get; set; }
-        public String ParentPrimaryKeyColumnName { get; set; }
+        public ColumnMember ParentPrimaryKey { get; set; }
+        public PropertyInfo ParentPrimaryKeyProperty { get { return ParentPrimaryKey.Property; } }
+        public String ParentPrimaryKeyColumnName { get { return ParentPrimaryKey.Name; } }
 
         public Type CollectionType { get; set; }
 
         public Boolean AlwaysInclude { get; set; }
 
-        /// <summary>
-        /// This is the column on the child object we join to the parent.
-        /// </summary>
+        public ColumnMember ReferencedColumn { get; set; }
         public String ReferencedColumnName { get; set; }
-        public PropertyInfo ReferenceProperty { get; set; }
+        public PropertyInfo ReferencedProperty { get { return ReferencedColumn.Property; } }
 
         public String TableName { get; private set; }
         public String DatabaseName { get; private set; }

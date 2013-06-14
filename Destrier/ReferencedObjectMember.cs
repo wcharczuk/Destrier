@@ -13,20 +13,21 @@ namespace Destrier
     {
         public ReferencedObjectMember(PropertyInfo pi) : base(pi)
         {
-            //this.Name = pi.Name a.k.a. the property name
-            this.ReferencedObjectAttribute = Model.ReferencedObjectAttribute(pi);
-            this.ReferencedColumn = Model.ColumnPropertyForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName);
-            this.ReferencedColumnAttribute = Model.ColumnAttribute(ReferencedColumn);
-            this.ReferencedColumnIsNullable = ReflectionCache.IsNullableType(ReferencedColumn.PropertyType) || ReferencedColumnAttribute.CanBeNull;
+            this.ReferencedObjectAttribute = ReflectionCache.GetReferencedObjectAttribute(pi);
+            this.ReferencedColumnMember = Model.ColumnMemberForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName);
+            this.ReferencedColumnIsNullable = ReflectionCache.IsNullableType(ReferencedColumnProperty.PropertyType) || ReferencedColumnAttribute.CanBeNull;
 
             this.TableName = Model.TableName(this.Type); 
             this.DatabaseName = Model.DatabaseName(this.Type); 
             this.SchemaName = Model.SchemaName(this.Type);
         }
-
         public ReferencedObjectAttribute ReferencedObjectAttribute { get; set; }
-        public PropertyInfo ReferencedColumn { get; set; }
-        public ColumnAttribute ReferencedColumnAttribute { get; set; }
+
+        public ColumnMember ReferencedColumnMember { get; set; }
+
+        public PropertyInfo ReferencedColumnProperty { get { return ReferencedColumnMember.Property; } }
+        public ColumnAttribute ReferencedColumnAttribute { get { return ReferencedColumnMember.ColumnAttribute; } }
+
         public Boolean ReferencedColumnIsNullable { get; set; }
 
         public String TableName { get; private set; }
@@ -49,7 +50,7 @@ namespace Destrier
                 {
                     parentAlias = this.Root.TableAlias;
                 }
-                return String.Format("[{0}].[{1}]", parentAlias, Model.ColumnName(ReferencedColumn));
+                return String.Format("[{0}].[{1}]", parentAlias, ReferencedColumnMember.Name);
             }
         }
 
@@ -67,7 +68,7 @@ namespace Destrier
                 {
                     throw new Exception("No Primary Key to join on.");
                 }
-                return String.Format("[{0}].[{1}]", this.TableAlias, Model.ColumnName(pk));
+                return String.Format("[{0}].[{1}]", this.TableAlias, pk.Name);
             }
         }
     }

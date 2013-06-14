@@ -18,7 +18,7 @@ namespace Destrier.Test
         [Fact]
         public void Core_Tests()
         {
-            var members = Model.ColumnMembers(typeof(MockObject));
+            var members = ReflectionCache.GetColumnMemberLookup(typeof(MockObject));
 
             var notNullable = members["MockObjectId"];
             var nullable = members["NullableId"];
@@ -33,7 +33,7 @@ namespace Destrier.Test
             var tableAttribute = ReflectionCache.GetTableAttribute(typeof(MockObject));
             Assert.NotNull(tableAttribute);
 
-            var tableAttributeFromModel = Model.TableAttribute(typeof(MockObject));
+            var tableAttributeFromModel = ReflectionCache.GetTableAttribute(typeof(MockObject));
             Assert.Equal(tableAttributeFromModel, tableAttribute);
             var tableName = Model.TableName(typeof(MockObject));
 
@@ -52,7 +52,7 @@ namespace Destrier.Test
         [Fact]
         public void Members_Test()
         {
-            var members = ReflectionCache.MembersRecursive(typeof(MockObject));
+            var members = ReflectionCache.GenerateMembersRecursive(typeof(MockObject));
 
             Assert.NotNull(members);
             Assert.NotEmpty(members);
