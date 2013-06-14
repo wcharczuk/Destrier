@@ -383,6 +383,14 @@ namespace Destrier
             return members[fullName];
         }
 
+        public static Object ChangeType(Object value, Type destinationType)
+        {
+            if (value.GetType().Equals(destinationType))
+                return value;
+            else
+                return Convert.ChangeType(value, destinationType);
+        }
+
         #endregion
 
         public static RootMember GetRootMemberForType(Type type)
