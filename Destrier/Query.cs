@@ -107,10 +107,10 @@ namespace Destrier
         }
 
         /// <summary>
-        /// Execute the query and gather the results.
+        /// Evaluate the query and return an enumerable for streaming results.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<T> Execute()
+        public IEnumerable<T> Evaluate()
         {
             var type = typeof(T);
             if (ReflectionCache.HasReferencedObjectMembers(type) || ReflectionCache.HasChildCollectionMembers(type))
@@ -207,11 +207,13 @@ namespace Destrier
             }
         }
 
-        public Query<T> Sql(String sql, object parameters)
+        /// <summary>
+        /// Execute the query.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<T> Execute()
         {
-            QueryBody = sql;
-            this._parameters = Destrier.Execute.Utility.DecomposeObject(parameters);
-            return this;
+            return this.Evaluate().ToList();
         }
 
         private String _queryBody = null;
@@ -219,10 +221,9 @@ namespace Destrier
         {
             get
             {
-                if (!String.IsNullOrEmpty(_queryBody))
-                    return _queryBody;
+                if (String.IsNullOrEmpty(_queryBody))
+                    _queryBody = _builder.GenerateSelect();
 
-                _queryBody = _builder.GenerateSelect();
                 return _queryBody;
             }
             set
