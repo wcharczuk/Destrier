@@ -115,7 +115,7 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            if (ReflectionCache.HasReferencedObjectMembers(_t) || ReflectionCache.HasChildCollectionMembers(_t))
+            if (ReflectionCache.HasReferencedObjectMembers(_t) || _builder.ChildCollections.Any())
                 return _slowPipeline();  
             else
                 return _fastPipeline();
