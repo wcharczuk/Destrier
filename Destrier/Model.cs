@@ -19,13 +19,7 @@ namespace Destrier
 
         public static String TableNameFullyQualified(Type t)
         {
-            var databaseName = DatabaseName(t);
-            if (!String.IsNullOrEmpty(databaseName))
-            {
-                return String.Format("{0}.{1}.{2}", databaseName, SchemaName(t), TableName(t));
-            }
-            else
-                return String.Format("{0}.{1}", SchemaName(t), TableName(t));
+            return String.Format("{0}.{1}.{2}", DatabaseName(t), SchemaName(t), TableName(t));
         }
 
         public static String DatabaseName(Type t)
@@ -43,7 +37,7 @@ namespace Destrier
         public static String ColumnName(PropertyInfo pi)
         {
             ColumnAttribute ca = ColumnAttribute(pi);
-            
+
             if (ca == null) //it's not a column!
                 return null;
 
@@ -192,7 +186,7 @@ namespace Destrier
             {
                 dbColumnNames.Add(ColumnName(pi));
             }
-            return dbColumnNames;   
+            return dbColumnNames;
         }
 
         public static List<String> DatabaseParameterNamesPrimaryKey(Type t)
@@ -202,7 +196,7 @@ namespace Destrier
             {
                 dbColumnNames.Add(ColumnName(pi));
             }
-            return dbColumnNames;   
+            return dbColumnNames;
         }
 
         public static List<String> DatabaseParameterNamesNonPrimaryKey(Type t)
@@ -309,7 +303,7 @@ namespace Destrier
 
         public static Boolean CheckLengthForColumn(ColumnAttribute column, object value)
         {
-            if(value == null)
+            if (value == null)
                 return true;
 
             if (value is String && column.MaxStringLength != default(Int32))
@@ -387,7 +381,7 @@ namespace Destrier
                 foreach (var pi in primaryKeys)
                 {
                     object value = pi.GetValue(instance);
-                    objPrimaryKeyValue = value != null? value.ToString() : null;
+                    objPrimaryKeyValue = value != null ? value.ToString() : null;
                     pkValues.Add(objPrimaryKeyValue.ToString());
                 }
                 objPrimaryKeyValue = String.Join("|", pkValues);
@@ -395,7 +389,7 @@ namespace Destrier
             else if (primaryKeys.Any())
             {
                 var objPrimaryKeyProperty = primaryKeys.First();
-                var value =  objPrimaryKeyProperty.GetValue(instance);
+                var value = objPrimaryKeyProperty.GetValue(instance);
                 objPrimaryKeyValue = value != null ? value.ToString() : null;
             }
             return objPrimaryKeyValue;
@@ -406,33 +400,11 @@ namespace Destrier
             return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
         }
 
-        public static String GenerateTableAlias()
-        {
-            return System.Guid.NewGuid().ToString("N");
-        }
-
-        public static List<Member> Members(Type type, Member root = null, Member parent = null)
-        {
-            return ReflectionCache.GetMembers(type, root, parent);
-        }
-
-        public static List<Member> MembersRecursive(Type type, RootMember applyRootMember = null, Member applyParentMember = null)
-        {
-            if (applyRootMember == null && applyParentMember == null)
-            {
-                return ReflectionCache.GetMembersRecursive(type);
-            }
-            else
-            {
-                return ReflectionCache.GenerateMembersRecursive(type, applyRootMember, applyParentMember);
-            }
-        }
-
         public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
             var members = Model.ColumnMembers(thisType);
 
-            if (Model.HasReferencedObjects(thisType))
+            if (Model.HasReferencedObjects(thisType) || parentMember != null)
             {
                 foreach (ColumnMember col in members.Values)
                 {
@@ -444,7 +416,7 @@ namespace Destrier
                 }
 
                 rootMember = rootMember ?? new RootMember(thisType);
-                foreach (ReferencedObjectMember rom in Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
+                foreach (ReferencedObjectMember rom in ReflectionCache.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
                 {
                     var type = rom.Type;
                     var newObject = ReflectionCache.GetNewObject(type);
@@ -493,6 +465,11 @@ namespace Destrier
                     objectLookups[thisType].Add(pkv, instance);
                 }
             }
+        }
+
+        public static String GenerateAlias()
+        {
+            return System.Guid.NewGuid().ToString("N");
         }
     }
 }

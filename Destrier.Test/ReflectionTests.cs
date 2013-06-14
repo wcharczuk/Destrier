@@ -52,7 +52,7 @@ namespace Destrier.Test
         [Fact]
         public void Members_Test()
         {
-            var members = Model.MembersRecursive(typeof(MockObject));
+            var members = ReflectionCache.MembersRecursive(typeof(MockObject));
 
             Assert.NotNull(members);
             Assert.NotEmpty(members);
