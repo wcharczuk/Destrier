@@ -466,5 +466,10 @@ namespace Destrier
                 }
             }
         }
+
+        public static String GenerateAlias()
+        {
+            return System.Guid.NewGuid().ToString("N");
+        }
     }
 }

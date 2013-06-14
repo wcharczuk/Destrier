@@ -33,10 +33,9 @@ namespace Destrier
             this._t = typeof(T);
             this.Parameters = new Dictionary<String, Object>();
             this.FullyQualifiedTableName = Model.TableNameFullyQualified(_t);
-            this.TableAlias = GenerateTableAlias();
+
             this.Command = new StringBuilder();
             this.Parameters = new Dictionary<String, Object>();
-            this.OutputTableName = GenerateTableAlias();
 
             DiscoverMembers();
             SetupTableAliases(this.Members.Values, _tableAliases);
@@ -57,9 +56,9 @@ namespace Destrier
         public Dictionary<String, Member> Members { get; set; }
         
         public String FullyQualifiedTableName { get; private set; }
-        public String TableAlias { get; set; }
-        public String OutputTableName { get; set; }
-        public RootMember AsRootMember { get { return new RootMember(_t) { TableAlias = this.TableAlias, OutputTableName = this.OutputTableName }; } }
+        public String TableAlias { get { return this.AsRootMember.TableAlias; } }
+        public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
+        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
 
         private Expression<Func<T, bool>> _whereClause = null;
         private dynamic _whereParameters = null;
@@ -220,7 +219,7 @@ namespace Destrier
         private void DiscoverMembers()
         {
             this.Members = new Dictionary<String, Member>();
-            var memberList = ReflectionCache.MembersRecursive(_t, rootMember: this.AsRootMember);
+            var memberList = ReflectionCache.MembersRecursiveCached(_t);
 
             foreach (var m in memberList)
             {

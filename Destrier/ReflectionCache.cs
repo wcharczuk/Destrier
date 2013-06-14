@@ -36,6 +36,8 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
+        private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
+        private static ConcurrentDictionary<Type, RootMember> _rootMemberCache = new ConcurrentDictionary<Type, RootMember>();
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
@@ -450,14 +452,29 @@ namespace Destrier
             return members;
         }
 
+        public static List<Member> MembersRecursiveCached(Type type)
+        {
+            return _recursiveMemberCache.GetOrAdd(type, (t) =>
+            {
+                return MembersRecursive(t);
+            });
+        }
+
         public static List<Member> MembersRecursive(Type type, Member rootMember = null, Member parent = null)
         {
             var members = new List<Member>();
-            rootMember = rootMember ?? new RootMember(type);
+            rootMember = rootMember ?? GetRootMemberForType(type);
             MembersImpl(type, members, rootMember, parent);
             return members.ToList();
         }
 
+        public static RootMember GetRootMemberForType(Type type)
+        {
+            return _rootMemberCache.GetOrAdd(type, (t) =>
+            {
+                return new RootMember(t) { TableAlias = Model.GenerateAlias(), OutputTableName = Model.GenerateAlias() };
+            });
+        }
         private static void MembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
         {
             foreach (var cpi in GetColumns(type))
