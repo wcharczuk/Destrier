@@ -404,7 +404,7 @@ namespace Destrier
         public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
-            foreach (var cm in GenerateColumnMembers(type))
+            foreach (var cm in GetColumnMembers(type))
             {
                 if (!cm.Skip)
                 {
@@ -415,7 +415,7 @@ namespace Destrier
             }
             if (HasReferencedObjectMembers(type))
             {
-                foreach (var rom in GenerateReferencedObjectMembers(type))
+                foreach (var rom in GetReferencedObjectMembers(type))
                 {
                     rom.Parent = parentMember;
                     rom.Root = rootMember;
@@ -424,7 +424,7 @@ namespace Destrier
             }
             if (HasChildCollectionMembers(type))
             {
-                foreach (var ccp in GenerateChildCollectionMembers(type))
+                foreach (var ccp in GetChildCollectionMembers(type))
                 {
                     ccp.Parent = parentMember;
                     ccp.Root = rootMember;
@@ -452,7 +452,7 @@ namespace Destrier
 
         private static void GenerateMembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
         {
-            foreach (var cm in GenerateColumnMembers(type))
+            foreach (var cm in GetColumnMembers(type))
             {
                 if (!cm.Skip)
                 {
@@ -464,7 +464,7 @@ namespace Destrier
 
             if (HasReferencedObjectMembers(type))
             {
-                foreach (var rom in GenerateReferencedObjectMembers(type))
+                foreach (var rom in GetReferencedObjectMembers(type))
                 {
                     rom.Parent = parentMember;
                     rom.Root = rootMember;
@@ -479,7 +479,7 @@ namespace Destrier
 
             if (HasChildCollectionMembers(type))
             {
-                foreach (var ccp in GenerateChildCollectionMembers(type))
+                foreach (var ccp in GetChildCollectionMembers(type))
                 {
                     ccp.Parent = parentMember;
                     ccp.Root = rootMember;
