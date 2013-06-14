@@ -189,12 +189,14 @@ namespace ORMComparison
                     stopwatch = new System.Diagnostics.Stopwatch();
                     stopwatch.Start();
                     var queryResults = kvp.Value();
-
-                    if (!queryResults.Any())
-                        throw new Exception("DOH! no results.");
-
                     stopwatch.Stop();
                     results.Add(stopwatch.ElapsedMilliseconds);
+
+                    if (!queryResults.Any())
+                        throw new Exception("No results.");
+
+                    if (queryResults.Last().BrandId != 230)
+                        throw new Exception("Suspect results.");
                 }
                 
                 Console.Write(kvp.Key);

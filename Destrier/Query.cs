@@ -193,12 +193,13 @@ namespace Destrier
                     cmd.CommandText = this.QueryBody;
                     cmd.CommandType = System.Data.CommandType.Text;
                     Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
-                    using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection)))
+                    using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
                     {
                         while (dr.Read())
                         {
                             T newObject = ReflectionCache.GetNewObject(type) as T;
                             Model.PopulateFullResults(newObject, dr, thisType: type);
+
                             yield return newObject;
                         }
                     }
