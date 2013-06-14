@@ -262,7 +262,7 @@ namespace Destrier
                     if (effectiveType.IsEnum)
                         return Enum.ToObject(effectiveType, value);
                     else
-                        return Convert.ChangeType(value, effectiveType);
+                        return value; //Convert.ChangeType(value, effectiveType);
                 }
             }
 
@@ -283,7 +283,7 @@ namespace Destrier
                 if (resultType.IsEnum)
                     return Enum.ToObject(resultType, value);
                 else
-                    return Convert.ChangeType(value, resultType);
+                    return value; //Convert.ChangeType(value, resultType);
             }
 
             return isNullableType ? null : ReflectionCache.GetDefault(resultType);
