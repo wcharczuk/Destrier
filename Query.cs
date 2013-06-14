@@ -167,21 +167,24 @@ namespace Destrier
 
                                 object objPrimaryKeyValue = Model.InstancePrimaryKeyValue(cm.CollectionType, obj);
 
-                                if (objectLookups.ContainsKey(cm.CollectionType))
+                                Dictionary<Object, Object> parentLookup = null;
+                                objectLookups.TryGetValue(cm.CollectionType, out parentLookup);
+                                if (parentLookup != null)
                                 {
-                                    if (!objectLookups[cm.CollectionType].ContainsKey(objPrimaryKeyValue))
+                                    if (!parentLookup.ContainsKey(objPrimaryKeyValue))
                                     {
-                                        objectLookups[cm.CollectionType].Add(objPrimaryKeyValue, obj);
+                                        parentLookup.Add(objPrimaryKeyValue, obj);
                                     }
                                     else
                                     {
-                                        obj = objectLookups[cm.CollectionType][objPrimaryKeyValue] as IPopulate;
+                                        obj = parentLookup[objPrimaryKeyValue] as IPopulate;
                                     }
                                 }
 
-                                if (objectLookups[cm.DeclaringType].ContainsKey(pkValueAsString)) //if we have an instance of the parent
+                                object parentObj = null;
+                                objectLookups[cm.DeclaringType].TryGetValue(pkValueAsString, out parentObj);
+                                if (parentObj != null)
                                 {
-                                    var parentObj = objectLookups[cm.DeclaringType][pkValueAsString];
                                     var parentCollectionProperty = cm.Property;
                                     if (parentCollectionProperty.GetValue(parentObj) == null)
                                     {
