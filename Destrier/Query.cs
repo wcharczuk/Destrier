@@ -115,7 +115,7 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            if (ReflectionCache.HasReferencedObjectMembers(_t) || _builder.ChildCollections.Any())
+            if (_builder.ChildCollections.Any())
                 return _slowPipeline();  
             else
                 return _fastPipeline();
@@ -229,11 +229,7 @@ namespace Destrier
         /// <returns></returns>
         public IEnumerable<T> Execute()
         {
-            var results = this.StreamResults();
-            if (results is List<T>)
-                return results;
-            else
-                return results.ToList();
+            return StreamResults().ToList();
         }
 
         private String _queryBody = null;
