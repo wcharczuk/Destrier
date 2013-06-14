@@ -15,176 +15,147 @@ namespace Destrier
     /// </summary>
     public class ReflectionCache
     {
-        private static ConcurrentDictionary<String, Type> _typeNameCache = new ConcurrentDictionary<string, Type>();
+        //these i have to keep
         private static ConcurrentDictionary<Type, Type[]> _interfaceCache = new ConcurrentDictionary<Type, Type[]>();
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
-        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberStandardizedCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsNonPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, ColumnAttribute[]> _columnAttributeCache = new ConcurrentDictionary<Type, ColumnAttribute[]>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, TableAttribute> _tableAttributeCache = new ConcurrentDictionary<Type, TableAttribute>();
-        private static ConcurrentDictionary<PropertyInfo, ColumnAttribute> _columnAttributePropertyCache = new ConcurrentDictionary<PropertyInfo, ColumnAttribute>();
-        private static ConcurrentDictionary<PropertyInfo, ReferencedObjectAttribute> _referencedObjectAttributeCache = new ConcurrentDictionary<PropertyInfo, ReferencedObjectAttribute>();
-        private static ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute> _childCollectionAttributeCache = new ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute>();
-        private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
-        private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
-        private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
-        private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
+
+        private static ConcurrentDictionary<Type, List<Member>> _memberCache = new ConcurrentDictionary<Type, List<Member>>();
+        private static ConcurrentDictionary<Type, List<ColumnMember>> _columnMemberCache = new ConcurrentDictionary<Type, List<ColumnMember>>();
+
+        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberLookupStandardizedCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
+        private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberLookupCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
+
+        private static ConcurrentDictionary<Type, List<ReferencedObjectMember>> _referencedObjectMemberCache = new ConcurrentDictionary<Type, List<ReferencedObjectMember>>();
+        private static ConcurrentDictionary<Type, List<ChildCollectionMember>> _childCollectionMemberCache = new ConcurrentDictionary<Type, List<ChildCollectionMember>>();
+
         private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
         private static ConcurrentDictionary<Type, RootMember> _rootMemberCache = new ConcurrentDictionary<Type, RootMember>();
 
+        private static ConcurrentDictionary<Type, TableAttribute> _tableAttributeCache = new ConcurrentDictionary<Type, TableAttribute>();
+        private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
+        private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
+        private static ConcurrentDictionary<Type, bool> _isNullableTypeCache = new ConcurrentDictionary<Type, bool>();
+        private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
+        private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
+
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
-        public static Type GetTypeFromName(String fullTypeName)
+        public static Dictionary<String, ColumnMember> GetColumnMemberStandardizedLookup(Type type)
         {
-            return _typeNameCache.GetOrAdd(fullTypeName, Type.GetType(fullTypeName));
-        }
-
-        public static PropertyInfo[] GetProperties(Type type)
-        {
-            return _propertyCache.GetOrAdd(type, type.GetProperties());
-        }
-
-        public static Type[] GetInterfaces(Type type)
-        {
-            return _interfaceCache.GetOrAdd(type, type.GetInterfaces());
-        }
-
-        public static PropertyInfo[] GetColumns(Type type)
-        {
-            return _columnCache.GetOrAdd(type, (t) =>
+            return _columnMemberLookupStandardizedCache.GetOrAdd(type, (t) =>
             {
-                List<PropertyInfo> columnProperties = GetNewObject<List<PropertyInfo>>();
-
-                PropertyInfo[] properties = ReflectionCache.GetProperties(t);
-
-                foreach (PropertyInfo pi in properties)
-                {
-                    object[] attributes = pi.GetCustomAttributes(typeof(ColumnAttribute), false);
-                    if (attributes.Any())
-                    {
-                        columnProperties.Add(pi);
-                    }
-                }
-
-                return columnProperties.ToArray();
+                return GenerateColumnMembers(t).ToDictionary(cm => Model.StandardizeCasing(cm.Name));
             });
         }
 
-        public static Dictionary<String, ColumnMember> GetColumnMembersStandardized(Type type)
+        public static Dictionary<String, ColumnMember> GetColumnMemberLookup(Type type)
         {
-            return _columnMemberStandardizedCache.GetOrAdd(type, (t) =>
+            return _columnMemberLookupCache.GetOrAdd(type, (t) =>
             {
-                PropertyInfo[] columnProperties = GetColumns(type);
-                var members = new List<ColumnMember>();
-                foreach (var prop in columnProperties)
-                {
-                    members.Add(new ColumnMember(prop));
-                }
-
-                return members.ToDictionary(cm => Model.StandardizeCasing(cm.Name));
+                return GenerateColumnMembers(t).ToDictionary(cm => cm.Name);
             });
         }
 
-        public static Dictionary<String, ColumnMember> GetColumnMembers(Type type)
+        public static List<ColumnMember> GetColumnMembers(Type type)
         {
             return _columnMemberCache.GetOrAdd(type, (t) =>
             {
-                PropertyInfo[] columnProperties = GetColumns(type);
-                var members = new List<ColumnMember>();
-                foreach (var prop in columnProperties)
+                return GenerateColumnMembers(t);
+            });
+        }
+
+        public static List<ColumnMember> GenerateColumnMembers(Type type)
+        {
+            PropertyInfo[] properties = type.GetProperties();
+            var members = new List<ColumnMember>();
+
+            foreach (var prop in properties)
+            {
+                if (prop.GetCustomAttributes(typeof(ColumnAttribute), false).Any())
                 {
                     members.Add(new ColumnMember(prop));
                 }
+            }
 
-                return members.ToDictionary(cm => cm.Name);
+            return members;
+        }
+
+        public static List<ReferencedObjectMember> GetReferencedObjectMembers(Type type)
+        {
+            return _referencedObjectMemberCache.GetOrAdd(type, (t) =>
+            {
+                return GenerateReferencedObjectMembers(t);
             });
         }
 
-        public static Boolean HasReferencedObjectProperties(Type type)
+        public static List<ReferencedObjectMember> GenerateReferencedObjectMembers(Type type)
+        {
+            var list = new List<ReferencedObjectMember>();
+            var properties = type.GetProperties();
+            foreach(var prop in properties)
+            {
+                if(prop.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).Any())
+                {
+                    list.Add(new ReferencedObjectMember(prop));
+                }
+            }
+            return list;
+        }
+
+        public static List<ChildCollectionMember> GetChildCollectionMembers(Type type)
+        {
+            return _childCollectionMemberCache.GetOrAdd(type, (t) =>
+            {
+                return GenerateChildCollectionMembers(t);
+            });
+        }
+
+        public static List<ChildCollectionMember> GenerateChildCollectionMembers(Type type)
+        {
+            var list = new List<ChildCollectionMember>();
+            var properties = type.GetProperties();
+            foreach (var prop in properties)
+            {
+                if (prop.GetCustomAttributes(typeof(ChildCollectionAttribute), false).Any())
+                {
+                    list.Add(new ChildCollectionMember(prop));
+                }
+            }
+            return list;
+        }
+
+        public static Boolean HasReferencedObjectMembers(Type type)
         {
             return _hasReferencedObjectPropertiesCache.GetOrAdd(type, (t) =>
             {
-                return GetReferencedObjectProperties(t).Any();
+                return GetReferencedObjectMembers(t).Any();
             });
         }
 
-        public static PropertyInfo[] GetReferencedObjectProperties(Type type)
-        {
-            return _referencedObjectCache.GetOrAdd(type, (t) =>
-            {
-                List<PropertyInfo> referencedObjectProperties = GetNewObject<List<PropertyInfo>>();
-
-                PropertyInfo[] properties = ReflectionCache.GetProperties(t);
-                foreach (PropertyInfo pi in properties)
-                {
-                    object[] attributes = pi.GetCustomAttributes(typeof(ReferencedObjectAttribute), false);
-                    if (attributes.Any())
-                    {
-                        referencedObjectProperties.Add(pi);
-                    }
-                }
-
-                return referencedObjectProperties.ToArray();
-            });
-        }
-
-        public static Boolean HasChildCollectionProperties(Type type)
+        public static Boolean HasChildCollectionMembers(Type type)
         {
             return _hasChildCollectionPropertiesCache.GetOrAdd(type, (t) =>
             {
-                return GetChildCollectionProperties(t).Any();
+                return GetChildCollectionMembers(t).Any();
             });
         }
 
-        public static PropertyInfo[] GetChildCollectionProperties(Type type)
-        {
-            return _childCollectionCache.GetOrAdd(type, (t) =>
-            {
-                List<PropertyInfo> childCollectionProperties = GetNewObject<List<PropertyInfo>>();
-
-                PropertyInfo[] properties = ReflectionCache.GetProperties(t);
-                foreach (PropertyInfo pi in properties)
-                {
-                    object[] attributes = pi.GetCustomAttributes(typeof(ChildCollectionAttribute), false);
-                    if (attributes.Any())
-                    {
-                        childCollectionProperties.Add(pi);
-                    }
-                }
-
-                return childCollectionProperties.ToArray();
-            });
-        }
+        #region Model Metadata
 
         public static ColumnAttribute GetColumnAttribute(PropertyInfo property)
         {
-            return _columnAttributePropertyCache.GetOrAdd(property, (pi) =>
-            {
-                return pi.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
-            });
+            return property.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
         }
 
-        public static ColumnAttribute[] GetColumnAttributes(Type type)
+        public static ReferencedObjectAttribute GetReferencedObjectAttribute(PropertyInfo property)
         {
-            return _columnAttributeCache.GetOrAdd(type, (t) =>
-            {
-                var columnAttributes = GetNewObject<List<ColumnAttribute>>();
-                var properties = ReflectionCache.GetProperties(t);
+            return property.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).FirstOrDefault() as ReferencedObjectAttribute;
+        }
 
-                foreach (PropertyInfo pi in properties)
-                {
-                    columnAttributes.Add(pi.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute);
-                }
-
-                return columnAttributes.ToArray();
-            });
+        public static ChildCollectionAttribute GetChildCollectionAttribute(PropertyInfo property)
+        {
+            return property.GetCustomAttributes(typeof(ChildCollectionAttribute), false).FirstOrDefault() as ChildCollectionAttribute;
         }
 
         public static TableAttribute GetTableAttribute(Type type)
@@ -195,66 +166,9 @@ namespace Destrier
             });
         }
 
-        public static ReferencedObjectAttribute GetReferencedObjectAttribute(PropertyInfo property)
-        {
-            return _referencedObjectAttributeCache.GetOrAdd(property, (pi) =>
-            {
-                return pi.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).FirstOrDefault() as ReferencedObjectAttribute;
-            });
-        }
+        #endregion
 
-        public static ChildCollectionAttribute GetChildCollectionAttribute(PropertyInfo property)
-        {
-            return _childCollectionAttributeCache.GetOrAdd(property, (pi) =>
-            {
-                return pi.GetCustomAttributes(typeof(ChildCollectionAttribute), false).FirstOrDefault() as ChildCollectionAttribute;
-            });
-        }
-
-        public static PropertyInfo[] GetColumnsPrimaryKey(Type type)
-        {
-            return _columnsPrimaryKeyCache.GetOrAdd(type, (t) =>
-            {
-                List<PropertyInfo> primaryKeys = GetNewObject<List<PropertyInfo>>();
-
-                foreach (PropertyInfo pi in GetColumns(t))
-                {
-                    ColumnAttribute ca = GetColumnAttribute(pi);
-                    if (ca.IsPrimaryKey)
-                    {
-                        primaryKeys.Add(pi);
-                    }
-                }
-
-                return primaryKeys.ToArray();
-            });
-        }
-
-        public static PropertyInfo[] GetColumnsNonPrimaryKey(Type type)
-        {
-            return _columnsNonPrimaryKeyCache.GetOrAdd(type, (t) =>
-            {
-                List<PropertyInfo> nonPrimaryKeys = GetNewObject<List<PropertyInfo>>();
-
-                foreach (PropertyInfo pi in GetColumns(t))
-                {
-                    ColumnAttribute ca = GetColumnAttribute(pi);
-                    if (!ca.IsPrimaryKey)
-                    {
-                        nonPrimaryKeys.Add(pi);
-                    }
-                }
-
-                return nonPrimaryKeys.ToArray();
-            });
-        }
-
-        public static object GetNewObject(String fullTypeName)
-        {
-            var neededType = GetTypeFromName(fullTypeName);
-            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
-            return ctor();
-        }
+        #region General Reflection
 
         public static object GetNewObject(Type toConstruct)
         {
@@ -287,28 +201,6 @@ namespace Destrier
             return Expression.Lambda<Func<T>>(Expression.New(target)).Compile();
         }
 
-        public static String GetFullTypeName(Type target)
-        {
-            String typeName = target.FullName;
-            String assemblyName = target.Assembly.FullName.Split(',')[0];
-            return String.Format("{0}, {1}", typeName, assemblyName);
-        }
-
-        public static Byte[] GetBytesForObject(Object o)
-        {
-            MemoryStream ms = new MemoryStream();
-            System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            bf.Serialize(ms, o);
-            return ms.ToArray();
-        }
-
-        public static Object GetObjectFromBytes(Type t, Byte[] bytes)
-        {
-            MemoryStream ms = new MemoryStream(bytes);
-            System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            return bf.Deserialize(ms);
-        }
-
         public static object GetDefault(Type type)
         {
             if (type.IsValueType)
@@ -320,7 +212,7 @@ namespace Destrier
 
         public static object GetValueOfPropertyForObject(object target, string propertyName, Boolean ignoreCasing = true)
         {
-            var propList = ReflectionCache.GetProperties(target.GetType());
+            var propList = target.GetType().GetProperties();
             return propList.FirstOrDefault(p => p.Name.Equals(propertyName, ignoreCasing ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture)).GetValue(target, null);
         }
 
@@ -341,6 +233,11 @@ namespace Destrier
             return first != null;
         }
 
+        public static Type[] GetInterfaces(Type type)
+        {
+            return _interfaceCache.GetOrAdd(type, type.GetInterfaces());
+        }
+
         public static Boolean HasInterface<T, I>() where T : BaseModel
         {
             return HasInterface(typeof(T), typeof(I));
@@ -353,7 +250,10 @@ namespace Destrier
 
         public static Boolean IsNullableType(Type type)
         {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+            return _isNullableTypeCache.GetOrAdd(type, (t) =>
+            {
+                return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>);
+            });
         }
 
         public static Type GetUnderlyingTypeForNullable(Type nullableType)
@@ -400,7 +300,7 @@ namespace Destrier
                 return first != null;
             }
         }
-
+        
         public static Action<Object, Object> GetSetAction(PropertyInfo property)
         {
             return _compiledSetFunctions.GetOrAdd(property, (p) =>
@@ -424,29 +324,103 @@ namespace Destrier
             return lambda.Compile();
         }
 
+        public static Type RootTypeForExpression(Expression exp)
+        {
+            if (exp.NodeType == ExpressionType.MemberAccess)
+            {
+                var visitedMemberExp = exp as MemberExpression;
+                if (visitedMemberExp.Expression != null)
+                {
+                    while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
+                    {
+                        if (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
+                        {
+                            visitedMemberExp = visitedMemberExp.Expression as MemberExpression;
+                        }
+                    }
+
+                    if (visitedMemberExp.Expression.NodeType == ExpressionType.Parameter)
+                    {
+                        return visitedMemberExp.Expression.Type;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            else if (exp.NodeType == ExpressionType.Parameter || exp.NodeType == ExpressionType.Constant)
+            {
+                return exp.Type;
+            }
+
+            return null;
+        }
+
+        public static Member MemberForExpression(MemberExpression memberExp, Dictionary<String, Member> members)
+        {
+            List<String> visitedNames = new List<String>();
+
+            var com = new ColumnMember(memberExp.Member as PropertyInfo);
+
+            visitedNames.Add(com.Name);
+
+            var visitedMemberExp = memberExp;
+            while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
+            {
+                visitedMemberExp = memberExp.Expression as MemberExpression;
+                if (visitedMemberExp.Member is PropertyInfo)
+                {
+                    ReferencedObjectMember rom = new ReferencedObjectMember(visitedMemberExp.Member as PropertyInfo);
+                    visitedNames.Add(rom.Name);
+                }
+                else
+                    return null; //abort!
+            }
+
+            visitedNames.Reverse();
+            var fullName = String.Join(".", visitedNames);
+            return members[fullName];
+        }
+
+        #endregion
+
+        public static RootMember GetRootMemberForType(Type type)
+        {
+            return _rootMemberCache.GetOrAdd(type, (t) =>
+            {
+                return new RootMember(t) { TableAlias = Model.GenerateAlias(), OutputTableName = Model.GenerateAlias() };
+            });
+        }
+
         public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
-            foreach (var cpi in GetColumns(type))
+            foreach (var cm in GenerateColumnMembers(type))
             {
-                var columnMember = new ColumnMember(cpi) { Parent = parentMember, Root = rootMember };
-                if (!columnMember.Skip)
-                    members.Add(columnMember);
-            }
-            if (GetReferencedObjectProperties(type).Any())
-            {
-                foreach (var referencedObjectProperty in GetReferencedObjectProperties(type))
+                if (!cm.Skip)
                 {
-                    var referencedObjectMember = new ReferencedObjectMember(referencedObjectProperty) { Parent = parentMember, Root = rootMember };
-                    members.Add(referencedObjectMember);
+                    cm.Parent = parentMember;
+                    cm.Root = rootMember;
+                    members.Add(cm);
                 }
             }
-            if (GetChildCollectionProperties(type).Any())
+            if (HasReferencedObjectMembers(type))
             {
-                foreach (var childCollectionProperty in GetChildCollectionProperties(type))
+                foreach (var rom in GenerateReferencedObjectMembers(type))
                 {
-                    var childCollectionMember = new ChildCollectionMember(childCollectionProperty) { Parent = parentMember, Root = rootMember };
-                    members.Add(childCollectionMember);
+                    rom.Parent = parentMember;
+                    rom.Root = rootMember;
+                    members.Add(rom);
+                }
+            }
+            if (HasChildCollectionMembers(type))
+            {
+                foreach (var ccp in GenerateChildCollectionMembers(type))
+                {
+                    ccp.Parent = parentMember;
+                    ccp.Root = rootMember;
+                    members.Add(ccp);
                 }
             }
             return members;
@@ -456,58 +430,56 @@ namespace Destrier
         {
             return _recursiveMemberCache.GetOrAdd(type, (t) =>
             {
-                return MembersRecursive(t);
+                return GenerateMembersRecursive(t);
             });
         }
 
-        public static List<Member> MembersRecursive(Type type, Member rootMember = null, Member parent = null)
+        public static List<Member> GenerateMembersRecursive(Type type, Member rootMember = null, Member parent = null)
         {
             var members = new List<Member>();
             rootMember = rootMember ?? GetRootMemberForType(type);
-            MembersImpl(type, members, rootMember, parent);
+            GenerateMembersImpl(type, members, rootMember, parent);
             return members.ToList();
         }
 
-        public static RootMember GetRootMemberForType(Type type)
+        private static void GenerateMembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
         {
-            return _rootMemberCache.GetOrAdd(type, (t) =>
+            foreach (var cm in GenerateColumnMembers(type))
             {
-                return new RootMember(t) { TableAlias = Model.GenerateAlias(), OutputTableName = Model.GenerateAlias() };
-            });
-        }
-        private static void MembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
-        {
-            foreach (var cpi in GetColumns(type))
-            {
-                var columnMember = new ColumnMember(cpi) { Parent = parentMember, Root = rootMember };
-                if (!columnMember.Skip)
-                    members.Add(columnMember);
+                if (!cm.Skip)
+                {
+                    cm.Parent = parentMember;
+                    cm.Root = rootMember;
+                    members.Add(cm);
+                }
             }
 
-            if (HasReferencedObjectProperties(type))
+            if (HasReferencedObjectMembers(type))
             {
-                foreach (var referencedObjectProperty in GetReferencedObjectProperties(type))
+                foreach (var rom in GenerateReferencedObjectMembers(type))
                 {
-                    var referencedObjectMember = new ReferencedObjectMember(referencedObjectProperty) { Parent = parentMember, Root = rootMember };
+                    rom.Parent = parentMember;
+                    rom.Root = rootMember;
 
-                    if (!referencedObjectMember.HasCycle)
+                    if (!rom.HasCycle)
                     {
-                        members.Add(referencedObjectMember);
-                        MembersImpl(referencedObjectMember.Type, members, rootMember, referencedObjectMember);
+                        members.Add(rom);
+                        GenerateMembersImpl(rom.Type, members, rootMember, rom);
                     }
                 }
             }
 
-            if (HasChildCollectionProperties(type))
+            if (HasChildCollectionMembers(type))
             {
-                foreach (var childCollectionProperty in GetChildCollectionProperties(type))
+                foreach (var ccp in GenerateChildCollectionMembers(type))
                 {
-                    var childCollectionMember = new ChildCollectionMember(childCollectionProperty) { Parent = parentMember, Root = rootMember };
+                    ccp.Parent = parentMember;
+                    ccp.Root = rootMember;
 
-                    if (!childCollectionMember.HasCycle)
+                    if (!ccp.HasCycle)
                     {
-                        members.Add(childCollectionMember);
-                        MembersImpl(childCollectionMember.CollectionType, members, rootMember, childCollectionMember);
+                        members.Add(ccp);
+                        GenerateMembersImpl(ccp.CollectionType, members, rootMember, ccp);
                     }
                 }
             }

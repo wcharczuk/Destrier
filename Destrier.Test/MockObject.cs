@@ -125,7 +125,7 @@ namespace Destrier.Test
         public Int32 SubCollectionObjectId { get; set;}
 
         [Column]
-        public Int32 CollectionObjetId { get; set; }
+        public Int32 CollectionObjectId { get; set; }
 
         [Column]
         public String SubCollectionObjectName { get; set; }

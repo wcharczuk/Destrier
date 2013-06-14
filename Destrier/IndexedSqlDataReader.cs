@@ -325,7 +325,7 @@ namespace Destrier
             return values;
         }
 
-        public  T ReadScalar<T>(Boolean advanceToNextResultAfter = true) where T : struct
+        public T ReadScalar<T>(Boolean advanceToNextResultAfter = true) where T : struct
         {
             T value = default(T);
 
@@ -344,7 +344,7 @@ namespace Destrier
             return value;
         }
 
-        public  T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
         {
             T newObject = ReflectionCache.GetNewObject<T>();
             if (this.HasRows)
@@ -365,7 +365,7 @@ namespace Destrier
             return newObject;
         }
 
-        public  List<T> ReadScalarList<T>(Boolean advanceToNextResultAfter = true)
+        public List<T> ReadScalarList<T>(Boolean advanceToNextResultAfter = true)
         {
             List<T> list = new List<T>();
 
@@ -383,7 +383,7 @@ namespace Destrier
             return list;
         }
 
-        public  List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
         {
             List<T> list = new List<T>();
 
@@ -403,7 +403,7 @@ namespace Destrier
             return list;
         }
 
-        public  Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : class, IPopulate
+        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : class, IPopulate
         {
             Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>();
 

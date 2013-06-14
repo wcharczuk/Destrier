@@ -30,13 +30,11 @@ namespace Destrier
                 command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
 
                 List<String> columnNames = new List<String>();
-                foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
                 {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                    String columnName = String.IsNullOrEmpty(column.Name) ? pi.Name.ToLowerCaseFirstLetter() : column.Name;
-                    if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
+                    if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
                     {
-                        columnNames.Add(columnName);
+                        columnNames.Add(cm.Name);
                     }
                 }
 
@@ -46,13 +44,11 @@ namespace Destrier
                 command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
                 command.Append(");");
 
-                foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
                 {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-
-                    if (!column.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && column.IsPrimaryKey))
+                    if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
                     {
-                        AddColumnParameter(pi, column, myObject, cmd);
+                        AddColumnParameter(cm, myObject, cmd);
                     }
                 }
 
@@ -64,7 +60,8 @@ namespace Destrier
                     object o = cmd.ExecuteScalar();
                     if (o != null && !(o is DBNull))
                     {
-                        Model.AutoIncrementColumn(myObjectType).SetValue(myObject, Convert.ChangeType(o, Model.AutoIncrementColumn(myObjectType).PropertyType), null);
+                        var aicm = Model.AutoIncrementColumn(myObjectType);
+                        aicm.SetValue(myObject, Convert.ChangeType(o, aicm.Property.PropertyType));
                     }
                 }
                 else
@@ -98,43 +95,31 @@ namespace Destrier
                 command.Append("UPDATE ");
                 command.Append(Model.TableNameFullyQualified(myObjectType));
                 command.Append(" SET ");
-                //set
-                List<String> variables = new List<String>();
-                foreach (PropertyInfo pi in Model.ColumnsNonPrimaryKey(myObjectType))
-                {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                    if (!column.IsForReadOnly)
-                    {
-                        if (!String.IsNullOrEmpty(column.Name))
-                            variables.Add(column.Name);
-                        else
-                            variables.Add(pi.Name.ToLowerCaseFirstLetter());
-                    }
-                }
+                
 
+                List<String> variables = new List<String>();
+
+                foreach (var cm in Model.ColumnsNonPrimaryKey(myObjectType))
+                    if (!cm.ColumnAttribute.IsForReadOnly)
+                        variables.Add(cm.Name);
+                    
                 command.Append(string.Join(", ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
                 command.Append(" WHERE ");
 
                 variables = new List<String>();
-                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
-                {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                    if (!String.IsNullOrEmpty(column.Name))
-                        variables.Add(column.Name);
-                    else
-                        variables.Add(pi.Name.ToLowerCaseFirstLetter());
-                }
+                
+                foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
+                    variables.Add(cm.Name);
+
                 command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
                 //parameters
-                foreach (PropertyInfo pi in Model.Columns(myObjectType))
+                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
                 {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-
-                    if (!column.IsForReadOnly)
+                    if (!cm.IsForReadOnly)
                     {
-                        AddColumnParameter(pi, column, myObject, cmd);
+                        AddColumnParameter(cm, myObject, cmd);
                     }
                 }
 
@@ -165,21 +150,15 @@ namespace Destrier
                 command.Append("DELETE FROM " + Model.TableNameFullyQualified(myObjectType) + " WHERE ");
 
                 List<String> variables = new List<String>();
-                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
-                {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                    if (!String.IsNullOrEmpty(column.Name))
-                        variables.Add(column.Name);
-                    else
-                        variables.Add(pi.Name.ToLowerCaseFirstLetter());
-                }
+                
+                foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
+                    variables.Add(cm.Name);
+
                 command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
-                foreach (PropertyInfo pi in Model.ColumnsPrimaryKey(myObjectType))
+                foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                 {
-                    ColumnAttribute column = pi.GetCustomAttributes(true).FirstOrDefault(ca => ca is ColumnAttribute) as ColumnAttribute;
-                    string columnName = String.IsNullOrEmpty(column.Name) ? pi.Name : column.Name;
-                    cmd.Parameters.AddWithValue("@" + columnName, pi.GetValue(myObject, null));
+                    cmd.Parameters.AddWithValue("@" + cm.Name, cm.Property.GetValue(myObject, null));
                 }
 
                 cmd.CommandText = command.ToString();
@@ -242,24 +221,23 @@ namespace Destrier
         }
 
         #region Utility
-        private static void AddColumnParameter(PropertyInfo property, ColumnAttribute column, object myObject, SqlCommand cmd)
+        private static void AddColumnParameter(ColumnMember cm, object myObject, SqlCommand cmd)
         {
-            object value = property.GetValue(myObject, null).DBNullCoalese();
-            String columnName = String.IsNullOrEmpty(column.Name) ? property.Name.ToLowerCaseFirstLetter() : column.Name;
+            object value = cm.Property.GetValue(myObject, null).DBNullCoalese();
 
-            if (!Model.CheckNullStateForColumn(column, value))
-                throw new InvalidColumnDataException(column, value);
+            if (!Model.CheckNullStateForColumn(cm, value))
+                throw new InvalidColumnDataException(cm.ColumnAttribute, value);
 
-            if (!Model.CheckLengthForColumn(column, value))
-                if (column.MaxStringLength != default(Int32) && column.ShouldTrimLongStrings && value != null)
-                    value = value.ToString().Substring(0, column.MaxStringLength - 1);
+            if (!Model.CheckLengthForColumn(cm, value))
+                if (cm.ColumnAttribute.MaxStringLength != default(Int32) && cm.ColumnAttribute.ShouldTrimLongStrings && value != null)
+                    value = value.ToString().Substring(0, cm.ColumnAttribute.MaxStringLength - 1);
                 else
-                    throw new InvalidColumnDataException(column, value);
+                    throw new InvalidColumnDataException(cm.ColumnAttribute, value);
 
-            if ((int)column.SqlDbType == (-1))
-                cmd.Parameters.AddWithValue("@" + columnName, value);
+            if ((int)cm.ColumnAttribute.SqlDbType == (-1))
+                cmd.Parameters.AddWithValue("@" + cm.Name, value);
             else
-                cmd.Parameters.Add(new SqlParameter() { SqlDbType = column.SqlDbType, ParameterName = "@" + columnName, Value = value });
+                cmd.Parameters.Add(new SqlParameter() { SqlDbType = cm.ColumnAttribute.SqlDbType, ParameterName = "@" + cm.Name, Value = value });
         }
         #endregion
     }

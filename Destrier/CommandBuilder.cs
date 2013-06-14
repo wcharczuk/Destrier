@@ -47,7 +47,7 @@ namespace Destrier
         protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
         protected List<Member> _outputMembers = new List<Member>();
 
-        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => Model.HasChildCollections(cm.CollectionType)); } }
+        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
 
         public Int32? Limit { get; set; }
         public StringBuilder Command { get; set; }
@@ -84,7 +84,7 @@ namespace Destrier
         {
             var body = (MemberExpression)expression.Body;
 
-            var columnMember = Model.MemberForExpression(body, Members);
+            var columnMember = ReflectionCache.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -96,7 +96,7 @@ namespace Destrier
         {
             var body = (MemberExpression)expression.Body;
 
-            var columnMember = Model.MemberForExpression(body, Members);
+            var columnMember = ReflectionCache.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -110,7 +110,7 @@ namespace Destrier
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
-            var columnMember = Model.MemberForExpression(body, Members);
+            var columnMember = ReflectionCache.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -124,7 +124,7 @@ namespace Destrier
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
-            var columnMember = Model.MemberForExpression(body, Members);
+            var columnMember = ReflectionCache.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -138,7 +138,7 @@ namespace Destrier
                 throw new ArgumentNullException("expression");
 
             var body = (MemberExpression)expression.Body;
-            var member = Model.MemberForExpression(body, Members) as ChildCollectionMember;
+            var member = ReflectionCache.MemberForExpression(body, Members) as ChildCollectionMember;
 
             if (member != null)
                 if (!_includedChildCollections.Any(ic => ic.Equals(member)))
@@ -163,7 +163,7 @@ namespace Destrier
                 throw new ArgumentNullException("expression");
 
             var body = (MemberExpression)expression.Body;
-            var childCollectionMember = Model.MemberForExpression(body, Members) as ChildCollectionMember;
+            var childCollectionMember = ReflectionCache.MemberForExpression(body, Members) as ChildCollectionMember;
 
             if (childCollectionMember == null)
                 throw new Exception("Invalid child collection member!");
@@ -257,7 +257,7 @@ namespace Destrier
                 }
                 cm.TableAlias = tableAliases[cm.FullyQualifiedName];
 
-                if (Model.HasChildCollections(cm.CollectionType))
+                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     cm.OutputTableName = GenerateTableAlias();
                 }
@@ -284,7 +284,7 @@ namespace Destrier
 
         private static void AddJoins(Type t, List<Member> members, StringBuilder command)
         {
-            if (Model.HasReferencedObjects(t))
+            if (ReflectionCache.HasReferencedObjectMembers(t))
             {
                 foreach (var rom in members.Where(m => m is ReferencedObjectMember && !m.ParentAny(rm => rm is ChildCollectionMember)).Select(m => m as ReferencedObjectMember))
                 {
@@ -386,7 +386,7 @@ namespace Destrier
             List<String> tablesToDrop = new List<String>();
             foreach (var cm in ChildCollections)
             {
-                var subMembers = ReflectionCache.MembersRecursive(cm.CollectionType, new RootMember(cm));
+                var subMembers = ReflectionCache.GenerateMembersRecursive(cm.CollectionType, new RootMember(cm));
 
                 var tableAliases = new Dictionary<String, String>();
                 SetupTableAliases(subMembers, tableAliases);
@@ -396,7 +396,7 @@ namespace Destrier
                 var subColumnList = String.Join("\n\t, ", outputColumns);
                 Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);
 
-                if (Model.HasChildCollections(cm.CollectionType))
+                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     Command.AppendFormat("\nINTO #{0}", cm.OutputTableName);
                     tablesToDrop.Add(cm.OutputTableName);
@@ -411,7 +411,7 @@ namespace Destrier
                 Command.AppendFormat("\n\t{0} JOIN {1} [{2}] (NOLOCK) ON {3} = {4}", cm.JoinType, cm.FullyQualifiedTableName, cm.TableAlias, cm.AliasedParentColumnName, cm.AliasedColumnName);
                 AddJoins(cm.CollectionType, subMembers, Command);
 
-                if (Model.HasChildCollections(cm.CollectionType))
+                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     Command.AppendFormat("\n\nSELECT * FROM #{0};", cm.OutputTableName);
                 }
