@@ -22,7 +22,7 @@ namespace Destrier
             this.Buffer = new StringBuilder();
             this.Parameters = new Dictionary<string, object>();
             this.Type = typeof(T);
-            this.Members = Model.MembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
+            this.Members = ReflectionCache.MembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
         }
 
         public SqlExpressionVisitor(StringBuilder buffer) : this()

@@ -36,7 +36,6 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
-        private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
@@ -257,7 +256,10 @@ namespace Destrier
 
         public static object GetNewObject(Type toConstruct)
         {
-            return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
+            var neededType = toConstruct;
+            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
+
+            return ctor();
         }
 
         public static T GetNewObject<T>() where T : class
@@ -420,7 +422,7 @@ namespace Destrier
             return lambda.Compile();
         }
 
-        public static List<Member> GetMembers(Type type, Member rootMember = null, Member parentMember = null)
+        public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
             foreach (var cpi in GetColumns(type))
@@ -429,7 +431,7 @@ namespace Destrier
                 if (!columnMember.Skip)
                     members.Add(columnMember);
             }
-            if (HasReferencedObjectProperties(type))
+            if (GetReferencedObjectProperties(type).Any())
             {
                 foreach (var referencedObjectProperty in GetReferencedObjectProperties(type))
                 {
@@ -437,7 +439,7 @@ namespace Destrier
                     members.Add(referencedObjectMember);
                 }
             }
-            if (HasChildCollectionProperties(type))
+            if (GetChildCollectionProperties(type).Any())
             {
                 foreach (var childCollectionProperty in GetChildCollectionProperties(type))
                 {
@@ -448,25 +450,15 @@ namespace Destrier
             return members;
         }
 
-        public static List<Member> GetMembersRecursive(Type type)
-        {
-            return _recursiveMemberCache.GetOrAdd(type, (t) =>
-            {
-                return GenerateMembersRecursive(t);
-            });
-        }
-
-        public static List<Member> GenerateMembersRecursive(Type type, Member rootMember = null, Member parent = null)
+        public static List<Member> MembersRecursive(Type type, Member rootMember = null, Member parent = null)
         {
             var members = new List<Member>();
             rootMember = rootMember ?? new RootMember(type);
-            
-            members.Add(rootMember);
-            GenerateMembersImpl(type, members, rootMember, parent);
+            MembersImpl(type, members, rootMember, parent);
             return members.ToList();
         }
 
-        private static void GenerateMembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
+        private static void MembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
         {
             foreach (var cpi in GetColumns(type))
             {
@@ -484,7 +476,7 @@ namespace Destrier
                     if (!referencedObjectMember.HasCycle)
                     {
                         members.Add(referencedObjectMember);
-                        GenerateMembersImpl(referencedObjectMember.Type, members, rootMember, referencedObjectMember);
+                        MembersImpl(referencedObjectMember.Type, members, rootMember, referencedObjectMember);
                     }
                 }
             }
@@ -498,7 +490,7 @@ namespace Destrier
                     if (!childCollectionMember.HasCycle)
                     {
                         members.Add(childCollectionMember);
-                        GenerateMembersImpl(childCollectionMember.CollectionType, members, rootMember, childCollectionMember);
+                        MembersImpl(childCollectionMember.CollectionType, members, rootMember, childCollectionMember);
                     }
                 }
             }
