@@ -83,7 +83,7 @@ namespace ORMComparison
 
             var results = new List<Int64>();
 
-            Action rawAction = () =>
+            Func<List<Garment>> rawAction = () =>
             {
                 var list = new List<Garment>();
                 using (var conn = new System.Data.SqlClient.SqlConnection(ConnectionString))
@@ -113,42 +113,47 @@ namespace ORMComparison
                                     garment.ModifiedBy = !dr.IsDBNull(8) ? dr.GetInt32(8) : default(int);
                                     garment.PricePoint = !dr.IsDBNull(9) ? dr.GetString(9) : String.Empty;
                                     garment.Season = !dr.IsDBNull(10) ? dr.GetString(10) : String.Empty;
+
+                                    list.Add(garment);
                                 }
                             }
                         }
                     }
                 }
+                return list;
             };
 
-            Action ormLiteAction = () =>
+            Func<List<Garment>> ormLiteAction = () =>
             {
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
-                    var garments = ServiceStack.OrmLite.ReadConnectionExtensions.Select<Garment>(db, q => q.Limit(LIMIT));
+                    var garments = ServiceStack.OrmLite.ReadConnectionExtensions.Select<Garment>(db, q => q.Limit(LIMIT)).ToList();
+                    return garments;
                 }
             };
 
-            Action entityFrameworkAction = () =>
+            Func<List<Garment>> entityFrameworkAction = () =>
             {
                 using (var db = new GarmentContext())
                 {
                     var query = (from g in db.Garments select g).Take(LIMIT);
                     var efResults = query.ToList();
+                    return efResults;
                 }
             };
 
-            Action destrierAction = () =>
+            Func<List<Garment>> destrierAction = () =>
             {
-                var destrierResults = new Destrier.Query<Garment>().Execute();
+                return new Destrier.Query<Garment>().Limit(LIMIT).Execute().ToList();
             };
 
-            Action dapperAction = () =>
+            Func<List<Garment>> dapperAction = () =>
             {
                 using (var conn = new SqlConnection(ConnectionString))
                 {
                     conn.Open();
-                    var dapperResults = conn.Query<Garment>(String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT));
+                    return conn.Query<Garment>(String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT)).ToList();
                 }
             };
 
@@ -167,7 +172,7 @@ namespace ORMComparison
             }
             Console.WriteLine();
 
-            Dictionary<String, Action> testSteps = new Dictionary<string, Action>()
+            Dictionary<String, Func<List<Garment>>> testSteps = new Dictionary<string, Func<List<Garment>>>()
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
@@ -183,9 +188,15 @@ namespace ORMComparison
                 {
                     stopwatch = new System.Diagnostics.Stopwatch();
                     stopwatch.Start();
-                    kvp.Value();
+                    var queryResults = kvp.Value();
                     stopwatch.Stop();
                     results.Add(stopwatch.ElapsedMilliseconds);
+
+                    if (!queryResults.Any())
+                        throw new Exception("No results.");
+
+                    if (queryResults.Last().BrandId != 230)
+                        throw new Exception("Suspect results.");
                 }
                 
                 Console.Write(kvp.Key);

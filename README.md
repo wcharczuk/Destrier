@@ -5,11 +5,11 @@ It is designed to leverage both strong typing and model / schema relationships a
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
 ###Features###
-* Speed: It's kinda fast, not the fastest yet but pretty fast considering the type safety and expressiveness.
+* Speed: It's kinda fast, not the fastest yet but pretty fast considering what it gives you.
 * Code first, minimal configuration, powerful annotations.
- * Column key, datatype, string precision control
  * "Referenced Objects" let you have associated objects (joined to specified properties)
- * "Child Objects" let you have related sub collections.
+ * "Child Objects" let you have related sub collections (one-to-many relationships).
+ * Enumerable 'streaming' results, means you can query huge datasets
 
 ###Speed###
 The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
