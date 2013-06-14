@@ -39,7 +39,20 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
 
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
+
+        public static PropertyInfo[] GetProperties(Type type)
+        {
+            return _propertyCache.GetOrAdd(type, (t) =>
+            {
+                return type.GetProperties();
+            });
+        }
 
         public static Dictionary<String, ColumnMember> GetColumnMemberStandardizedLookup(Type type)
         {
@@ -65,19 +78,65 @@ namespace Destrier
             });
         }
 
+        public static PropertyInfo[] GetColumnMemberProperties(Type type)
+        {
+            return _columnMemberPropertyCache.GetOrAdd(type, (t) =>
+            {
+                var list = new List<PropertyInfo>();
+                PropertyInfo[] properties = GetProperties(type);
+                foreach (var prop in properties)
+                {
+                    if (prop.GetCustomAttributes(typeof(ColumnAttribute), false).Any())
+                    {
+                        list.Add(prop);
+                    }
+                }
+                return list.ToArray();
+            });
+        }
+
+        public static PropertyInfo[] GetReferencedObjectMemberProperties(Type type)
+        {
+            return _referencedObjectMemberPropertyCache.GetOrAdd(type, (t) =>
+            {
+                var list = new List<PropertyInfo>();
+                PropertyInfo[] properties = GetProperties(type);
+                foreach (var prop in properties)
+                {
+                    if (prop.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).Any())
+                    {
+                        list.Add(prop);
+                    }
+                }
+                return list.ToArray();
+            });
+        }
+
+        public static PropertyInfo[] GetChildCollectionMemberProperties(Type type)
+        {
+            return _childCollectionMemberPropertyCache.GetOrAdd(type, (t) =>
+            {
+                var list = new List<PropertyInfo>();
+                PropertyInfo[] properties = GetProperties(type);
+                foreach (var prop in properties)
+                {
+                    if (prop.GetCustomAttributes(typeof(ChildCollectionAttribute), false).Any())
+                    {
+                        list.Add(prop);
+                    }
+                }
+                return list.ToArray();
+            });
+        }
+
         public static List<ColumnMember> GenerateColumnMembers(Type type)
         {
-            PropertyInfo[] properties = type.GetProperties();
+            PropertyInfo[] properties = GetColumnMemberProperties(type);
             var members = new List<ColumnMember>();
 
             foreach (var prop in properties)
-            {
-                if (prop.GetCustomAttributes(typeof(ColumnAttribute), false).Any())
-                {
-                    members.Add(new ColumnMember(prop));
-                }
-            }
-
+                members.Add(new ColumnMember(prop));
+            
             return members;
         }
 
@@ -92,14 +151,10 @@ namespace Destrier
         public static List<ReferencedObjectMember> GenerateReferencedObjectMembers(Type type)
         {
             var list = new List<ReferencedObjectMember>();
-            var properties = type.GetProperties();
-            foreach(var prop in properties)
-            {
-                if(prop.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).Any())
-                {
-                    list.Add(new ReferencedObjectMember(prop));
-                }
-            }
+            PropertyInfo[] properties = GetReferencedObjectMemberProperties(type);
+            foreach(var prop in properties)            
+                list.Add(new ReferencedObjectMember(prop));
+
             return list;
         }
 
@@ -114,14 +169,10 @@ namespace Destrier
         public static List<ChildCollectionMember> GenerateChildCollectionMembers(Type type)
         {
             var list = new List<ChildCollectionMember>();
-            var properties = type.GetProperties();
+            PropertyInfo[] properties = GetChildCollectionMemberProperties(type);
             foreach (var prop in properties)
-            {
-                if (prop.GetCustomAttributes(typeof(ChildCollectionAttribute), false).Any())
-                {
-                    list.Add(new ChildCollectionMember(prop));
-                }
-            }
+                list.Add(new ChildCollectionMember(prop));
+
             return list;
         }
 
@@ -452,7 +503,7 @@ namespace Destrier
 
         private static void GenerateMembersImpl(Type type, List<Member> members, Member rootMember, Member parentMember = null)
         {
-            foreach (var cm in GetColumnMembers(type))
+            foreach (var cm in GenerateColumnMembers(type))
             {
                 if (!cm.Skip)
                 {
@@ -464,7 +515,7 @@ namespace Destrier
 
             if (HasReferencedObjectMembers(type))
             {
-                foreach (var rom in GetReferencedObjectMembers(type))
+                foreach (var rom in GenerateReferencedObjectMembers(type))
                 {
                     rom.Parent = parentMember;
                     rom.Root = rootMember;
@@ -479,7 +530,7 @@ namespace Destrier
 
             if (HasChildCollectionMembers(type))
             {
-                foreach (var ccp in GetChildCollectionMembers(type))
+                foreach (var ccp in GenerateChildCollectionMembers(type))
                 {
                     ccp.Parent = parentMember;
                     ccp.Root = rootMember;

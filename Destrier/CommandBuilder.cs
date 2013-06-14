@@ -36,7 +36,7 @@ namespace Destrier
 
             this.Command = new StringBuilder();
             this.Parameters = new Dictionary<String, Object>();
-            
+
             DiscoverMembers();
             SetupTableAliases(this.Members.Values, _tableAliases);
         }
