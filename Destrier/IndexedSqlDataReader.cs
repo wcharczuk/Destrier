@@ -275,18 +275,28 @@ namespace Destrier
             if (isNullableType)
             {
                 resultType = ReflectionCache.GetUnderlyingTypeForNullable(resultType);
+                object value = _dr.GetValue(columnIndex);
+                if (!(value is DBNull))
+                {
+                    if (resultType.IsEnum)
+                        return Enum.ToObject(resultType, value);
+                    else
+                        return ReflectionCache.ChangeType(value, resultType);
+                }
+                return null;
             }
-
-            object value = _dr.GetValue(columnIndex);
-            if (!(value is DBNull))
+            else
             {
-                if (resultType.IsEnum)
-                    return Enum.ToObject(resultType, value);
-                else
-                    return ReflectionCache.ChangeType(value, resultType);
+                object value = _dr.GetValue(columnIndex);
+                if (!(value is DBNull))
+                {
+                    if (resultType.IsEnum)
+                        return Enum.ToObject(resultType, value);
+                    else
+                        return ReflectionCache.ChangeType(value, resultType);
+                }
+                return ReflectionCache.GetDefault(resultType);
             }
-
-            return isNullableType ? null : ReflectionCache.GetDefault(resultType);
         }
 
         public dynamic ReadDynamic()
