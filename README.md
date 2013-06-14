@@ -5,7 +5,7 @@ It is designed to leverage both strong typing and model / schema relationships a
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
 ###Features###
-* Speed: It's kinda fast, not the fastest yet but pretty fast considering what it gives you.
+* Speed: It's pretty fast for what it lets you do.
 * Code first, minimal configuration, powerful annotations.
  * "Referenced Objects" let you have associated objects (joined to specified properties)
  * "Child Objects" let you have related sub collections (one-to-many relationships).
