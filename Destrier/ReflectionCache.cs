@@ -455,7 +455,7 @@ namespace Destrier
         public static List<Member> Members(Type type, Member rootMember = null, Member parentMember = null)
         {
             List<Member> members = new List<Member>();
-            foreach (var cm in GetColumnMembers(type))
+            foreach (ColumnMember cm in GetColumnMembers(type).Select(cm => cm.Clone()))
             {
                 if (!cm.Skip)
                 {
@@ -466,7 +466,7 @@ namespace Destrier
             }
             if (HasReferencedObjectMembers(type))
             {
-                foreach (var rom in GetReferencedObjectMembers(type))
+                foreach (ReferencedObjectMember rom in GetReferencedObjectMembers(type).Select(rom => rom.Clone()))
                 {
                     rom.Parent = parentMember;
                     rom.Root = rootMember;
@@ -475,11 +475,11 @@ namespace Destrier
             }
             if (HasChildCollectionMembers(type))
             {
-                foreach (var ccp in GetChildCollectionMembers(type))
+                foreach (ChildCollectionMember ccm in GetChildCollectionMembers(type).Select(ccm => ccm.Clone()))
                 {
-                    ccp.Parent = parentMember;
-                    ccp.Root = rootMember;
-                    members.Add(ccp);
+                    ccm.Parent = parentMember;
+                    ccm.Root = rootMember;
+                    members.Add(ccm);
                 }
             }
             return members;
