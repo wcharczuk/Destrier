@@ -54,6 +54,11 @@ namespace Destrier
 
         }
 
+        public String GetColumnName(Int32 index)
+        {
+            return ColumnIndexMap[index];
+        }
+
         public Boolean HasRows
         {
             get
@@ -193,7 +198,7 @@ namespace Destrier
 
         public string GetName(int i)
         {
-            return ColumnIndexMap[i];
+            return _dr.GetName(i);
         }
 
         public int GetOrdinal(string name)
