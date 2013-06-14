@@ -21,12 +21,15 @@ namespace Destrier
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
             _builder = new CommandBuilder<T>(_command, _parameters);
+            _t = typeof(T);
         }
 
         private IDictionary<String, Object> _parameters = null;
         private List<Member> _members = new List<Member>();
         private StringBuilder _command = null;
         private CommandBuilder<T> _builder = null;
+
+        private Type _t = null;
 
         public Query<T> Limit(int resultSize)
         {
@@ -112,99 +115,106 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            var type = typeof(T);
-            if (ReflectionCache.HasReferencedObjectMembers(type) || ReflectionCache.HasChildCollectionMembers(type))
+            if (ReflectionCache.HasReferencedObjectMembers(_t) || ReflectionCache.HasChildCollectionMembers(_t))
+                return _slowPipeline();  
+            else
+                return _fastPipeline();
+        }
+
+        private IEnumerable<T> _slowPipeline()
+        {
+            var list = new List<T>();
+            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
             {
-                using (var cmd = Destrier.Execute.Command(Model.ConnectionString(type)))
+                cmd.CommandText = this.QueryBody;
+                cmd.CommandType = System.Data.CommandType.Text;
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
                 {
-                    cmd.CommandText = this.QueryBody;
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                    var objectLookups = new Dictionary<Type, Dictionary<Object, Object>>();
+                    var parentDict = new Dictionary<Object, Object>();
+                    objectLookups.Add(_t, parentDict);
 
-                    using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
+                    while (dr.Read())
                     {
-                        var objectLookups = new Dictionary<Type, Dictionary<Object, Object>>();
-                        var parentDict = new Dictionary<Object, Object>();
-                        objectLookups.Add(type, parentDict);
+                        T newObject = ReflectionCache.GetNewObject(_t) as T;
+                        Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
+                        list.Add(newObject);
+                    }
 
-                        while (dr.Read())
+                    if (_builder.ChildCollections.Any())
+                    {
+                        dr.NextResult();
+
+                        foreach (var cm in _builder.ChildCollections)
                         {
-                            T newObject = ReflectionCache.GetNewObject(type) as T;
-                            Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: type);
-                            yield return newObject;
-                        }
+                            var root = cm.Root;
+                            var parent = cm.Parent ?? cm.Root;
+                            var parentPrimaryKeyReference = cm.ReferencedProperty;
 
-                        if (_builder.ChildCollections.Any())
-                        {
-                            dr.NextResult();
-
-                            foreach (var cm in _builder.ChildCollections)
+                            if (!objectLookups.ContainsKey(cm.CollectionType))
                             {
-                                var root = cm.Root;
-                                var parent = cm.Parent ?? cm.Root;
-                                var parentPrimaryKeyReference = cm.ReferencedProperty;
+                                objectLookups.Add(cm.CollectionType, new Dictionary<Object, Object>());
+                            }
 
-                                if (!objectLookups.ContainsKey(cm.CollectionType))
+                            dr.ReadIntoParentCollection(cm.CollectionType, (reader, obj) =>
+                            {
+                                var pkValue = parentPrimaryKeyReference.GetValue(obj);
+                                var pkValueAsString = pkValue != null ? pkValue.ToString() : null;
+
+                                var objPrimaryKeys = Model.ColumnsPrimaryKey(cm.CollectionType);
+
+                                object objPrimaryKeyValue = Model.InstancePrimaryKeyValue(cm.CollectionType, obj);
+
+                                if (objectLookups.ContainsKey(cm.CollectionType))
                                 {
-                                    objectLookups.Add(cm.CollectionType, new Dictionary<Object, Object>());
+                                    if (!objectLookups[cm.CollectionType].ContainsKey(objPrimaryKeyValue))
+                                    {
+                                        objectLookups[cm.CollectionType].Add(objPrimaryKeyValue, obj);
+                                    }
+                                    else
+                                    {
+                                        obj = objectLookups[cm.CollectionType][objPrimaryKeyValue] as IPopulate;
+                                    }
                                 }
 
-                                dr.ReadIntoParentCollection(cm.CollectionType, (reader, obj) =>
+                                if (objectLookups[cm.DeclaringType].ContainsKey(pkValueAsString)) //if we have an instance of the parent
                                 {
-                                    var pkValue = parentPrimaryKeyReference.GetValue(obj);
-                                    var pkValueAsString = pkValue != null ? pkValue.ToString() : null;
-
-                                    var objPrimaryKeys = Model.ColumnsPrimaryKey(cm.CollectionType);
-
-                                    object objPrimaryKeyValue = Model.InstancePrimaryKeyValue(cm.CollectionType, obj);
-
-                                    if (objectLookups.ContainsKey(cm.CollectionType))
+                                    var parentObj = objectLookups[cm.DeclaringType][pkValueAsString];
+                                    var parentCollectionProperty = cm.Property;
+                                    if (parentCollectionProperty.GetValue(parentObj) == null)
                                     {
-                                        if (!objectLookups[cm.CollectionType].ContainsKey(objPrimaryKeyValue))
-                                        {
-                                            objectLookups[cm.CollectionType].Add(objPrimaryKeyValue, obj);
-                                        }
-                                        else
-                                        {
-                                            obj = objectLookups[cm.CollectionType][objPrimaryKeyValue] as IPopulate;
-                                        }
+                                        parentCollectionProperty.SetValue(parentObj, ReflectionCache.GetNewObject(cm.Type));
                                     }
 
-                                    if (objectLookups[cm.DeclaringType].ContainsKey(pkValueAsString)) //if we have an instance of the parent
-                                    {
-                                        var parentObj = objectLookups[cm.DeclaringType][pkValueAsString];
-                                        var parentCollectionProperty = cm.Property;
-                                        if (parentCollectionProperty.GetValue(parentObj) == null)
-                                        {
-                                            parentCollectionProperty.SetValue(parentObj, ReflectionCache.GetNewObject(cm.Type));
-                                        }
+                                    var collection = parentCollectionProperty.GetValue(parentObj);
+                                    ((System.Collections.IList)collection).Add(obj);
 
-                                        var collection = parentCollectionProperty.GetValue(parentObj);
-                                        ((System.Collections.IList)collection).Add(obj);
-
-                                    }
-                                }, populateFullResults: true);
-                            }
+                                }
+                            }, populateFullResults: true);
                         }
                     }
-                }               
+                }
             }
-            else
-            {
-                using(var cmd = Destrier.Execute.Command(Model.ConnectionString(type)))
-                {
-                    cmd.CommandText = this.QueryBody;
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
-                    using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
-                    {
-                        while (dr.Read())
-                        {
-                            T newObject = ReflectionCache.GetNewObject(type) as T;
-                            Model.PopulateFullResults(newObject, dr, thisType: type);
+            return list;
+        }
 
-                            yield return newObject;
-                        }
+        private IEnumerable<T> _fastPipeline()
+        {
+            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            {
+                cmd.CommandText = this.QueryBody;
+                cmd.CommandType = System.Data.CommandType.Text;
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
+                {
+                    while (dr.Read())
+                    {
+                        T newObject = ReflectionCache.GetNewObject(_t) as T;
+                        Model.PopulateFullResults(newObject, dr, thisType: _t);
+
+                        yield return newObject;
                     }
                 }
             }
@@ -216,7 +226,11 @@ namespace Destrier
         /// <returns></returns>
         public IEnumerable<T> Execute()
         {
-            return this.StreamResults().ToList();
+            var results = this.StreamResults();
+            if (results is List<T>)
+                return results;
+            else
+                return results.ToList();
         }
 
         public Query<T> Sql(String sql, object parameters)
