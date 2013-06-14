@@ -15,29 +15,34 @@ namespace Destrier
     /// </summary>
     public class ReflectionCache
     {
-        private static ConcurrentDictionary<String, Type> _typeNameCache = new ConcurrentDictionary<string, Type>();
+        //these i have to keep
         private static ConcurrentDictionary<Type, Type[]> _interfaceCache = new ConcurrentDictionary<Type, Type[]>();
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
+        private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
+        private static ConcurrentDictionary<Type, RootMember> _rootMemberCache = new ConcurrentDictionary<Type, RootMember>();
         private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
         private static ConcurrentDictionary<Type, Dictionary<String, ColumnMember>> _columnMemberStandardizedCache = new ConcurrentDictionary<Type, Dictionary<String, ColumnMember>>();
+
+        //these i can probably do away with
+        private static ConcurrentDictionary<String, Type> _typeNameCache = new ConcurrentDictionary<string, Type>();
+        private static ConcurrentDictionary<Type, TableAttribute> _tableAttributeCache = new ConcurrentDictionary<Type, TableAttribute>();
+        private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
+        private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
+        private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
+
+        //these i can definitely do away with
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<Type, PropertyInfo[]> _columnCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnsNonPrimaryKeyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, ColumnAttribute[]> _columnAttributeCache = new ConcurrentDictionary<Type, ColumnAttribute[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<Type, TableAttribute> _tableAttributeCache = new ConcurrentDictionary<Type, TableAttribute>();
         private static ConcurrentDictionary<PropertyInfo, ColumnAttribute> _columnAttributePropertyCache = new ConcurrentDictionary<PropertyInfo, ColumnAttribute>();
+        private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
         private static ConcurrentDictionary<PropertyInfo, ReferencedObjectAttribute> _referencedObjectAttributeCache = new ConcurrentDictionary<PropertyInfo, ReferencedObjectAttribute>();
         private static ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute> _childCollectionAttributeCache = new ConcurrentDictionary<PropertyInfo, ChildCollectionAttribute>();
-        private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
-        private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
-        private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
-        private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
-        private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
-        private static ConcurrentDictionary<Type, List<Member>> _recursiveMemberCache = new ConcurrentDictionary<Type, List<Member>>();
-        private static ConcurrentDictionary<Type, RootMember> _rootMemberCache = new ConcurrentDictionary<Type, RootMember>();
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
