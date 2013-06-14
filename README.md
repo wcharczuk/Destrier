@@ -14,13 +14,13 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Speed###
 The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
 
-| ORM                   | Timing        |
-|-----------------------|---------------|
-|Raw Reader             | Avg:  1.126ms |
-|Dapper                 | Avg:  4.480ms |
-|ServiceStack ORMLite   | Avg:  5.210ms |
-|Destrier               | Avg:  6.350ms |
-|EntityFramework        | Avg: 18.040ms |
+| ORM                   | Timing       |
+|-----------------------|--------------|
+|Raw Reader             | Avg:  2.11ms |
+|Dapper                 | Avg:  4.20ms |
+|ServiceStack ORMLite   | Avg:  4.77ms |
+|Destrier               | Avg:  6.11ms |
+|EntityFramework        | Avg: 17.63ms |
 
 
 ###Core Components###
