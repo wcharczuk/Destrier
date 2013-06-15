@@ -69,7 +69,7 @@ namespace ORMComparison
     {
         public const String ConnectionString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
         public const int TRIALS = 1000;
-        public const int LIMIT = 1000;
+        public const int LIMIT = 5000;
 
         public static void EnsureInitDataStore()
         {
@@ -124,7 +124,7 @@ END
 
             EnsureInitDataStore();
 
-            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, MockObjectTypeId, Created, Modified, NullableId from MockObjects (nolock)", LIMIT);
+            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, MockObjectTypeId, Created, Modified, NullableId, ReferencedObjectId from MockObjects (nolock)", LIMIT);
 
             Func<List<MockObject>> rawAction = () =>
             {
@@ -152,6 +152,7 @@ END
                                     mockObject.Created = dr.GetDateTime(4);
                                     mockObject.Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
                                     mockObject.NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
+                                    mockObject.ReferencedObjectId = dr.GetInt32(7);
 
                                     list.Add(mockObject);
                                 }
