@@ -9,85 +9,126 @@ using Dapper;
 
 namespace ORMComparison
 {
-    public class GarmentContext : DbContext
+    public class MockObjectContext : DbContext
     {
-        public GarmentContext() : base(String.Format("Server={0};Database={1};Trusted_Connection=true", "localhost", "clotheshorse")) { }
+        public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
 
-        public DbSet<Garment> Garments { get; set; }
+        public DbSet<MockObject> MockObjects { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Configurations.Add(new GarmentMap());
+            modelBuilder.Configurations.Add(new MockObjectMap());
         }
     }
 
-    public class GarmentMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<Garment>
+    public class MockObjectMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<MockObject>
     {
-        public GarmentMap()
+        public MockObjectMap()
         {
-            this.HasKey(t => t.GarmentId);
-            this.Property(t => t.GarmentTypeId);
-            this.Property(t => t.BrandId);
-            this.Property(t => t.GenderTypeId);
+            this.HasKey(t => t.Id);
+            this.Property(t => t.Id);
+            this.Property(t => t.Name);
             this.Property(t => t.Active);
-            this.Property(t => t.Season);
-            this.Property(t => t.PricePoint);
-            this.Property(t => t.Notes);
-            this.Property(t => t.CreatedBy);
-            this.Property(t => t.ModifiedBy);
-            this.ToTable("Garment_tbl");
+            this.Property(t => t.Created);
+            this.Property(t => t.Modified);
+            this.Property(t => t.ReferencedObjectId);
+            this.Property(t => t.NullableId);
+            this.ToTable("MockObjects");
         }
     }
 
-    [Destrier.Table("Garment_tbl")]
-    [ServiceStack.DataAnnotations.Alias("Garment_tbl")]
-    public class Garment : Destrier.BaseModel
+    [Destrier.Table("MockObjects")]
+    [ServiceStack.DataAnnotations.Alias("MockObjects")]
+    public class MockObject : Destrier.BaseModel
     {
-        [Destrier.Column(IsPrimaryKey=true)]
+        [Destrier.Column(IsPrimaryKey = true)]
         [ServiceStack.DataAnnotations.PrimaryKey]
-        public Int32 GarmentId { get; set; }
-        [Destrier.Column]
-        public Int16 GarmentTypeId { get; set; }
-        [Destrier.Column]
-        public Int32 BrandId { get; set; }
-        [Destrier.Column]
-        public Int16 GenderTypeId { get; set; }
+        public Int32 Id { get; set; }
+
         [Destrier.Column]
         public Boolean Active { get; set; }
-        [Destrier.Column]
-        public String Season { get; set; }
-        [Destrier.Column]
-        public String PricePoint { get; set; }
-        [Destrier.Column]
-        public String Notes { get; set; }
-        [Destrier.Column]
-        public int? CreatedBy { get; set; }
-        [Destrier.Column]
-        public int? ModifiedBy { get; set; }   
-    }
 
-    
+        [Destrier.Column]
+        public String Name { get; set; }
+
+        [Destrier.Column]
+        public DateTime Created { get; set; }
+
+        [Destrier.Column]
+        public DateTime? Modified { get; set; }
+
+        [Destrier.Column]
+        public Int32 ReferencedObjectId { get; set; }
+
+        [Destrier.Column]
+        public Int32? NullableId { get; set; }
+    }
 
     public class Program
     {
-        public const String ConnectionString = "Server=localhost;Database=clotheshorse;Trusted_Connection=true";
+        public const String ConnectionString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
         public const int TRIALS = 1000;
         public const int LIMIT = 1000;
+
+        public static void EnsureInitDataStore()
+        {
+            var initDbScript = @"
+if (OBJECT_ID('tempdb..MockObjects') is not null)
+BEGIN
+    DROP TABLE MockObjects
+END
+
+CREATE TABLE MockObjects
+( 
+    id int not null identity(1,1) primary key, 
+    name varchar(255) not null,
+    mockObjectTypeId smallint not null, 
+    active bit not null,
+    created datetime not null,
+    modified datetime,
+    nullableId int,
+    referencedObjectId int,
+);
+
+DECLARE @id int;
+DECLARE @i int;
+DECLARE @subId int;
+DECLARE @typeId smallint;
+
+SET @i = 0;
+SET @subId = 1;
+SET @typeId = 1;
+
+WHILE @i < 5001
+BEGIN
+    INSERT INTO MockObjects ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId]) VALUES ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId);
+
+    IF(@subId = 100) BEGIN; SET @subId = 1; END;
+    IF(@typeId = 10) BEGIN; SET @typeId = 1; END;
+
+    SET @subId = @subId + 1;
+    SET @typeId = @typeId + 1;
+    SET @i = @i + 1;
+END
+
+";
+            Destrier.Execute.NonQuery(initDbScript);
+        }
 
         public static void Main(string[] args)
         {
             Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
             Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
-            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "ClothesHorse";
+            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
 
-            var results = new List<Int64>();
+            EnsureInitDataStore();
 
-            string QUERY = String.Format("SELECT TOP {0} GarmentId, GenderTypeId, GarmentTypeId, Active, BrandId, Notes, SourceTypeId, CreatedBy, ModifiedBy, PricePoint, Season from Garment_tbl (nolock)", LIMIT);
+            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, MockObjectTypeId, Created, Modified, NullableId from MockObjects (nolock)", LIMIT);
 
-            Func<List<Garment>> rawAction = () =>
+            Func<List<MockObject>> rawAction = () =>
             {
-                var list = new List<Garment>();
+                var list = new List<MockObject>();
                 using (var conn = new System.Data.SqlClient.SqlConnection(ConnectionString))
                 {
                     conn.Open();
@@ -104,19 +145,15 @@ namespace ORMComparison
                             {
                                 while (dr.Read())
                                 {
-                                    var garment = Destrier.ReflectionCache.GetNewObject<Garment>();
-                                    garment.GarmentId = dr.GetInt32(0);
-                                    garment.GenderTypeId = dr.GetInt16(1);
-                                    garment.GarmentTypeId = dr.GetInt16(2);
-                                    garment.Active = dr.GetBoolean(3);
-                                    garment.BrandId = dr.GetInt32(4);
-                                    garment.Notes = !dr.IsDBNull(5) ? dr.GetString(5) : String.Empty;
-                                    garment.CreatedBy = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(int);
-                                    garment.ModifiedBy = !dr.IsDBNull(8) ? dr.GetInt32(8) : default(int);
-                                    garment.PricePoint = !dr.IsDBNull(9) ? dr.GetString(9) : String.Empty;
-                                    garment.Season = !dr.IsDBNull(10) ? dr.GetString(10) : String.Empty;
+                                    var mockObject = Destrier.ReflectionCache.GetNewObject<MockObject>();
+                                    mockObject.Id = dr.GetInt32(0);
+                                    mockObject.Name = dr.GetString(1);
+                                    mockObject.Active = dr.GetBoolean(2);
+                                    mockObject.Created = dr.GetDateTime(4);
+                                    mockObject.Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
+                                    mockObject.NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
 
-                                    list.Add(garment);
+                                    list.Add(mockObject);
                                 }
                             }
                         }
@@ -125,48 +162,48 @@ namespace ORMComparison
                 return list;
             };
 
-            Func<List<Garment>> ormLiteAction = () =>
+            Func<List<MockObject>> ormLiteAction = () =>
             {
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
-                    var garments = ServiceStack.OrmLite.ReadConnectionExtensions.Select<Garment>(db, q => q.Limit(LIMIT)).ToList();
-                    return garments;
+                    var queryResults = ServiceStack.OrmLite.ReadConnectionExtensions.Select<MockObject>(db, q => q.Limit(LIMIT));
+                    return queryResults.ToList();
                 }
             };
 
-            Func<List<Garment>> entityFrameworkAction = () =>
+            Func<List<MockObject>> entityFrameworkAction = () =>
             {
-                using (var db = new GarmentContext())
+                using (var db = new MockObjectContext())
                 {
-                    var query = (from g in db.Garments select g).Take(LIMIT);
+                    var query = (from g in db.MockObjects select g).Take(LIMIT);
                     var efResults = query.ToList();
                     return efResults;
                 }
             };
 
-            Func<List<Garment>> destrierAction = () =>
+            Func<List<MockObject>> destrierAction = () =>
             {
-                return new Destrier.Query<Garment>().Limit(LIMIT).StreamResults().ToList();
+                return new Destrier.Query<MockObject>().Limit(LIMIT).StreamResults().ToList();
             };
 
-            var destrierRawQuery = new Destrier.Query<Garment>().Limit(LIMIT);
-            Func<List<Garment>> destrierReuseAction = () =>
+            var destrierRawQuery = new Destrier.Query<MockObject>().Limit(LIMIT);
+            Func<List<MockObject>> destrierReuseAction = () =>
             {
                 return destrierRawQuery.StreamResults().ToList();
             };
 
-            Func<List<Garment>> destrierRawAction = () =>
+            Func<List<MockObject>> destrierRawAction = () =>
             {
-                return new Destrier.Query<Garment>(QUERY).StreamResults().ToList();
+                return new Destrier.Query<MockObject>(QUERY).StreamResults().ToList();
             };
 
-            Func<List<Garment>> dapperAction = () =>
+            Func<List<MockObject>> dapperAction = () =>
             {
                 using (var conn = new SqlConnection(ConnectionString))
                 {
                     conn.Open();
-                    return conn.Query<Garment>(QUERY).ToList();
+                    return conn.Query<MockObject>(QUERY).ToList();
                 }
             };
 
@@ -185,7 +222,7 @@ namespace ORMComparison
             }
             Console.WriteLine();
 
-            Dictionary<String, Func<List<Garment>>> testSteps = new Dictionary<string, Func<List<Garment>>>()
+            var testSteps = new Dictionary<string, Func<List<MockObject>>>()
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
@@ -195,6 +232,8 @@ namespace ORMComparison
                 { "Dapper", dapperAction },
                 { "EntityFramework", entityFrameworkAction }
             };
+
+            var results = new List<Int64>();
 
             foreach (var kvp in testSteps)
             {
@@ -220,7 +259,6 @@ namespace ORMComparison
                 Console.WriteLine(String.Format("\tAvg: {0}ms", results.Average()));
             }
             Console.WriteLine();
-            Console.ReadKey();
         }
     }
 }
