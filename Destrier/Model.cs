@@ -223,31 +223,17 @@ namespace Destrier
             }
             else
             {
-                var members = ReflectionCache.GetColumnMemberLookup(thisType);
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
                     ColumnMember member = null;
-                    members.TryGetValue(name, out member);
+                    dr.ColumnMemberLookup.TryGetValue(name, out member);
                     if (member != null)
                     {
                         var value = dr.Get(member.Type, x);
                         if (!(value is DBNull))
                             member.SetValue(instance, value);
                     }
-                }
-            }
-
-            if (ReflectionCache.HasChildCollectionMembers(thisType) && objectLookups != null)
-            {
-                if (!objectLookups.ContainsKey(thisType))
-                {
-                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
-                }
-                var pkv = Model.InstancePrimaryKeyValue(thisType, instance);
-                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
-                {
-                    objectLookups[thisType].Add(pkv, instance);
                 }
             }
         }

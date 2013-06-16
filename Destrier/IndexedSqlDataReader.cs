@@ -19,10 +19,19 @@ namespace Destrier
             StandardizeCasing = standardizeCasing;
         }
 
+        public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false)
+            : this(hostReader, standardizeCasing)
+        {
+            CurrentOutputType = type;
+            ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+        }
+
         public Boolean StandardizeCasing { get; set; }
 
         private SqlDataReader _dr = null;
-        
+
+        public Type CurrentOutputType { get; set; }
+        public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
         public Dictionary<String, Int32> ColumnMap { get; set; }
         public string[] ColumnIndexMap { get; set; }
 
@@ -94,6 +103,13 @@ namespace Destrier
             ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
             ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
             return result;
+        }
+
+        public bool NextResult(Type type)
+        {
+            CurrentOutputType = type;
+            ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+            return NextResult();
         }
 
         public bool Read()
@@ -459,7 +475,7 @@ namespace Destrier
 
         public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
 		{
-			bool hasPopulate = !populateFullResults || ReflectionCache.HasInterface(type, typeof(IPopulate));
+			bool hasPopulate = populateFullResults ? false : ReflectionCache.HasInterface(type, typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
