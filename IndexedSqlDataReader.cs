@@ -359,19 +359,24 @@ namespace Destrier
             return value;
         }
 
-        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : new()
         {
             T newObject = ReflectionCache.GetNewObject<T>();
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
+
             if (this.HasRows)
             {
                 while (this.Read())
                 {
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
                 }
             }
             else if (returnNullOnEmpty)
             {
-                newObject = null;
+                newObject = default(T);
             }
 
             if (advanceToNextResultAfter)
@@ -398,16 +403,21 @@ namespace Destrier
             return list;
         }
 
-        public List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : new()
         {
             List<T> list = new List<T>();
 
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     T newObject = ReflectionCache.GetNewObject<T>();
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     list.Add(newObject);
                 }
             }
@@ -418,16 +428,22 @@ namespace Destrier
             return list;
         }
 
-        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : class, IPopulate
+        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : new()
         {
             Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>();
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(TValue), typeof(IPopulate));
 
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     TValue newObject = ReflectionCache.GetNewObject<TValue>();
-                    newObject.Populate(this);
+
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     TKey keyValue = keySelector(newObject);
 
                     if (!dict.ContainsKey(keyValue))
@@ -441,22 +457,26 @@ namespace Destrier
             return dict;
         }
 
-        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, IPopulate> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
-        {
+        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
+		{
+			bool hasPopulate = !populateFullResults || ReflectionCache.HasInterface(type, typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
-                    IPopulate newObject = ReflectionCache.GetNewObject(type) as IPopulate;
-                    if (newObject == null)
-                        throw new Exception("type is not IPopulate");
+                    var newObject = ReflectionCache.GetNewObject(type);
 
-                    if (populateFullResults && newObject is BaseModel)
+                    if (populateFullResults)
                     {
-                        Model.PopulateFullResults((BaseModel)newObject, this, type);
+                        Model.PopulateFullResults(newObject, this, type);
                     }
                     else
-                        newObject.Populate(this);
+					{
+						if(hasPopulate)
+							((IPopulate)newObject).Populate(this);
+						else
+							Model.Populate(newObject, this);
+					}
 
                     doStuffToAddToParent(this, newObject);
                 }
@@ -466,14 +486,19 @@ namespace Destrier
                 this.NextResult();
         }
 
-        public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : new()
         {
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     T newObject = ReflectionCache.GetNewObject<T>();
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     doStuffToAddToParent(this, newObject);
                 }
             }
