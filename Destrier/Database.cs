@@ -10,16 +10,15 @@ namespace Destrier
 {
     public class Database
     {
-        public static void Create(BaseModel myObject)
+        public static void Create(object myObject)
         {
             Type myObjectType = myObject.GetType();
 
-            myObject.OnPreCreate(new EventArgs());
-            
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreCreate)))
+            	((IPreCreate)myObject).PreCreate();
+
             if (ReflectionCache.HasInterface(myObjectType, typeof(IAuditable)))
-            {
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Create, myObject);
-            }
 
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
@@ -71,10 +70,11 @@ namespace Destrier
                 }
             }
 
-            myObject.OnPostCreate(new EventArgs());
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostCreate)))
+				((IPostCreate)myObject).PostCreate();
         }
 
-        public static void Update(BaseModel myObject)
+        public static void Update(object myObject)
         {
             Type myObjectType = myObject.GetType();
 
@@ -84,7 +84,8 @@ namespace Destrier
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Update, myObject, previous);
             }
 
-            myObject.OnPreUpdate(new EventArgs());
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreUpdate)))
+				((IPreUpdate)myObject).PreUpdate();
 
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
@@ -127,21 +128,20 @@ namespace Destrier
                 cmd.ExecuteNonQuery();
             }
             
-
-            myObject.OnPostUpdate(new EventArgs());
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostUpdate)))
+				((IPostUpdate)myObject).PostUpdate();
         }
 
-        public static void Remove(BaseModel myObject)
+        public static void Remove(object myObject)
         {
             Type myObjectType = myObject.GetType();
 
-            myObject.OnPreRemove(new EventArgs());
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreRemove)))
+				((IPreRemove)myObject).PreRemove();
 
             if (ReflectionCache.HasInterface(myObjectType, typeof(IAuditable)))
-            {
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Delete, myObject);
-            }
-
+            
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
             using (var cmd = Execute.Command())
@@ -166,7 +166,8 @@ namespace Destrier
             }
             
 
-            myObject.OnPostRemove(new EventArgs());
+			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostRemove)))
+				((IPostRemove)myObject).PostRemove();
         }
 
         public static void RemoveWhere<T>(Expression<Func<T, bool>> expression = null)
@@ -195,13 +196,11 @@ namespace Destrier
             }
         }
 
-        public static T Get<T>(dynamic parameters = null) where T : BaseModel
+        public static T Get<T>(dynamic parameters = null) where T : new()
         {
             if (ReflectionCache.HasInterface(typeof(T), typeof(IGet<T>)))
-            {
-                return ((IGet<T>)ReflectionCache.GetNewObject<T>()).Get(parameters) as T;
-            }
-
+                return ((IGet<T>)ReflectionCache.GetNewObject<T>()).Get(parameters);
+            
             if (parameters == null)
                 throw new ArgumentNullException("parameters");
 
@@ -210,7 +209,7 @@ namespace Destrier
             return System.Linq.Enumerable.FirstOrDefault(obj);
         }
 
-        public static IEnumerable<T> All<T>() where T : BaseModel
+        public static IEnumerable<T> All<T>() where T : new()
         {
             if (ReflectionCache.HasInterface(typeof(T), typeof(IGetMany<T>)))
             {

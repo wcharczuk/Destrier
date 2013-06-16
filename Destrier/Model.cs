@@ -175,7 +175,17 @@ namespace Destrier
             return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
         }
 
-        public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+		public static void Populate(object instance, IndexedSqlDataReader dr)
+		{
+			var thisType = instance.GetType();
+			var members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
+			foreach (ColumnMember col in members.Values)
+			{
+				col.SetValue(instance, dr.Get(col.Type, col.Name));
+			}
+		}
+
+        public static void PopulateFullResults(object instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
             if (ReflectionCache.HasReferencedObjectMembers(thisType) || parentMember != null)
             {
@@ -194,7 +204,7 @@ namespace Destrier
                 {
                     var type = rom.Type;
                     var newObject = ReflectionCache.GetNewObject(type);
-                    PopulateFullResults((newObject as BaseModel), dr, type, rootMember, rom);
+                    PopulateFullResults(newObject, dr, type, rootMember, rom);
                     rom.Property.SetValue(instance, newObject);
 
                     if (objectLookups != null)
