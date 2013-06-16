@@ -158,22 +158,22 @@ namespace Destrier
 					//JSON to the rescue?
 					//WC: Maybe pass the list as a 'json text parameter' and hope the database code knows what to do with it.
 					//There is an example of a proc to consume JSON here: https://www.simple-talk.com/sql/t-sql-programming/consuming-json-strings-in-sql-server/
-//                    if (propertyValue is IList)
-//                    {
-//                        DataTable values = new DataTable();
-//                        values.Columns.Add(new DataColumn("value"));
-//                        foreach (object value in (IEnumerable)propertyValue)
-//                        {
-//                            if (value.GetType().IsEnum)
-//                                values.Rows.Add((int)value);
-//                            else
-//                                values.Rows.Add(value);
-//                        }
-//
-//                        SqlParameter param = cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), values);
-//                        param.SqlDbType = System.Data.SqlDbType.Structured;
-//                    }
-//                    else
+                    if (propertyValue is IList)
+                    {
+                        DataTable values = new DataTable();
+                        values.Columns.Add(new DataColumn("value"));
+                        foreach (object value in (IEnumerable)propertyValue)
+                        {
+                            if (value.GetType().IsEnum)
+                                values.Rows.Add((int)value);
+                            else
+                                values.Rows.Add(value);
+                        }
+
+                        SqlParameter param = cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), values);
+                        param.SqlDbType = System.Data.SqlDbType.Structured;
+                    }
+                    else
                         cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), propertyValue.DBNullCoalese());
                 }
             }
