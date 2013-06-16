@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Destrier
 {
-    public interface IGet<T> where T : BaseModel
+    public interface IGet<T> where T : new()
     {
         T Get(dynamic parameters = null);
     }

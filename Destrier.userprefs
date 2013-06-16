@@ -1,0 +1,22 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Destrier/ReflectionCache.cs">
+    <Files>
+      <File FileName="Destrier/SqlDataReaderExtensions.cs" Line="33" Column="10" />
+      <File FileName="Destrier/IndexedSqlDataReader.cs" Line="522" Column="10" />
+      <File FileName="Destrier/ReflectionCache.cs" Line="237" Column="23" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="Destrier" expanded="True" />
+          <Node name="ORMComparison" selected="True" />
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

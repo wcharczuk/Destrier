@@ -14,7 +14,7 @@ namespace Destrier
     /// Represents the abstract query body.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Query<T> where T : BaseModel
+    public class Query<T> where T : new()
     {
         public Query() 
         {
@@ -151,7 +151,7 @@ namespace Destrier
 
                     while (dr.Read())
                     {
-                        T newObject = ReflectionCache.GetNewObject(_t) as T;
+                        T newObject = (T)ReflectionCache.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
                         list.Add(newObject);
                     }
@@ -227,7 +227,7 @@ namespace Destrier
                 {
                     while (dr.Read())
                     {
-                        T newObject = ReflectionCache.GetNewObject(_t) as T;
+                        T newObject = (T)ReflectionCache.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, thisType: _t);
 
                         yield return newObject;
