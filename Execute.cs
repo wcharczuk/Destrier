@@ -171,7 +171,7 @@ namespace Destrier
                         }
 
                         SqlParameter param = cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), values);
-                        param.SqlDbType = System.Data.SqlDbType.Structured;
+                        param.SqlDbType = System.Data.SqlDbType.Structured; //NOTE: this breaks MONO compatibility
                     }
                     else
                         cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), propertyValue.DBNullCoalese());
