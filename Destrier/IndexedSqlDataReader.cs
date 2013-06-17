@@ -50,10 +50,6 @@ namespace Destrier
 
         }
 
-        private Func<IDataReader, int, bool> _isDbNullInternal = null;
-
-        private Func<IDataReader, int, object> _accessDataInternal = null;
-
         public Boolean HasColumn(String columnName)
         {
             if (this.StandardizeCasing)
@@ -249,9 +245,10 @@ namespace Destrier
             return _dr.GetValue(i);
         }
 
-        public object GetValue(int i, TypeCode convertTo)
+        public object GetValue(int i, TypeCode outputType)
         {
-            switch (convertTo)
+            var originType = Type.GetTypeCode(_dr.GetFieldType(i));
+            switch (outputType)
             {
                 case TypeCode.Boolean:
                     return _dr.GetBoolean(i);
@@ -268,17 +265,34 @@ namespace Destrier
                     return _dr.GetDouble(i);
                 case TypeCode.UInt16:
                 case TypeCode.Int16:
-                    return _dr.GetInt16(i);
+                    switch(originType)
+                    {
+                        case TypeCode.Int64:
+                            return (short)_dr.GetInt64(i); //wut r u doing.
+                        case TypeCode.Int32:
+                            return (short)_dr.GetInt32(i);
+                        default:
+                            return _dr.GetInt16(i);
+                    }
                 case TypeCode.UInt32:
                 case TypeCode.Int32:
-                    return _dr.GetInt32(i);
+                    switch (originType)
+                    {
+                        case TypeCode.Int64:
+                            return (int)_dr.GetInt64(i);
+                        case TypeCode.Int16:
+                            return (int)_dr.GetInt16(i);
+                        default:
+                            return _dr.GetInt32(i);
+                    }
+                    
                 case TypeCode.UInt64:
                 case TypeCode.Int64:
                     return _dr.GetInt64(i);
                 case TypeCode.Single:
                     return (Single)_dr.GetDouble(i);
             }
-            throw new InvalidOperationException("Cannot retrieve specified type: " + convertTo.ToString());
+            throw new InvalidOperationException("Cannot retrieve specified type: " + outputType.ToString());
         }
 
         public int GetValues(object[] values)
@@ -320,7 +334,13 @@ namespace Destrier
             if (member != null)
                 return (T)this.Get(member);
             else
-                return (T)ReflectionCache.GetDefault(typeof(T));
+            {
+                var columnIndex = GetColumnIndex(columnName);
+                if (columnIndex != null)
+                    return (T)Get(typeof(T), columnIndex.Value);
+                else
+                    return (T)ReflectionCache.GetDefault(typeof(T));
+            }
         }
 
         public object Get(ColumnMember member, String columnName = null)
@@ -364,6 +384,35 @@ namespace Destrier
                         return value;
                 }
                 return ReflectionCache.GetDefault(member.Type);
+            }
+        }
+
+        public object Get(Type type, Int32 columnIndex)
+        {
+            if (ReflectionCache.IsNullableType(type))
+            {
+                if (!_dr.IsDBNull(columnIndex))
+                {
+                    var resultType = ReflectionCache.GetUnderlyingTypeForNullable(type);
+                    var value = _dr.GetValue(columnIndex);
+                    if (resultType.IsEnum)
+                        return Enum.ToObject(resultType, value);
+                    else
+                        return Convert.ChangeType(value, resultType);
+                }
+                return null;
+            }
+            else
+            {
+                if (!_dr.IsDBNull(columnIndex))
+                {
+                    object value = this.GetValue(columnIndex);
+                    if (type.IsEnum)
+                        return Enum.ToObject(type, value);
+                    else
+                        return Convert.ChangeType(value, type);
+                }
+                return ReflectionCache.GetDefault(type);
             }
         }
 

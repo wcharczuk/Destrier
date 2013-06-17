@@ -99,30 +99,33 @@ namespace Destrier
 
         public static void CheckColumns(Type t)
         {
-            var databaseColumns = Schema.GetColumnsForTable(Model.TableName(t), Model.DatabaseName(t), Model.ConnectionString(t));
-            var columnMembers = ReflectionCache.GetColumnMembers(t);
-
-            foreach (var cm in columnMembers)
+            if (ReflectionCache.GetTableAttribute(t) != null)
             {
-                var modelColumn = cm.ColumnAttribute;
-                if (!modelColumn.IsForReadOnly)
+                var databaseColumns = Schema.GetColumnsForTable(Model.TableName(t), Model.DatabaseName(t), Model.ConnectionString(t));
+                var columnMembers = ReflectionCache.GetColumnMembers(t);
+
+                foreach (var cm in columnMembers)
                 {
-                    if (!databaseColumns.Any(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase)))
-                        throw new ColumnMissingException(String.Format("\'{0}\' : Column in the model doesn't map to the schema.", cm.Name));
+                    var modelColumn = cm.ColumnAttribute;
+                    if (!modelColumn.IsForReadOnly)
+                    {
+                        if (!databaseColumns.Any(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase)))
+                            throw new ColumnMissingException(String.Format("\'{0}\' : Column in the model doesn't map to the schema.", cm.Name));
 
-                    var databaseColumn = databaseColumns.FirstOrDefault(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase));
+                        var databaseColumn = databaseColumns.FirstOrDefault(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase));
 
-                    if (!databaseColumn.CanBeNull && !modelColumn.IsPrimaryKey && modelColumn.CanBeNull)
-                        throw new ColumnNullabilityException(String.Format("{4} DBColumn: {0} {2} ModelColumn: {1} {3}", databaseColumn.Name, cm.Name, databaseColumn.CanBeNull.ToString(), modelColumn.CanBeNull.ToString(), Model.TableName(t)));
+                        if (!databaseColumn.CanBeNull && !modelColumn.IsPrimaryKey && modelColumn.CanBeNull)
+                            throw new ColumnNullabilityException(String.Format("{4} DBColumn: {0} {2} ModelColumn: {1} {3}", databaseColumn.Name, cm.Name, databaseColumn.CanBeNull.ToString(), modelColumn.CanBeNull.ToString(), Model.TableName(t)));
+                    }
                 }
-            }
 
-            foreach (var column in databaseColumns)
-            {
-                if (!column.IsForReadOnly)
+                foreach (var column in databaseColumns)
                 {
-                    if (!columnMembers.Any(c => c.Name.Equals(column.Name, StringComparison.InvariantCultureIgnoreCase)))
-                        throw new ColumnMissingException(String.Format("\'{0}\' : Column in the schema ({1}) doesn't map to the model.", column.Name, Model.TableName(t)));
+                    if (!column.IsForReadOnly)
+                    {
+                        if (!columnMembers.Any(c => c.Name.Equals(column.Name, StringComparison.InvariantCultureIgnoreCase)))
+                            throw new ColumnMissingException(String.Format("\'{0}\' : Column in the schema ({1}) doesn't map to the model.", column.Name, Model.TableName(t)));
+                    }
                 }
             }
         }

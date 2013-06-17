@@ -226,7 +226,7 @@ namespace Destrier
             return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
         }
 
-        public static T GetNewObject<T>() where T : new()
+        public static T GetNewObject<T>()
         {
             var neededType = typeof(T);
             var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
