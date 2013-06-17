@@ -32,6 +32,7 @@ namespace Destrier
 
         private SqlDataReader _dr = null;
 
+        public Boolean HasChildCollectionMembers { get; set; }
         public Boolean HasReferencedObjectMembers { get; set; }
         public Type CurrentOutputType { get; set; }
         public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
@@ -44,15 +45,12 @@ namespace Destrier
             ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
             if (this.CurrentOutputType != null)
             {
+                this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
                 ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
             }
 
         }
-
-        private Func<IDataReader, int, bool> _isDbNullInternal = null;
-
-        private Func<IDataReader, int, object> _accessDataInternal = null;
 
         public Boolean HasColumn(String columnName)
         {
@@ -249,9 +247,10 @@ namespace Destrier
             return _dr.GetValue(i);
         }
 
-        public object GetValue(int i, TypeCode convertTo)
+        public object GetValue(int i, TypeCode outputType)
         {
-            switch (convertTo)
+            var originType = Type.GetTypeCode(_dr.GetFieldType(i));
+            switch (outputType)
             {
                 case TypeCode.Boolean:
                     return _dr.GetBoolean(i);
@@ -259,7 +258,23 @@ namespace Destrier
                     return _dr.GetByte(i);
                 case TypeCode.Char:
                 case TypeCode.String:
-                    return _dr.GetString(i);
+                    switch (originType)
+                    {
+                        case TypeCode.DateTime:
+                            return _dr.GetDateTime(i).ToString();
+                        case TypeCode.Boolean:
+                            return _dr.GetBoolean(i).ToString();
+                        case TypeCode.Int16:
+                            return _dr.GetInt16(i).ToString();
+                        case TypeCode.Int32:
+                            return _dr.GetInt32(i).ToString();
+                        case TypeCode.Int64:
+                            return _dr.GetInt64(i).ToString();
+                        case TypeCode.Double:
+                            return _dr.GetDouble(i).ToString();
+                        default:
+                            return _dr.GetString(i);
+                    }
                 case TypeCode.DateTime:
                     return _dr.GetDateTime(i);
                 case TypeCode.Decimal:
@@ -268,17 +283,44 @@ namespace Destrier
                     return _dr.GetDouble(i);
                 case TypeCode.UInt16:
                 case TypeCode.Int16:
-                    return _dr.GetInt16(i);
+                    switch(originType)
+                    {
+                        case TypeCode.Byte:
+                            return (short)_dr.GetByte(i);
+                        case TypeCode.Int64:
+                            return (short)_dr.GetInt64(i); //wut r u doing.
+                        case TypeCode.Int32:
+                            return (short)_dr.GetInt32(i);
+                        default:
+                            return _dr.GetInt16(i);
+                    }
                 case TypeCode.UInt32:
                 case TypeCode.Int32:
-                    return _dr.GetInt32(i);
+                    switch (originType)
+                    {
+                        case TypeCode.Byte:
+                            return (int)_dr.GetByte(i);
+                        case TypeCode.Int64:
+                            return (int)_dr.GetInt64(i);
+                        case TypeCode.Int16:
+                            return (int)_dr.GetInt16(i);
+                        default:
+                            return _dr.GetInt32(i);
+                    }
+                    
                 case TypeCode.UInt64:
                 case TypeCode.Int64:
                     return _dr.GetInt64(i);
                 case TypeCode.Single:
                     return (Single)_dr.GetDouble(i);
+                case TypeCode.Object:
+                    switch (originType)
+                    {
+                        default:
+                            return _dr.GetValue(i);
+                    }
             }
-            throw new InvalidOperationException("Cannot retrieve specified type: " + convertTo.ToString());
+            throw new InvalidOperationException("Cannot retrieve specified type: " + outputType.ToString());
         }
 
         public int GetValues(object[] values)
@@ -316,11 +358,19 @@ namespace Destrier
         public T Get<T>(String columnName) 
         {
             ColumnMember member = null;
-            ColumnMemberLookup.TryGetValue(columnName, out member);
-            if (member != null)
-                return (T)this.Get(member);
+            if (ColumnMemberLookup != null)
+            {
+                ColumnMemberLookup.TryGetValue(columnName, out member);
+                if (member != null)
+                    return (T)this.Get(member);
+            }
+            
+            var columnIndex = GetColumnIndex(columnName);
+            if (columnIndex != null)
+                return (T)Get(typeof(T), columnIndex.Value);
             else
                 return (T)ReflectionCache.GetDefault(typeof(T));
+            
         }
 
         public object Get(ColumnMember member, String columnName = null)
@@ -364,6 +414,35 @@ namespace Destrier
                         return value;
                 }
                 return ReflectionCache.GetDefault(member.Type);
+            }
+        }
+
+        public object Get(Type type, Int32 columnIndex)
+        {
+            if (ReflectionCache.IsNullableType(type))
+            {
+                if (!_dr.IsDBNull(columnIndex))
+                {
+                    var resultType = ReflectionCache.GetUnderlyingTypeForNullable(type);
+                    var value = _dr.GetValue(columnIndex);
+                    if (resultType.IsEnum)
+                        return Enum.ToObject(resultType, value);
+                    else
+                        return Convert.ChangeType(value, resultType);
+                }
+                return null;
+            }
+            else
+            {
+                if (!_dr.IsDBNull(columnIndex))
+                {
+                    object value = this.GetValue(columnIndex);
+                    if (type.IsEnum)
+                        return Enum.ToObject(type, value);
+                    else
+                        return Convert.ChangeType(value, type);
+                }
+                return ReflectionCache.GetDefault(type);
             }
         }
 
