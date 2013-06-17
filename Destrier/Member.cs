@@ -20,6 +20,10 @@ namespace Destrier
         {
             this.Name = pi.Name;
             this.Type = pi.PropertyType;
+            this.IsNullableType = ReflectionCache.IsNullableType(this.Type);
+            if (IsNullableType)
+                this.NullableUnderlyingType = ReflectionCache.GetUnderlyingTypeForNullable(this.Type);
+
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
 
@@ -34,6 +38,8 @@ namespace Destrier
 
         public virtual String Name { get; set; }
         public virtual Type Type { get; set; }
+        public virtual Boolean IsNullableType { get; set; }
+        public virtual Type NullableUnderlyingType { get; set; }
         public virtual Type DeclaringType { get; set; }
         public virtual PropertyInfo Property { get; set; }
 

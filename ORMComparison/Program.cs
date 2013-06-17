@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity;
+//using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -9,38 +9,38 @@ using Dapper;
 
 namespace ORMComparison
 {
-    public class MockObjectContext : DbContext
-    {
-        public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
-
-        public DbSet<MockObject> MockObjects { get; set; }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Configurations.Add(new MockObjectMap());
-        }
-    }
-
-    public class MockObjectMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<MockObject>
-    {
-        public MockObjectMap()
-        {
-            this.HasKey(t => t.Id);
-            this.Property(t => t.Id);
-            this.Property(t => t.Name);
-            this.Property(t => t.Active);
-            this.Property(t => t.Created);
-            this.Property(t => t.Modified);
-            this.Property(t => t.ReferencedObjectId);
-            this.Property(t => t.NullableId);
-            this.ToTable("MockObjects");
-        }
-    }
+//    public class MockObjectContext : DbContext
+//    {
+//        public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
+//
+//        public DbSet<MockObject> MockObjects { get; set; }
+//
+//        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+//        {
+//            base.OnModelCreating(modelBuilder);
+//            modelBuilder.Configurations.Add(new MockObjectMap());
+//        }
+//    }
+//
+//    public class MockObjectMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<MockObject>
+//    {
+//        public MockObjectMap()
+//        {
+//            this.HasKey(t => t.Id);
+//            this.Property(t => t.Id);
+//            this.Property(t => t.Name);
+//            this.Property(t => t.Active);
+//            this.Property(t => t.Created);
+//            this.Property(t => t.Modified);
+//            this.Property(t => t.ReferencedObjectId);
+//            this.Property(t => t.NullableId);
+//            this.ToTable("MockObjects");
+//        }
+//    }
 
     [Destrier.Table("MockObjects")]
     [ServiceStack.DataAnnotations.Alias("MockObjects")]
-    public class MockObject : Destrier.BaseModel
+    public class MockObject
     {
         [Destrier.Column(IsPrimaryKey = true)]
         [ServiceStack.DataAnnotations.PrimaryKey]
@@ -67,7 +67,7 @@ namespace ORMComparison
 
     public class Program
     {
-        public const String ConnectionString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+		public const String ConnectionString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
         public const int TRIALS = 1000;
         public const int LIMIT = 5000;
 
@@ -116,7 +116,7 @@ END
             Destrier.Execute.NonQuery(initDbScript);
         }
 
-        public static void Main(string[] args)
+        static void Main(string[] args)
         {
             Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
             Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
@@ -173,15 +173,15 @@ END
                 }
             };
 
-            Func<List<MockObject>> entityFrameworkAction = () =>
-            {
-                using (var db = new MockObjectContext())
-                {
-                    var query = (from g in db.MockObjects select g).Take(LIMIT);
-                    var efResults = query.ToList();
-                    return efResults;
-                }
-            };
+//            Func<List<MockObject>> entityFrameworkAction = () =>
+//            {
+//                using (var db = new MockObjectContext())
+//                {
+//                    var query = (from g in db.MockObjects select g).Take(LIMIT);
+//                    var efResults = query.ToList();
+//                    return efResults;
+//                }
+//            };
 
             Func<List<MockObject>> destrierAction = () =>
             {
@@ -228,10 +228,10 @@ END
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
                 { "Destrier (Re-use Query)", destrierReuseAction },
-                { "Destrier (Raw Query)", destrierReuseAction },
+                { "Destrier (Raw Query)", destrierRawAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
-                { "EntityFramework", entityFrameworkAction }
+                //{ "EntityFramework", entityFrameworkAction }
             };
 
             var results = new List<Int64>();

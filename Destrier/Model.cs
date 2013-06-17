@@ -175,9 +175,19 @@ namespace Destrier
             return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
         }
 
-        public static void PopulateFullResults(BaseModel instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+		public static void Populate(object instance, IndexedSqlDataReader dr)
+		{
+			var thisType = instance.GetType();
+			var members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
+			foreach (ColumnMember col in members.Values)
+			{
+				col.SetValue(instance, dr.Get(col));
+			}
+		}
+
+        public static void PopulateFullResults(object instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
-            if (ReflectionCache.HasReferencedObjectMembers(thisType) || parentMember != null)
+            if (dr.HasReferencedObjectMembers || parentMember != null)
             {
                 var members = ReflectionCache.GetColumnMembers(thisType);
                 foreach (ColumnMember col in members)
@@ -186,7 +196,7 @@ namespace Destrier
                     if (parentMember != null)
                         columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, col.Name);
 
-                    col.SetValue(instance, dr.Get(col.Type, columnName));
+                    col.SetValue(instance, dr.Get(col, columnName));
                 }
 
                 rootMember = rootMember ?? new RootMember(thisType);
@@ -194,7 +204,7 @@ namespace Destrier
                 {
                     var type = rom.Type;
                     var newObject = ReflectionCache.GetNewObject(type);
-                    PopulateFullResults((newObject as BaseModel), dr, type, rootMember, rom);
+                    PopulateFullResults(newObject, dr, type, rootMember, rom);
                     rom.Property.SetValue(instance, newObject);
 
                     if (objectLookups != null)
@@ -213,31 +223,16 @@ namespace Destrier
             }
             else
             {
-                var members = ReflectionCache.GetColumnMemberLookup(thisType);
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     var name = dr.ColumnIndexMap[x];
                     ColumnMember member = null;
-                    members.TryGetValue(name, out member);
+                    dr.ColumnMemberLookup.TryGetValue(name, out member);
                     if (member != null)
                     {
-                        var value = dr.Get(member.Type, x);
-                        if (!(value is DBNull))
-                            member.SetValue(instance, value);
+                        var value = dr.Get(member, x);
+                        member.SetValue(instance, value);
                     }
-                }
-            }
-
-            if (ReflectionCache.HasChildCollectionMembers(thisType) && objectLookups != null)
-            {
-                if (!objectLookups.ContainsKey(thisType))
-                {
-                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
-                }
-                var pkv = Model.InstancePrimaryKeyValue(thisType, instance);
-                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
-                {
-                    objectLookups[thisType].Add(pkv, instance);
                 }
             }
         }

@@ -5,16 +5,13 @@ using System.Text;
 using System.Linq.Expressions;
 using System.Data.SqlClient;
 
-//var users = new Query<User>().Where(u => u.UserId > 10).Limit(1).Execute();
-//var users = new Query<User>().Sql("select * from user_tbl where userid = @userId", new { userId = 2 }).Execute();
-
 namespace Destrier
 {
     /// <summary>
     /// Represents the abstract query body.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class Query<T> where T : BaseModel
+    /// <typeparam name="T">Type to populate and return.</typeparam>
+    public class Query<T> where T : new()
     {
         public Query() 
         {
@@ -143,7 +140,7 @@ namespace Destrier
                 cmd.CommandType = System.Data.CommandType.Text;
                 Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
 
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
                 {
                     var objectLookups = new Dictionary<Type, Dictionary<Object, Object>>();
                     var parentDict = new Dictionary<Object, Object>();
@@ -151,14 +148,28 @@ namespace Destrier
 
                     while (dr.Read())
                     {
-                        T newObject = ReflectionCache.GetNewObject(_t) as T;
+                        T newObject = (T)ReflectionCache.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
+
+                        if (ReflectionCache.HasChildCollectionMembers(_t) && objectLookups != null)
+                        {
+                            if (!objectLookups.ContainsKey(_t))
+                            {
+                                objectLookups.Add(_t, new Dictionary<Object, Object>());
+                            }
+                            var pkv = Model.InstancePrimaryKeyValue(_t, newObject);
+                            if (pkv != null && !objectLookups[_t].ContainsKey(pkv))
+                            {
+                                objectLookups[_t].Add(pkv, newObject);
+                            }
+                        }
+
                         list.Add(newObject);
                     }
 
                     if (_builder.ChildCollections.Any())
                     {
-                        dr.NextResult();
+                        dr.NextResult(_builder.ChildCollections.First().Type);
 
                         foreach (var cm in _builder.ChildCollections)
                         {
@@ -223,13 +234,12 @@ namespace Destrier
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
                 Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
                 {
                     while (dr.Read())
                     {
-                        T newObject = ReflectionCache.GetNewObject(_t) as T;
-                        Model.PopulateFullResults(newObject, dr, thisType: _t);
-
+                        T newObject = (T)ReflectionCache.GetNewObject(_t);
+                        Model.PopulateFullResults(newObject, dr, _t);
                         yield return newObject;
                     }
                 }

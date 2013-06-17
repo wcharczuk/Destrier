@@ -31,10 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\lib\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
@@ -45,6 +41,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChildCollectionMember.cs" />
@@ -60,7 +59,6 @@
     <Compile Include="DatabaseAction.cs" />
     <Compile Include="AgileObject.cs" />
     <Compile Include="IAuditable.cs" />
-    <Compile Include="BaseModel.cs" />
     <Compile Include="IEnumerableExtensions.cs" />
     <Compile Include="IGet.cs" />
     <Compile Include="Query.cs" />
@@ -91,6 +89,12 @@
     <Compile Include="Parallel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TablePrimitive.cs" />
+    <Compile Include="IPreCreate.cs" />
+    <Compile Include="IPostCreate.cs" />
+    <Compile Include="IPreUpdate.cs" />
+    <Compile Include="IPostUpdate.cs" />
+    <Compile Include="IPreRemove.cs" />
+    <Compile Include="IPostRemove.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Destrier
@@ -14,17 +15,44 @@ namespace Destrier
         public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true)
         {
             _dr = hostReader;
-            ColumnMap = _dr.GetColumnMap(standardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(standardizeCasing);
             StandardizeCasing = standardizeCasing;
+            InitResultSet();
+        }
+
+        public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false)
+            : this(hostReader, standardizeCasing)
+        {
+            _dr = hostReader;
+            StandardizeCasing = standardizeCasing;
+            CurrentOutputType = type;
+            InitResultSet();
         }
 
         public Boolean StandardizeCasing { get; set; }
 
         private SqlDataReader _dr = null;
-        
+
+        public Boolean HasReferencedObjectMembers { get; set; }
+        public Type CurrentOutputType { get; set; }
+        public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
         public Dictionary<String, Int32> ColumnMap { get; set; }
         public string[] ColumnIndexMap { get; set; }
+
+        private void InitResultSet()
+        {
+            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
+            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+            if (this.CurrentOutputType != null)
+            {
+                this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
+                ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+            }
+
+        }
+
+        private Func<IDataReader, int, bool> _isDbNullInternal = null;
+
+        private Func<IDataReader, int, object> _accessDataInternal = null;
 
         public Boolean HasColumn(String columnName)
         {
@@ -91,9 +119,14 @@ namespace Destrier
         public bool NextResult()
         {
             var result = _dr.NextResult();
-            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+            InitResultSet();
             return result;
+        }
+
+        public bool NextResult(Type type)
+        {
+            CurrentOutputType = type;
+            return NextResult();
         }
 
         public bool Read()
@@ -216,6 +249,38 @@ namespace Destrier
             return _dr.GetValue(i);
         }
 
+        public object GetValue(int i, TypeCode convertTo)
+        {
+            switch (convertTo)
+            {
+                case TypeCode.Boolean:
+                    return _dr.GetBoolean(i);
+                case TypeCode.Byte:
+                    return _dr.GetByte(i);
+                case TypeCode.Char:
+                case TypeCode.String:
+                    return _dr.GetString(i);
+                case TypeCode.DateTime:
+                    return _dr.GetDateTime(i);
+                case TypeCode.Decimal:
+                    return _dr.GetDecimal(i);
+                case TypeCode.Double:
+                    return _dr.GetDouble(i);
+                case TypeCode.UInt16:
+                case TypeCode.Int16:
+                    return _dr.GetInt16(i);
+                case TypeCode.UInt32:
+                case TypeCode.Int32:
+                    return _dr.GetInt32(i);
+                case TypeCode.UInt64:
+                case TypeCode.Int64:
+                    return _dr.GetInt64(i);
+                case TypeCode.Single:
+                    return (Single)_dr.GetDouble(i);
+            }
+            throw new InvalidOperationException("Cannot retrieve specified type: " + convertTo.ToString());
+        }
+
         public int GetValues(object[] values)
         {
             return _dr.GetValues(values);
@@ -248,59 +313,57 @@ namespace Destrier
         }
         #endregion
 
-        public T Get<T>(String columnName)
+        public T Get<T>(String columnName) 
         {
-            return (T)this.Get(typeof(T), columnName);
+            ColumnMember member = null;
+            ColumnMemberLookup.TryGetValue(columnName, out member);
+            if (member != null)
+                return (T)this.Get(member);
+            else
+                return (T)ReflectionCache.GetDefault(typeof(T));
         }
 
-        public object Get(Type resultType, String columnName)
+        public object Get(ColumnMember member, String columnName = null)
         {
-            Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
-
-            var columnIndex = GetColumnIndex(columnName);
+            var columnIndex = GetColumnIndex(columnName ?? member.Name);
             if (columnIndex != null)
             {
-                object value = this[columnIndex.Value];
-                if (!(value is DBNull))
-                {
-                    if (effectiveType.IsEnum)
-                        return Enum.ToObject(effectiveType, value);
-                    else
-                        return ReflectionCache.ChangeType(value, effectiveType);
-                }
+                return Get(member, columnIndex.Value);
             }
-
-            return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
+            return ReflectionCache.GetDefault(member.Type);
         }
 
-        public object Get(Type resultType, Int32 columnIndex)
+        public object Get(Member member, Int32 columnIndex)
         {
-            Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            if (isNullableType)
+            if (member.IsNullableType)
             {
-                resultType = ReflectionCache.GetUnderlyingTypeForNullable(resultType);
-                object value = _dr.GetValue(columnIndex);
-                if (!(value is DBNull))
+                if (!_dr.IsDBNull(columnIndex))
                 {
+                    var resultType = member.NullableUnderlyingType;
+                    var convertTo = Type.GetTypeCode(resultType);
+                    object value = this.GetValue(columnIndex, convertTo);
+
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
                     else
-                        return ReflectionCache.ChangeType(value, resultType);
+                        return value;
                 }
                 return null;
             }
             else
             {
-                object value = _dr.GetValue(columnIndex);
-                if (!(value is DBNull))
+                if (!_dr.IsDBNull(columnIndex))
                 {
+                    var resultType = member.Type;
+                    var convertTo = Type.GetTypeCode(resultType);
+                    object value = this.GetValue(columnIndex, convertTo);
+
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
                     else
-                        return ReflectionCache.ChangeType(value, resultType);
+                        return value;
                 }
-                return ReflectionCache.GetDefault(resultType);
+                return ReflectionCache.GetDefault(member.Type);
             }
         }
 
@@ -359,19 +422,24 @@ namespace Destrier
             return value;
         }
 
-        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : new()
         {
             T newObject = ReflectionCache.GetNewObject<T>();
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
+
             if (this.HasRows)
             {
                 while (this.Read())
                 {
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
                 }
             }
             else if (returnNullOnEmpty)
             {
-                newObject = null;
+                newObject = default(T);
             }
 
             if (advanceToNextResultAfter)
@@ -398,16 +466,21 @@ namespace Destrier
             return list;
         }
 
-        public List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public List<T> ReadList<T>(Boolean columnsCanBeMissing = false, Boolean advanceToNextResultAfter = true) where T : new()
         {
             List<T> list = new List<T>();
 
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     T newObject = ReflectionCache.GetNewObject<T>();
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     list.Add(newObject);
                 }
             }
@@ -418,16 +491,22 @@ namespace Destrier
             return list;
         }
 
-        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : class, IPopulate
+        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : new()
         {
             Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>();
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(TValue), typeof(IPopulate));
 
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     TValue newObject = ReflectionCache.GetNewObject<TValue>();
-                    newObject.Populate(this);
+
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     TKey keyValue = keySelector(newObject);
 
                     if (!dict.ContainsKey(keyValue))
@@ -441,22 +520,26 @@ namespace Destrier
             return dict;
         }
 
-        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, IPopulate> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
-        {
+        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
+		{
+			bool hasPopulate = populateFullResults ? false : ReflectionCache.HasInterface(type, typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
-                    IPopulate newObject = ReflectionCache.GetNewObject(type) as IPopulate;
-                    if (newObject == null)
-                        throw new Exception("type is not IPopulate");
+                    var newObject = ReflectionCache.GetNewObject(type);
 
-                    if (populateFullResults && newObject is BaseModel)
+                    if (populateFullResults)
                     {
-                        Model.PopulateFullResults((BaseModel)newObject, this, type);
+                        Model.PopulateFullResults(newObject, this, type);
                     }
                     else
-                        newObject.Populate(this);
+					{
+						if(hasPopulate)
+							((IPopulate)newObject).Populate(this);
+						else
+							Model.Populate(newObject, this);
+					}
 
                     doStuffToAddToParent(this, newObject);
                 }
@@ -466,14 +549,19 @@ namespace Destrier
                 this.NextResult();
         }
 
-        public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : class, IPopulate
+        public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : new()
         {
+			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
             if (this.HasRows)
             {
                 while (this.Read())
                 {
                     T newObject = ReflectionCache.GetNewObject<T>();
-                    newObject.Populate(this);
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+
                     doStuffToAddToParent(this, newObject);
                 }
             }
@@ -495,6 +583,5 @@ namespace Destrier
             if (advanceToNextResultAfter)
                 this.NextResult();
         }
-
     }
 }

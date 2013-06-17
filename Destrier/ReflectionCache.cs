@@ -223,18 +223,15 @@ namespace Destrier
 
         public static object GetNewObject(Type toConstruct)
         {
-            var neededType = toConstruct;
-            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
-
-            return ctor();
+            return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
         }
 
-        public static T GetNewObject<T>() where T : class
+        public static T GetNewObject<T>() where T : new()
         {
             var neededType = typeof(T);
             var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
 
-            return ctor() as T;
+            return (T)ctor();
         }
 
         public static Func<object> ConstructorCreationHelper(Type target)
@@ -289,7 +286,7 @@ namespace Destrier
             return _interfaceCache.GetOrAdd(type, type.GetInterfaces());
         }
 
-        public static Boolean HasInterface<T, I>() where T : BaseModel
+        public static Boolean HasInterface<T, I>()
         {
             return HasInterface(typeof(T), typeof(I));
         }
@@ -436,10 +433,7 @@ namespace Destrier
 
         public static Object ChangeType(Object value, Type destinationType)
         {
-            if (value.GetType().Equals(destinationType))
-                return value;
-            else
-                return Convert.ChangeType(value, destinationType);
+            return Convert.ChangeType(value, destinationType);
         }
 
         #endregion
