@@ -187,7 +187,7 @@ namespace Destrier
 
         public static void PopulateFullResults(object instance, IndexedSqlDataReader dr, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
         {
-            if (ReflectionCache.HasReferencedObjectMembers(thisType) || parentMember != null)
+            if (dr.HasReferencedObjectMembers || parentMember != null)
             {
                 var members = ReflectionCache.GetColumnMembers(thisType);
                 foreach (ColumnMember col in members)
@@ -230,9 +230,8 @@ namespace Destrier
                     dr.ColumnMemberLookup.TryGetValue(name, out member);
                     if (member != null)
                     {
-                        var value = dr.Get(member.Type, x);
-                        if (!(value is DBNull))
-                            member.SetValue(instance, value);
+                        var value = dr.Get(member, x);
+                        member.SetValue(instance, value);
                     }
                 }
             }
