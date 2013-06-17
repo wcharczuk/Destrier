@@ -181,7 +181,7 @@ namespace Destrier
 			var members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
 			foreach (ColumnMember col in members.Values)
 			{
-				col.SetValue(instance, dr.Get(col.Type, col.Name));
+				col.SetValue(instance, dr.Get(col));
 			}
 		}
 
@@ -196,7 +196,7 @@ namespace Destrier
                     if (parentMember != null)
                         columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, col.Name);
 
-                    col.SetValue(instance, dr.Get(col.Type, columnName));
+                    col.SetValue(instance, dr.Get(col, columnName));
                 }
 
                 rootMember = rootMember ?? new RootMember(thisType);

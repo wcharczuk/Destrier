@@ -313,30 +313,24 @@ namespace Destrier
         }
         #endregion
 
-        public T Get<T>(String columnName)
+        public T Get<T>(String columnName) 
         {
-            return (T)this.Get(typeof(T), columnName);
+            ColumnMember member = null;
+            ColumnMemberLookup.TryGetValue(columnName, out member);
+            if (member != null)
+                return (T)this.Get(member);
+            else
+                return (T)ReflectionCache.GetDefault(typeof(T));
         }
 
-        public object Get(Type resultType, String columnName)
+        public object Get(ColumnMember member, String columnName = null)
         {
-            Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            Type effectiveType = isNullableType ? ReflectionCache.GetUnderlyingTypeForNullable(resultType) : resultType;
-
-            var columnIndex = GetColumnIndex(columnName);
+            var columnIndex = GetColumnIndex(columnName ?? member.Name);
             if (columnIndex != null)
             {
-                object value = this[columnIndex.Value];
-                if (!(value is DBNull))
-                {
-                    if (effectiveType.IsEnum)
-                        return Enum.ToObject(effectiveType, value);
-                    else
-                        return ReflectionCache.ChangeType(value, effectiveType);
-                }
+                return Get(member, columnIndex.Value);
             }
-
-            return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
+            return ReflectionCache.GetDefault(member.Type);
         }
 
         public object Get(Member member, Int32 columnIndex)
@@ -367,7 +361,7 @@ namespace Destrier
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
                     else
-                        return value; // ReflectionCache.ChangeType(value, resultType);
+                        return value;
                 }
                 return ReflectionCache.GetDefault(member.Type);
             }
