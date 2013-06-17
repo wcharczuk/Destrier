@@ -335,6 +335,8 @@ namespace Destrier
                         case TypeCode.Single:
                         case TypeCode.Double:
                             return (long)_dr.GetDouble(i);
+                        case TypeCode.Decimal:
+                            return (long)_dr.GetDecimal(i);
                         default:
                             return _dr.GetInt64(i);
                     }
