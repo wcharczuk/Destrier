@@ -188,16 +188,16 @@ END
                 return new Destrier.Query<MockObject>().Limit(LIMIT).StreamResults().ToList();
             };
 
-            var destrierRawQuery = new Destrier.Query<MockObject>().Limit(LIMIT);
-            Func<List<MockObject>> destrierReuseAction = () =>
-            {
-                return destrierRawQuery.StreamResults().ToList();
-            };
+            //var destrierRawQuery = new Destrier.Query<MockObject>().Limit(LIMIT);
+            //Func<List<MockObject>> destrierReuseAction = () =>
+            //{
+            //    return destrierRawQuery.StreamResults().ToList();
+            //};
 
-            Func<List<MockObject>> destrierRawAction = () =>
-            {
-                return new Destrier.Query<MockObject>(QUERY).StreamResults().ToList();
-            };
+            //Func<List<MockObject>> destrierRawAction = () =>
+            //{
+            //    return new Destrier.Query<MockObject>(QUERY).StreamResults().ToList();
+            //};
 
             Func<List<MockObject>> dapperAction = () =>
             {
@@ -227,8 +227,8 @@ END
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
-                { "Destrier (Re-use Query)", destrierReuseAction },
-                { "Destrier (Raw Query)", destrierRawAction },
+                //{ "Destrier (Re-use Query)", destrierReuseAction },
+                //{ "Destrier (Raw Query)", destrierRawAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
                 //{ "EntityFramework", entityFrameworkAction }

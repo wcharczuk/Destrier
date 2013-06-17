@@ -150,29 +150,15 @@ namespace Destrier
                     {
                         T newObject = (T)ReflectionCache.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
-
-                        if (ReflectionCache.HasChildCollectionMembers(_t) && objectLookups != null)
-                        {
-                            if (!objectLookups.ContainsKey(_t))
-                            {
-                                objectLookups.Add(_t, new Dictionary<Object, Object>());
-                            }
-                            var pkv = Model.InstancePrimaryKeyValue(_t, newObject);
-                            if (pkv != null && !objectLookups[_t].ContainsKey(pkv))
-                            {
-                                objectLookups[_t].Add(pkv, newObject);
-                            }
-                        }
-
                         list.Add(newObject);
                     }
 
                     if (_builder.ChildCollections.Any())
                     {
-                        dr.NextResult(_builder.ChildCollections.First().Type);
-
                         foreach (var cm in _builder.ChildCollections)
                         {
+                            dr.NextResult(cm.CollectionType);
+
                             var root = cm.Root;
                             var parent = cm.Parent ?? cm.Root;
                             var parentPrimaryKeyReference = cm.ReferencedProperty;
@@ -217,9 +203,8 @@ namespace Destrier
 
                                     var collection = parentCollectionProperty.GetValue(parentObj);
                                     ((System.Collections.IList)collection).Add(obj);
-
                                 }
-                            }, populateFullResults: true);
+                            }, populateFullResults: true, advanceToNextResultAfter:false);
                         }
                     }
                 }
