@@ -258,7 +258,24 @@ namespace Destrier
                     return _dr.GetByte(i);
                 case TypeCode.Char:
                 case TypeCode.String:
-                    return _dr.GetString(i);
+                    switch (originType)
+                    {
+                        case TypeCode.DateTime:
+                            return _dr.GetDateTime(i).ToString();
+                        case TypeCode.Boolean:
+                            return _dr.GetBoolean(i).ToString();
+                        case TypeCode.Int16:
+                            return _dr.GetInt16(i).ToString();
+                        case TypeCode.Int32:
+                            return _dr.GetInt32(i).ToString();
+                        case TypeCode.Int64:
+                            return _dr.GetInt64(i).ToString();
+                        case TypeCode.Double:
+                            return _dr.GetDouble(i).ToString();
+                        default:
+                            return _dr.GetString(i);
+                    }
+                    
                 case TypeCode.DateTime:
                     return _dr.GetDateTime(i);
                 case TypeCode.Decimal:
@@ -297,6 +314,12 @@ namespace Destrier
                     return _dr.GetInt64(i);
                 case TypeCode.Single:
                     return (Single)_dr.GetDouble(i);
+                case TypeCode.Object:
+                    switch (originType)
+                    {
+                        default:
+                            return _dr.GetValue(i);
+                    }
             }
             throw new InvalidOperationException("Cannot retrieve specified type: " + outputType.ToString());
         }
@@ -336,17 +359,19 @@ namespace Destrier
         public T Get<T>(String columnName) 
         {
             ColumnMember member = null;
-            ColumnMemberLookup.TryGetValue(columnName, out member);
-            if (member != null)
-                return (T)this.Get(member);
-            else
+            if (ColumnMemberLookup != null)
             {
-                var columnIndex = GetColumnIndex(columnName);
-                if (columnIndex != null)
-                    return (T)Get(typeof(T), columnIndex.Value);
-                else
-                    return (T)ReflectionCache.GetDefault(typeof(T));
+                ColumnMemberLookup.TryGetValue(columnName, out member);
+                if (member != null)
+                    return (T)this.Get(member);
             }
+            
+            var columnIndex = GetColumnIndex(columnName);
+            if (columnIndex != null)
+                return (T)Get(typeof(T), columnIndex.Value);
+            else
+                return (T)ReflectionCache.GetDefault(typeof(T));
+            
         }
 
         public object Get(ColumnMember member, String columnName = null)
