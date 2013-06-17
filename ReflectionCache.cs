@@ -223,10 +223,7 @@ namespace Destrier
 
         public static object GetNewObject(Type toConstruct)
         {
-            var neededType = toConstruct;
-            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
-
-            return ctor();
+            return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
         }
 
         public static T GetNewObject<T>() where T : new()
@@ -436,10 +433,7 @@ namespace Destrier
 
         public static Object ChangeType(Object value, Type destinationType)
         {
-            if (value.GetType().Equals(destinationType))
-                return value;
-            else
-                return Convert.ChangeType(value, destinationType);
+            return Convert.ChangeType(value, destinationType);
         }
 
         #endregion

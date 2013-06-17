@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Destrier
@@ -14,26 +15,44 @@ namespace Destrier
         public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true)
         {
             _dr = hostReader;
-            ColumnMap = _dr.GetColumnMap(standardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(standardizeCasing);
             StandardizeCasing = standardizeCasing;
+            InitResultSet();
         }
 
         public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false)
             : this(hostReader, standardizeCasing)
         {
+            _dr = hostReader;
+            StandardizeCasing = standardizeCasing;
             CurrentOutputType = type;
-            ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+            InitResultSet();
         }
 
         public Boolean StandardizeCasing { get; set; }
 
         private SqlDataReader _dr = null;
 
+        public Boolean HasReferencedObjectMembers { get; set; }
         public Type CurrentOutputType { get; set; }
         public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
         public Dictionary<String, Int32> ColumnMap { get; set; }
         public string[] ColumnIndexMap { get; set; }
+
+        private void InitResultSet()
+        {
+            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
+            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+            if (this.CurrentOutputType != null)
+            {
+                this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
+                ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+            }
+
+        }
+
+        private Func<IDataReader, int, bool> _isDbNullInternal = null;
+
+        private Func<IDataReader, int, object> _accessDataInternal = null;
 
         public Boolean HasColumn(String columnName)
         {
@@ -100,15 +119,13 @@ namespace Destrier
         public bool NextResult()
         {
             var result = _dr.NextResult();
-            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+            InitResultSet();
             return result;
         }
 
         public bool NextResult(Type type)
         {
             CurrentOutputType = type;
-            ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
             return NextResult();
         }
 
@@ -232,6 +249,38 @@ namespace Destrier
             return _dr.GetValue(i);
         }
 
+        public object GetValue(int i, TypeCode convertTo)
+        {
+            switch (convertTo)
+            {
+                case TypeCode.Boolean:
+                    return _dr.GetBoolean(i);
+                case TypeCode.Byte:
+                    return _dr.GetByte(i);
+                case TypeCode.Char:
+                case TypeCode.String:
+                    return _dr.GetString(i);
+                case TypeCode.DateTime:
+                    return _dr.GetDateTime(i);
+                case TypeCode.Decimal:
+                    return _dr.GetDecimal(i);
+                case TypeCode.Double:
+                    return _dr.GetDouble(i);
+                case TypeCode.UInt16:
+                case TypeCode.Int16:
+                    return _dr.GetInt16(i);
+                case TypeCode.UInt32:
+                case TypeCode.Int32:
+                    return _dr.GetInt32(i);
+                case TypeCode.UInt64:
+                case TypeCode.Int64:
+                    return _dr.GetInt64(i);
+                case TypeCode.Single:
+                    return (Single)_dr.GetDouble(i);
+            }
+            throw new InvalidOperationException("Cannot retrieve specified type: " + convertTo.ToString());
+        }
+
         public int GetValues(object[] values)
         {
             return _dr.GetValues(values);
@@ -290,33 +339,37 @@ namespace Destrier
             return isNullableType ? null : ReflectionCache.GetDefault(effectiveType);
         }
 
-        public object Get(Type resultType, Int32 columnIndex)
+        public object Get(Member member, Int32 columnIndex)
         {
-            Boolean isNullableType = ReflectionCache.IsNullableType(resultType);
-            if (isNullableType)
+            if (member.IsNullableType)
             {
-                resultType = ReflectionCache.GetUnderlyingTypeForNullable(resultType);
-                object value = _dr.GetValue(columnIndex);
-                if (!(value is DBNull))
+                if (!_dr.IsDBNull(columnIndex))
                 {
+                    var resultType = member.NullableUnderlyingType;
+                    var convertTo = Type.GetTypeCode(resultType);
+                    object value = this.GetValue(columnIndex, convertTo);
+
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
                     else
-                        return ReflectionCache.ChangeType(value, resultType);
+                        return value;
                 }
                 return null;
             }
             else
             {
-                object value = _dr.GetValue(columnIndex);
-                if (!(value is DBNull))
+                if (!_dr.IsDBNull(columnIndex))
                 {
+                    var resultType = member.Type;
+                    var convertTo = Type.GetTypeCode(resultType);
+                    object value = this.GetValue(columnIndex, convertTo);
+
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
                     else
-                        return ReflectionCache.ChangeType(value, resultType);
+                        return value; // ReflectionCache.ChangeType(value, resultType);
                 }
-                return ReflectionCache.GetDefault(resultType);
+                return ReflectionCache.GetDefault(member.Type);
             }
         }
 
@@ -536,6 +589,5 @@ namespace Destrier
             if (advanceToNextResultAfter)
                 this.NextResult();
         }
-
     }
 }
