@@ -238,6 +238,19 @@ namespace Destrier
                     }
                 }
             }
+
+            if (dr.HasChildCollectionMembers && objectLookups != null)
+            {
+                if (!objectLookups.ContainsKey(thisType))
+                {
+                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
+                }
+                var pkv = Model.InstancePrimaryKeyValue(thisType, instance);
+                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
+                {
+                    objectLookups[thisType].Add(pkv, instance);
+                }
+            }
         }
 
         public static String GenerateAlias()

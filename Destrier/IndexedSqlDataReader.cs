@@ -32,6 +32,7 @@ namespace Destrier
 
         private SqlDataReader _dr = null;
 
+        public Boolean HasChildCollectionMembers { get; set; }
         public Boolean HasReferencedObjectMembers { get; set; }
         public Type CurrentOutputType { get; set; }
         public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
@@ -44,6 +45,7 @@ namespace Destrier
             ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
             if (this.CurrentOutputType != null)
             {
+                this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
                 ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
             }
@@ -267,6 +269,8 @@ namespace Destrier
                 case TypeCode.Int16:
                     switch(originType)
                     {
+                        case TypeCode.Byte:
+                            return (short)_dr.GetByte(i);
                         case TypeCode.Int64:
                             return (short)_dr.GetInt64(i); //wut r u doing.
                         case TypeCode.Int32:
@@ -278,6 +282,8 @@ namespace Destrier
                 case TypeCode.Int32:
                     switch (originType)
                     {
+                        case TypeCode.Byte:
+                            return (int)_dr.GetByte(i);
                         case TypeCode.Int64:
                             return (int)_dr.GetInt64(i);
                         case TypeCode.Int16:
