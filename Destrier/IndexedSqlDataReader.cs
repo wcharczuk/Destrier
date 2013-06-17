@@ -280,9 +280,41 @@ namespace Destrier
                 case TypeCode.DateTime:
                     return _dr.GetDateTime(i);
                 case TypeCode.Single:
-                    return (Single)_dr.GetDouble(i);
+                    switch (originType)
+                    {
+                        case TypeCode.Byte:
+                            return (float)_dr.GetByte(i);
+                        case TypeCode.Int64:
+                            return (float)_dr.GetInt64(i); //wut r u doing.
+                        case TypeCode.Int32:
+                            return (float)_dr.GetInt32(i);
+                        case TypeCode.Int16:
+                            return (float)_dr.GetInt16(i);
+                        case TypeCode.Single:
+                            return (float)_dr.GetDouble(i);
+                        case TypeCode.Decimal:
+                            return (float)_dr.GetDecimal(i);
+                        default:
+                            return _dr.GetDouble(i);
+                    }
                 case TypeCode.Double:
-                    return _dr.GetDouble(i);
+                    switch (originType)
+                    {
+                        case TypeCode.Byte:
+                            return (double)_dr.GetByte(i);
+                        case TypeCode.Int64:
+                            return (double)_dr.GetInt64(i); //wut r u doing.
+                        case TypeCode.Int32:
+                            return (double)_dr.GetInt32(i);
+                        case TypeCode.Int16:
+                            return (double)_dr.GetInt16(i);
+                        case TypeCode.Single:
+                            return (double)_dr.GetDouble(i);
+                        case TypeCode.Decimal:
+                            return (double)_dr.GetDecimal(i);
+                        default:
+                            return _dr.GetDouble(i);
+                    }
                 case TypeCode.Decimal:
                     return _dr.GetDecimal(i);
                 case TypeCode.UInt16:
