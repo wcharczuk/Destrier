@@ -272,15 +272,19 @@ namespace Destrier
                             return _dr.GetInt64(i).ToString();
                         case TypeCode.Double:
                             return _dr.GetDouble(i).ToString();
+                        case TypeCode.Decimal:
+                            return _dr.GetDecimal(i).ToString();
                         default:
                             return _dr.GetString(i);
                     }
                 case TypeCode.DateTime:
                     return _dr.GetDateTime(i);
-                case TypeCode.Decimal:
-                    return _dr.GetDecimal(i);
+                case TypeCode.Single:
+                    return (Single)_dr.GetDouble(i);
                 case TypeCode.Double:
                     return _dr.GetDouble(i);
+                case TypeCode.Decimal:
+                    return _dr.GetDecimal(i);
                 case TypeCode.UInt16:
                 case TypeCode.Int16:
                     switch(originType)
@@ -291,6 +295,11 @@ namespace Destrier
                             return (short)_dr.GetInt64(i); //wut r u doing.
                         case TypeCode.Int32:
                             return (short)_dr.GetInt32(i);
+                        case TypeCode.Single:
+                        case TypeCode.Double:
+                            return (short)_dr.GetDouble(i);
+                        case TypeCode.Decimal:
+                            return (short)_dr.GetDecimal(i);
                         default:
                             return _dr.GetInt16(i);
                     }
@@ -304,21 +313,33 @@ namespace Destrier
                             return (int)_dr.GetInt64(i);
                         case TypeCode.Int16:
                             return (int)_dr.GetInt16(i);
+                        case TypeCode.Single:
+                        case TypeCode.Double:
+                            return (int)_dr.GetDouble(i);
+                        case TypeCode.Decimal:
+                            return (int)_dr.GetDecimal(i);
                         default:
                             return _dr.GetInt32(i);
                     }
                     
                 case TypeCode.UInt64:
                 case TypeCode.Int64:
-                    return _dr.GetInt64(i);
-                case TypeCode.Single:
-                    return (Single)_dr.GetDouble(i);
-                case TypeCode.Object:
-                    switch (originType)
+                    switch(originType)
                     {
+                        case TypeCode.Byte:
+                            return (long)_dr.GetByte(i);
+                        case TypeCode.Int16:
+                            return (long)_dr.GetInt16(i);
+                        case TypeCode.Int32:
+                            return (long)_dr.GetInt32(i);
+                        case TypeCode.Single:
+                        case TypeCode.Double:
+                            return (long)_dr.GetDouble(i);
                         default:
-                            return _dr.GetValue(i);
+                            return _dr.GetInt64(i);
                     }
+                case TypeCode.Object:
+                    return _dr.GetValue(i);
             }
             throw new InvalidOperationException("Cannot retrieve specified type: " + outputType.ToString());
         }
@@ -395,8 +416,8 @@ namespace Destrier
 
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
-                    else
-                        return value;
+                   
+                    return value;
                 }
                 return null;
             }
@@ -410,8 +431,8 @@ namespace Destrier
 
                     if (resultType.IsEnum)
                         return Enum.ToObject(resultType, value);
-                    else
-                        return value;
+                    
+                    return value;
                 }
                 return ReflectionCache.GetDefault(member.Type);
             }
