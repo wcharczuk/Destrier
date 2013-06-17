@@ -275,7 +275,6 @@ namespace Destrier
                         default:
                             return _dr.GetString(i);
                     }
-                    
                 case TypeCode.DateTime:
                     return _dr.GetDateTime(i);
                 case TypeCode.Decimal:
