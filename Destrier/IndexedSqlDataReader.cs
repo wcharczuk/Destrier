@@ -290,12 +290,12 @@ namespace Destrier
                             return (float)_dr.GetInt32(i);
                         case TypeCode.Int16:
                             return (float)_dr.GetInt16(i);
-                        case TypeCode.Single:
+                        case TypeCode.Double:
                             return (float)_dr.GetDouble(i);
                         case TypeCode.Decimal:
                             return (float)_dr.GetDecimal(i);
                         default:
-                            return _dr.GetDouble(i);
+                            return (float)_dr.GetDouble(i);
                     }
                 case TypeCode.Double:
                     switch (originType)
