@@ -67,7 +67,7 @@ namespace ORMComparison
 
     public class Program
     {
-		public const String ConnectionString = "Data Source=.;Initial Catalog=tempdb;Integrated Security=True";
+		public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
         public const int TRIALS = 1000;
         public const int LIMIT = 5000;
 
