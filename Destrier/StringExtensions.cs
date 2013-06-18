@@ -448,8 +448,9 @@ namespace Destrier
                     }
                 }
             }
+
             double output = default(double);
-            var success = double.TryParse(textBuilder.ToString(), out output);
+            var success = double.TryParse(textBuilder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out output);
             return success ? (double?)output : null;
         }
 
