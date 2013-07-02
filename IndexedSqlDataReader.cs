@@ -20,7 +20,6 @@ namespace Destrier
         }
 
         public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false)
-            : this(hostReader, standardizeCasing)
         {
             _dr = hostReader;
             StandardizeCasing = standardizeCasing;
@@ -32,22 +31,62 @@ namespace Destrier
 
         private SqlDataReader _dr = null;
 
-        public Boolean HasChildCollectionMembers { get; set; }
-        public Boolean HasReferencedObjectMembers { get; set; }
         public Type CurrentOutputType { get; set; }
+
+        /// <summary>
+        /// Whether or not the output type needs to have child collections populated.
+        /// </summary>
+        public Boolean HasChildCollectionMembers { get; set; }
+
+        /// <summary>
+        /// Whether or not the output type needs to have referenced objects populated.
+        /// </summary>
+        public Boolean HasReferencedObjectMembers { get; set; }
+
+        /// <summary>
+        /// If the output type is specified this is a mapping between column names and column members.
+        /// </summary>
         public Dictionary<String, ColumnMember> ColumnMemberLookup { get; set; }
+
+        /// <summary>
+        /// If the output type is specified this is a mapping between array indices and column members.
+        /// </summary>
+        public ColumnMember[] ColumnMemberIndexMap { get; set; }
+
+        /// <summary>
+        /// This is the mapping of column names to array indices.
+        /// </summary>
         public Dictionary<String, Int32> ColumnMap { get; set; }
+
+        /// <summary>
+        /// This is the mapping of array indices to column names.
+        /// </summary>
         public string[] ColumnIndexMap { get; set; }
 
         private void InitResultSet()
         {
+            //these are standard regardless of if we're using this reader to get a destrier object.
             ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
             ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+
             if (this.CurrentOutputType != null)
             {
                 this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
+
                 ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+
+                var cm_index = new List<ColumnMember>();
+                //column member index map gen
+                foreach (var name in ColumnIndexMap)
+                {
+                    ColumnMember member = null;
+                    if(ColumnMemberLookup.TryGetValue(name, out member))
+                    {
+                        cm_index.Add(member);
+                    }
+                }
+                ColumnMemberIndexMap = cm_index.ToArray();
             }
 
         }
@@ -438,7 +477,7 @@ namespace Destrier
             return ReflectionCache.GetDefault(member.Type);
         }
 
-        public object Get(Member member, Int32 columnIndex)
+        public object Get(ColumnMember member, Int32 columnIndex)
         {
             if (member.IsNullableType)
             {
