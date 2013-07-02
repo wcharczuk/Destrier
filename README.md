@@ -14,35 +14,35 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Speed###
 The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
 
-| ORM                  | Timing        | Notes            |
-|----------------------|---------------|------------------|
-|Raw Reader            | Avg:  1.186ms |                  |
-|Dapper                | Avg:  2.032ms |                  |
-|ServiceStack ORMLite  | Avg:  4.071ms |                  |
-|Destrier              | Avg:  4.072ms | Re-used Query    |
-|Destrier              | Avg:  4.100ms | Hand-Coded Query |
-|Destrier              | Avg:  4.146ms |                  |
-|EntityFramework       | Avg:  8.412ms |                  |
+| ORM                  | Timing        |
+|----------------------|---------------|
+|Raw Reader            | Avg:	3.49ms | 
+|Dapper                | Avg:	4.03ms | 
+|ServiceStack ORMLite  | Avg:   8.87ms |
+|Destrier              | Avg:  11.83ms |
+|EntityFramework       | Avg:  48.73ms |
 
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
-* BaseModel: Inherit from this to get more complicated relational functionality like child members and associated objects and query support.
-* IPopulate: Use this interface to tell the ORM how to populate your objects from data readers.
 * Table Attribute: Tells the orm what table to map the class to
 * Column Attribute: Tells the orm what properties to map to columns in the schema.
+* IPopulate: Use this interface to tell the ORM how to populate your objects from data readers (if you don't want to mark columns with the Column attribute).
 * Query<T>: The main construct for querying.
-  * Where(): Add a where constraint by lambda
-  * Include(): Tells the ORM to include a child collection.
-  * OrderBy(): Order the results by the specified member.
-  * Limit(): Limit the results to N rows.
+  * Where(predicate): Add a where constraint by lambda
+  * Include(collection_prop): Tells the ORM to include a child collection.
+  * OrderBy(prop): Order the results by the specified member.
+  * Limit(int): Limit the results to N rows.
   * Execute(): Run the query, return a list of <T>
 * Database<T>: Main functions for simple CRUD operations.
-  * Get(): Get an object by Id
-  * Remove(): Remove an instance
-  * RemoveWhere(): Remove by a predicate
-  * Create(): Create a new row for the object. Will set the ID column if it's marked AutoIncrement.
-  * Update(): Update an object. Requires the object to have columns marked as primary key.
+  * Get(id): Get an object by id.
+  * Remove(obj): Remove an object instance.
+  * RemoveWhere(predicate): Remove by a predicate.
+  * Create(obj): Create a new row for the object. Will set the ID column if it's marked AutoIncrement.
+  * Update(obj): Update an object. Requires the object to have columns marked as primary key, will update the table with all properties of the object passed in.
+* Update<T>: For when you want to do an update and not send down the full contents of an object.
+  * Set(member, value): Sets the column in the database for the specified member to the value.
+  * Where(predicate): The 'Where' constraint on the update (typically, super important).
 
 ###Examples###
 

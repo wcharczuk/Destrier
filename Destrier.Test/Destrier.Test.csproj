@@ -33,6 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -46,9 +47,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DatabaseTest.cs" />
     <Compile Include="CommandBuilderTests.cs" />
-    <Compile Include="MockObject.cs" />
-    <Compile Include="ReferencedObjectTests.cs" />
+    <Compile Include="Objects.cs" />
     <Compile Include="ReflectionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlExpressionVisitorTests.cs" />

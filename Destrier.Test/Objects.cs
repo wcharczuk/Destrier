@@ -13,6 +13,31 @@ namespace Destrier.Test
         Tertiary = 3
     }
 
+    [Table("TestObjects")]
+    public class TestObject
+    {
+        [Column(IsPrimaryKey = true)]
+        public Int32 Id { get; set; }
+
+        [Column]
+        public Boolean Active { get; set; }
+
+        [Column]
+        public String Name { get; set; }
+
+        [Column]
+        public DateTime Created { get; set; }
+
+        [Column]
+        public DateTime? Modified { get; set; }
+
+        [Column]
+        public Int32 ReferencedObjectId { get; set; }
+
+        [Column]
+        public Int32? NullableId { get; set; }
+    }
+
     [Table(TableName = "MockObjects")]
     public class MockObject
     {
