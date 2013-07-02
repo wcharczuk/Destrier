@@ -95,6 +95,7 @@
     <Compile Include="IPostUpdate.cs" />
     <Compile Include="IPreRemove.cs" />
     <Compile Include="IPostRemove.cs" />
+    <Compile Include="Update.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

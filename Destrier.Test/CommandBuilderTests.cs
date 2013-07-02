@@ -101,5 +101,18 @@ namespace Destrier.Test
             var sqlText = visitor.Buffer.ToString();
             Assert.Equal(sqlText, String.Format("[MockObjectId] = @{0}", visitor.Parameters.First().Key));
         }
+
+        [Fact]
+        public void Update_Test()
+        {
+            var cb = new CommandBuilder<MockObject>();
+            cb.AddSet(m => m.Active, true);
+            cb.AddWhere(m => m.MockObjectId == 10);
+
+            var sqlText = cb.GenerateUpdate();
+
+            Assert.NotNull(sqlText);
+        }
+        
     }
 }

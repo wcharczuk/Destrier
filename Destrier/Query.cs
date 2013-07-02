@@ -115,7 +115,7 @@ namespace Destrier
 
         public Query<T> DontIncludeAny()
         {
-            _builder.RemoveALlChildCollections();
+            _builder.RemoveAllChildCollections();
             return this;
         }
 

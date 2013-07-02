@@ -42,27 +42,30 @@ namespace Destrier
         }
 
         protected Type _t { get; set; }
+        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
         protected Dictionary<String, String> _tableAliases = new Dictionary<String, String>();
-        
-        protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
-        protected List<Member> _outputMembers = new List<Member>();
-
-        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
-
-        public Int32? Limit { get; set; }
-        public StringBuilder Command { get; set; }
-        public IDictionary<String, Object> Parameters { get; set; }
-
         public Dictionary<String, Member> Members { get; set; }
-        
+
         public String FullyQualifiedTableName { get; private set; }
         public String TableAlias { get { return this.AsRootMember.TableAlias; } }
-        public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
-        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
 
         private Expression<Func<T, bool>> _whereClause = null;
         private dynamic _whereParameters = null;
+
+        #region Select
+        public Int32? Limit { get; set; }
+        public StringBuilder Command { get; set; }
+        public IDictionary<String, Object> Parameters { get; set; }
+        protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
+        protected List<Member> _outputMembers = new List<Member>();
+        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
+        public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
         private String _orderByClause = null;
+        #endregion
+
+        #region Update
+        protected List<String> _updateSets = new List<String>();
+        #endregion
 
         public void AddWhere(Expression<Func<T, Boolean>> expression)
         {
@@ -80,6 +83,7 @@ namespace Destrier
             _whereParameters = parameters;
         }
 
+        #region Select Publics
         public void AddOrderBy<F>(Expression<Func<T, F>> expression)
         {
             var body = (MemberExpression)expression.Body;
@@ -191,30 +195,32 @@ namespace Destrier
             }
         }
 
-        public void RemoveALlChildCollections()
+        public void RemoveAllChildCollections()
         {
             _includedChildCollections.Clear();
         }
+        #endregion
 
-        private static String GenerateTableAlias()
+        #region Update Publics
+        public void AddSet<F>(Expression<Func<T, F>> expression, Object value)
         {
-            return System.Guid.NewGuid().ToString("N");
-        }
+            if(expression == null)
+                throw new ArgumentNullException("expression");
 
-        private static List<String> GetOutputColumns(IEnumerable<Member> members)
-        {
-            var outputColumns = new List<String>();
+            var memberExp = expression.Body as MemberExpression;
 
-            foreach (var m in members)
-            {
-                outputColumns.Add(String.Format("[{0}].[{1}] as [{2}]"
-                    , m.TableAlias
-                    , m.Name
-                    , m.FullyQualifiedName
-                    ));
-            }
-            return outputColumns;
+            if (memberExp == null)
+                throw new ArgumentNullException("expression");
+
+            var member = ReflectionCache.MemberForExpression(memberExp, Members);
+
+            var paramName = System.Guid.NewGuid();
+            string param = String.Format("@{0}", paramName.ToString("N"));
+            Parameters.Add(paramName.ToString("N"), value);
+
+            _updateSets.Add(String.Format("{0} = {1}", member.Name, param));
         }
+        #endregion
 
         private void DiscoverMembers()
         {
@@ -239,13 +245,31 @@ namespace Destrier
             }
         }
 
+        #region Select Internals
+
+        private static List<String> GetOutputColumns(IEnumerable<Member> members)
+        {
+            var outputColumns = new List<String>();
+
+            foreach (var m in members)
+            {
+                outputColumns.Add(String.Format("[{0}].[{1}] as [{2}]"
+                    , m.TableAlias
+                    , m.Name
+                    , m.FullyQualifiedName
+                    ));
+            }
+            return outputColumns;
+        }
+
+
         private static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
         {
             foreach (ReferencedObjectMember refm in members.Where(m => m is ReferencedObjectMember))
             {
                 if (!tableAliases.ContainsKey(refm.FullyQualifiedName))
                 {
-                    tableAliases.Add(refm.FullyQualifiedName, GenerateTableAlias());
+                    tableAliases.Add(refm.FullyQualifiedName, Model.GenerateAlias());
                 }
                 refm.TableAlias = tableAliases[refm.FullyQualifiedName];
             }
@@ -253,13 +277,13 @@ namespace Destrier
             {
                 if (!tableAliases.ContainsKey(cm.FullyQualifiedName))
                 {
-                    tableAliases.Add(cm.FullyQualifiedName, GenerateTableAlias());
+                    tableAliases.Add(cm.FullyQualifiedName, Model.GenerateAlias());
                 }
                 cm.TableAlias = tableAliases[cm.FullyQualifiedName];
 
                 if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
-                    cm.OutputTableName = GenerateTableAlias();
+                    cm.OutputTableName = Model.GenerateAlias();
                 }
             }
             foreach (ColumnMember cm in members.Where(m => m is ColumnMember))
@@ -299,8 +323,62 @@ namespace Destrier
             }
         }
 
+        private void ProcessChildCollections()
+        {
+            List<String> tablesToDrop = new List<String>();
+            foreach (var cm in ChildCollections)
+            {
+                var subMembers = ReflectionCache.GenerateMembersRecursive(cm.CollectionType, new RootMember(cm));
+
+                var tableAliases = new Dictionary<String, String>();
+                SetupTableAliases(subMembers, tableAliases);
+
+                var outputColumns = GetOutputColumns(subMembers.Where(m => m is ColumnMember && !m.ParentAny(p => p is ChildCollectionMember)));
+
+                var subColumnList = String.Join("\n\t, ", outputColumns);
+                Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);
+
+                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
+                {
+                    Command.AppendFormat("\nINTO #{0}", cm.OutputTableName);
+                    tablesToDrop.Add(cm.OutputTableName);
+                }
+
+                Command.AppendFormat("\nFROM");
+
+                var root = this.AsRootMember;
+                var parent = cm.Parent ?? root;
+                Command.AppendFormat("\n\t#{0} [{1}]", parent.OutputTableName ?? root.OutputTableName, parent.TableAlias);
+
+                Command.AppendFormat("\n\t{0} JOIN {1} [{2}] (NOLOCK) ON {3} = {4}", cm.JoinType, cm.FullyQualifiedTableName, cm.TableAlias, cm.AliasedParentColumnName, cm.AliasedColumnName);
+                AddJoins(cm.CollectionType, subMembers, Command);
+
+                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
+                {
+                    Command.AppendFormat("\n\nSELECT * FROM #{0};", cm.OutputTableName);
+                }
+            }
+
+            Command.Append("\n");
+
+            foreach (var table in tablesToDrop)
+            {
+                Command.AppendFormat("\nDROP TABLE #{0}", table);
+            }
+        }
+
+        #endregion
+
+        #region Update Internals
+        protected void ProcessSetStatements()
+        {
+
+        }
+        #endregion
+
         public String GenerateSelect()
         {
+            Command = new StringBuilder();
             var columnList = String.Join("\n\t, ", GetOutputColumns(_outputMembers));
 
             if (Limit != null)
@@ -381,48 +459,25 @@ namespace Destrier
             return Command.ToString();
         }
 
-        public void ProcessChildCollections()
+        public String GenerateUpdate()
         {
-            List<String> tablesToDrop = new List<String>();
-            foreach (var cm in ChildCollections)
+            Command = new StringBuilder();
+            Command.Append("UPDATE\n");
+            Command.AppendFormat("\t[{0}]", this.TableAlias);
+            Command.Append("\nSET\n");
+
+            Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
+            Command.Append("\nFROM");
+            Command.AppendFormat("\n\t{0} [{1}]", this.FullyQualifiedTableName, this.TableAlias);
+            if (_whereClause != null)
             {
-                var subMembers = ReflectionCache.GenerateMembersRecursive(cm.CollectionType, new RootMember(cm));
+                Command.Append("\nWHERE\n");
 
-                var tableAliases = new Dictionary<String, String>();
-                SetupTableAliases(subMembers, tableAliases);
-
-                var outputColumns = GetOutputColumns(subMembers.Where(m => m is ColumnMember && !m.ParentAny(p => p is ChildCollectionMember)));
-
-                var subColumnList = String.Join("\n\t, ", outputColumns);
-                Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);
-
-                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
-                {
-                    Command.AppendFormat("\nINTO #{0}", cm.OutputTableName);
-                    tablesToDrop.Add(cm.OutputTableName);
-                }
-
-                Command.AppendFormat("\nFROM");
-
-                var root = this.AsRootMember;
-                var parent = cm.Parent ?? root;
-                Command.AppendFormat("\n\t#{0} [{1}]", parent.OutputTableName ?? root.OutputTableName, parent.TableAlias);
-
-                Command.AppendFormat("\n\t{0} JOIN {1} [{2}] (NOLOCK) ON {3} = {4}", cm.JoinType, cm.FullyQualifiedTableName, cm.TableAlias, cm.AliasedParentColumnName, cm.AliasedColumnName);
-                AddJoins(cm.CollectionType, subMembers, Command);
-
-                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
-                {
-                    Command.AppendFormat("\n\nSELECT * FROM #{0};", cm.OutputTableName);
-                }
+                SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
+                visitor.Visit(_whereClause);
             }
 
-            Command.Append("\n");
-
-            foreach (var table in tablesToDrop)
-            {
-                Command.AppendFormat("\nDROP TABLE #{0}", table);
-            }
+            return Command.ToString();
         }
     }
 }
