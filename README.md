@@ -12,7 +12,7 @@ using stored procedures for complicated queries (read: anything with 'group by' 
  * Enumerable 'streaming' results, means you can query huge datasets
 
 ###Speed###
-The following test was performed on 1000 iterations for each orm, selecting an object from a table limiting to 1000 results.
+The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 2000 results.
 
 | ORM                  | Timing        |
 |----------------------|---------------|
