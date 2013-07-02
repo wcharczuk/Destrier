@@ -449,9 +449,15 @@ namespace Destrier
                 }
             }
 
-            double output = default(double);
-            var success = double.TryParse(textBuilder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out output);
-            return success ? (double?)output : null;
+            double value = default(double);
+            var stringValue = textBuilder.ToString().Trim();
+            var numberFormat = (System.Globalization.NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+            numberFormat.CurrencyDecimalSeparator = ".";
+            numberFormat.NumberDecimalSeparator = ".";
+            numberFormat.PercentDecimalSeparator = ".";
+
+            var success = double.TryParse(stringValue, NumberStyles.Any, numberFormat, out value);
+            return success ? (double?)value : null;
         }
 
         public static Boolean IsNumeric(this String text)

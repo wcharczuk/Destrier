@@ -181,7 +181,12 @@ namespace Destrier
 		public static void Populate(object instance, IndexedSqlDataReader dr)
 		{
 			var thisType = instance.GetType();
-			var members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
+            var members = new Dictionary<String, ColumnMember>();
+            if (dr.StandardizeCasing)
+                members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
+            else
+                members = ReflectionCache.GetColumnMemberLookup(thisType);
+
 			foreach (ColumnMember col in members.Values)
 			{
 				col.SetValue(instance, dr.Get(col));
