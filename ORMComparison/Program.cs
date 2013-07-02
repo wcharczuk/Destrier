@@ -202,7 +202,6 @@ namespace ORMComparison
                 Console.WriteLine(String.Format("\tAvg: {0}ms", results.Average()));
             }
             Console.WriteLine();
-            Console.ReadKey();
         }
     }
 }

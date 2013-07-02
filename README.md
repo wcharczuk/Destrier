@@ -18,10 +18,9 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 |----------------------|---------------|
 |Raw Reader            | Avg:	3.49ms | 
 |Dapper                | Avg:	4.03ms | 
-|ServiceStack ORMLite  | Avg:   8.87ms |
-|Destrier              | Avg:  11.83ms |
+|ServiceStack ORMLite  | Avg:   7.45ms |
+|Destrier              | Avg:   8.16ms |
 |EntityFramework       | Avg:  48.73ms |
-
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
