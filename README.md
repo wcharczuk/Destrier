@@ -123,6 +123,19 @@ var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)
 
 //resulting sql is "WHERE [MockObjectId] in (1,2,3,4)"
 ```
+You can update objects by individual properties.
+```C#
+new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Exeute();
+//resulting sql is UPDATE [alias] SET Active = 0 FROM MockObjects [alias] where MockObjectId = 2
+```
+
+Alternately you can update a whole object at once\
+```C#
+var mo = Database.Get<MockObject>(2);
+mo.Active = false;
+Database.Update(mo);
+//this will cause a massive update statement with every property as 'SET's
+```
 
 ###Pull Requests / Contributions###
 Keep them coming.
