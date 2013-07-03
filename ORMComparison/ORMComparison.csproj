@@ -37,7 +37,7 @@
       <HintPath>lib\Dapper.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework">
-      <HintPath>..\..\ORMComparison\lib\EntityFramework.dll</HintPath>
+      <HintPath>lib\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>lib\Newtonsoft.Json.dll</HintPath>
@@ -56,6 +56,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Entity" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
