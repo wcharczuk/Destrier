@@ -37,7 +37,7 @@
       <HintPath>lib\Dapper.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework">
-      <HintPath>..\..\ORMComparison\lib\EntityFramework.dll</HintPath>
+      <HintPath>lib\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>lib\Newtonsoft.Json.dll</HintPath>
