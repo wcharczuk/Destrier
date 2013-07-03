@@ -383,8 +383,8 @@ namespace Destrier
 
             if (Limit != null)
             {
-                Command.AppendFormat("SELECT top(@RESULT_LIMIT)\n\t{0}", columnList);
-                Parameters.Add("RESULT_LIMIT", Limit.Value);
+                Command.AppendFormat("SELECT TOP {1} \n\t{0}", columnList, Limit.Value);
+                //Parameters.Add("RESULT_LIMIT", Limit.Value);
             }
             else
             {

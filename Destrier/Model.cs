@@ -233,14 +233,9 @@ namespace Destrier
             {
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
-                    var name = dr.ColumnIndexMap[x];
-                    ColumnMember member = null;
-                    dr.ColumnMemberLookup.TryGetValue(name, out member);
-                    if (member != null)
-                    {
-                        var value = dr.Get(member, x);
-                        member.SetValue(instance, value);
-                    }
+                    ColumnMember member = dr.ColumnMemberIndexMap[x];
+                    var value = dr.Get(member, x);
+                    member.SetValue(instance, value);
                 }
             }
 
