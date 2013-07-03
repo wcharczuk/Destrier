@@ -5,19 +5,23 @@ It is designed to leverage both strong typing and model / schema relationships a
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
 ###Features###
+* POCO support; use your existing objects.
+* Code first based on annotations.
 * Speed: It's pretty fast for what it lets you do.
-* Code first, minimal configuration, powerful annotations.
- * "Referenced Objects" let you have associated objects (joined to specified properties)
- * "Child Objects" let you have related sub collections (one-to-many relationships).
- * Enumerable 'streaming' results, means you can query huge datasets
+* Expressive: Strongly typed query syntax and update syntax.
+* Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
+* "Referenced Objects" let you have associated objects (joined to specified properties).
+ * Say an object has a 'UserId' property; Destrier will automatically fill a 'User' object based on the specified reference.
+* "Child Objects" let you have related sub collections (one-to-many relationships).
+* IEnumerable reader let you stream results from large datasets / queries.
 
 ###Speed###
 The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 2000 results.
 
 | ORM                  | Timing        |
 |----------------------|---------------|
-|Raw Reader            | Avg:	3.49ms | 
-|Dapper                | Avg:	4.03ms | 
+|Raw Reader            | Avg:	  3.49ms | 
+|Dapper                | Avg:	  4.03ms | 
 |ServiceStack ORMLite  | Avg:   7.45ms |
 |Destrier              | Avg:   8.16ms |
 |EntityFramework       | Avg:  48.73ms |
