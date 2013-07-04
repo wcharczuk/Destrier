@@ -72,10 +72,10 @@ namespace ORMComparison
         public Int32 ReferencedObjectId { get; set; }
 
         [Destrier.Column]
-        public Int32? NullableId { get; set; }
+        public short? NullableId { get; set; }
         
         [Destrier.Column]
-        public TestObjectTypeId Type { get; set; }
+        public String Type { get; set; }
 
         [Destrier.Column]
         public TestObjectTypeId? NullableType { get; set; }
@@ -84,7 +84,7 @@ namespace ORMComparison
     public class Program
     {
 		public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
-        public const int TRIALS = 50;
+        public const int TRIALS = 100;
         public const int LIMIT = 5000;
 
         static void SetValuesForObject(IDataReader dr, object instance)
@@ -94,9 +94,9 @@ namespace ORMComparison
             ((TestObject)instance).Active = dr.GetBoolean(2);
             ((TestObject)instance).Created = dr.GetDateTime(3);
             ((TestObject)instance).Modified = !dr.IsDBNull(4) ? (DateTime?)dr.GetDateTime(4) : null;
-            ((TestObject)instance).NullableId = !dr.IsDBNull(5) ? (int?)dr.GetInt32(5) : null;
-            ((TestObject)instance).ReferencedObjectId = dr.GetInt32(6);
-            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt32(7);
+            ((TestObject)instance).NullableId = !dr.IsDBNull(5) ? (short?)dr.GetInt32(5) : null;
+            ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(6) ? dr.GetInt32(6) : default(Int32);
+            ((TestObject)instance).Type = dr.GetInt32(7).ToString();
             ((TestObject)instance).NullableType = !dr.IsDBNull(8) ? (TestObjectTypeId?)dr.GetInt16(8) : null;
         }
 
@@ -192,9 +192,9 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
-                { "ServiceStack ORMLite", ormLiteAction },
+                //{ "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
-                { "EntityFramework", entityFrameworkAction }
+                //{ "EntityFramework", entityFrameworkAction }
             };
 
             var results = new List<Int64>();

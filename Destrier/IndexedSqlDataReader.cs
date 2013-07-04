@@ -90,7 +90,7 @@ namespace Destrier
                     }
                 }
                 ColumnMemberIndexMap = cm_index.ToArray();
-                _setInstanceValuesFn = ReflectionCache.EmitILMappedMethod(this);
+                _setInstanceValuesFn = ReflectionCache.GenerateSetInstanceValuesDelegate(this);
             }
         }
 
