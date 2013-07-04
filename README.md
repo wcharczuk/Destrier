@@ -16,15 +16,15 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 * IEnumerable reader let you stream results from large datasets / queries.
 
 ###Speed###
-The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 2000 results.
+The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 5000 results.
 
-| ORM                  | Timing        |
-|----------------------|---------------|
-|Raw Reader            | Avg:	  3.49ms | 
-|Dapper                | Avg:	  4.03ms | 
-|ServiceStack ORMLite  | Avg:   7.45ms |
-|Destrier              | Avg:   8.16ms |
-|EntityFramework       | Avg:  48.73ms |
+| ORM                  | Timing         |
+|----------------------|----------------|
+|Raw Reader            | Avg:	10.64ms | 
+|Dapper                | Avg:	12.96ms | 
+|ServiceStack ORMLite  | Avg:   33.62ms |
+|Destrier              | Avg:   14.60ms |
+|EntityFramework       | Avg:  112.10ms |
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
