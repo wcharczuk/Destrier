@@ -542,7 +542,7 @@ namespace Destrier
 
         public delegate void SetInstanceValuesDelegate(IndexedSqlDataReader dr, object instance);
 
-        public static SetInstanceValuesDelegate EmitILMappedMethod(IndexedSqlDataReader dr)
+        public static SetInstanceValuesDelegate GenerateSetInstanceValuesDelegate(IndexedSqlDataReader dr)
         {
             Type idr = dr.GetType();
             var idr_methods = new Dictionary<String, MethodInfo>();
@@ -580,6 +580,36 @@ namespace Destrier
             DynamicMethod dyn = new DynamicMethod("SetInstanceValues", typeof(void), new Type[] { typeof(IndexedSqlDataReader), typeof(object) });
             ILGenerator il = dyn.GetILGenerator();
 
+            var defaults = new Dictionary<TypeCode, Action>() 
+            {
+                { TypeCode.Boolean, () => { il.Emit(OpCodes.Ldc_I4_0); } },
+                { TypeCode.Int16, () => { il.Emit(OpCodes.Ldc_I4_0); } },
+                { TypeCode.UInt16, () => { il.Emit(OpCodes.Ldc_I4_0); } },
+                { TypeCode.Int32, () => { il.Emit(OpCodes.Ldc_I4_0); } },
+                { TypeCode.UInt32, () => { il.Emit(OpCodes.Ldc_I4_0); } },
+                { TypeCode.Int64, () => { il.Emit(OpCodes.Ldc_I8, 0); } },
+                { TypeCode.UInt64, () => { il.Emit(OpCodes.Ldc_I8, 0); } },
+                { TypeCode.Single, () => { il.Emit(OpCodes.Ldc_R4, 0); } },
+                { TypeCode.Double, () => { il.Emit(OpCodes.Ldc_R8, 0); } },
+            };
+
+            var on_stack_conversions = new Dictionary<TypeCode, Action>()
+            {
+                { TypeCode.Boolean, () => { il.Emit(OpCodes.Conv_Ovf_I4); } },
+                { TypeCode.Int32, () => { il.Emit(OpCodes.Conv_Ovf_I4); } } ,
+                { TypeCode.SByte, () => { il.Emit(OpCodes.Conv_Ovf_I1); } } ,
+                { TypeCode.Byte, () => { il.Emit(OpCodes.Conv_Ovf_I1_Un); } },
+                { TypeCode.Int16, () => { il.Emit(OpCodes.Conv_Ovf_I2);} },
+                { TypeCode.UInt16, () => { il.Emit(OpCodes.Conv_Ovf_I2_Un);} },
+                { TypeCode.UInt32, () => { il.Emit(OpCodes.Conv_Ovf_I4_Un);} },
+                { TypeCode.Int64, () => { il.Emit(OpCodes.Conv_Ovf_I8); } },
+                { TypeCode.UInt64, () => {il.Emit(OpCodes.Conv_Ovf_I8_Un);} },
+                { TypeCode.Single, () => { il.Emit(OpCodes.Conv_R4); } },
+                { TypeCode.Double, () => { il.Emit(OpCodes.Conv_R8); } },
+            };
+
+            //il.BeginExceptionBlock();
+
             int index = 0;
             foreach (var c in dr.ColumnMemberIndexMap)
             {
@@ -588,7 +618,6 @@ namespace Destrier
                 {
                     //nullable with branching!
                     var nullable_local = il.DeclareLocal(c.Property.PropertyType);
-                    var underlyingType = c.NullableUnderlyingType;
 
                     var originType = Type.GetTypeCode(dr.GetFieldType(index));
 
@@ -605,7 +634,7 @@ namespace Destrier
                     il.Emit(OpCodes.Callvirt, is_dbnull);
                     il.Emit(OpCodes.Brfalse_S, was_not_null);
 
-                    //new up a nullable<datetime>
+                    //new up a nullable<t>
                     il.Emit(OpCodes.Ldloca_S, nullable_local.LocalIndex);
                     il.Emit(OpCodes.Initobj, c.Property.PropertyType);
                     il.Emit(OpCodes.Ldloc, nullable_local.LocalIndex);
@@ -623,31 +652,140 @@ namespace Destrier
                 }
                 else
                 {
-                    var originType = Type.GetTypeCode(dr.GetFieldType(index));
+                    var origin = dr.GetFieldType(index);
+                    var originType = Type.GetTypeCode(origin);
                     var destinationType = Type.GetTypeCode(c.Property.PropertyType);
+
+                    var was_not_null = il.DefineLabel();
+                    var set_column = il.DefineLabel();
 
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
+
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldc_I4, index);
+                    il.Emit(OpCodes.Callvirt, is_dbnull);
+                    il.Emit(OpCodes.Brfalse_S, was_not_null);
+
+                    //new up a default(T)
+                    if (defaults.ContainsKey(destinationType))
+                    {
+                        defaults[destinationType]();
+                    }
+                    else
+                    {
+                        var local = il.DeclareLocal(c.Property.PropertyType);
+                        il.Emit(OpCodes.Ldloca_S, local.LocalIndex);
+                        il.Emit(OpCodes.Initobj, c.Property.PropertyType);
+                        il.Emit(OpCodes.Ldloc, local.LocalIndex);
+                    }
+                    il.Emit(OpCodes.Br_S, set_column);
 
                     //get the value
+                    il.MarkLabel(was_not_null);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4, index);
                     il.Emit(OpCodes.Callvirt, type_accessors[originType]);
 
                     if (originType != destinationType)
                     {
                         //we need to cast ...
-                        il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+                        if (destinationType == TypeCode.String)
+                        {
+                            var to_s = GetToStringForType(origin);
+                            var local = il.DeclareLocal(origin);
+
+                            il.Emit(OpCodes.Stloc, local.LocalIndex);
+                            il.Emit(OpCodes.Ldloca_S, local.LocalIndex);
+                            il.Emit(OpCodes.Call, to_s);
+                        }
+                        else
+                            if (on_stack_conversions.ContainsKey(destinationType))
+                            on_stack_conversions[destinationType]();
+                        else
+                            il.Emit(OpCodes.Newobj, c.Property.PropertyType);
                     }
 
+                    il.MarkLabel(set_column);
                     il.EmitCall(OpCodes.Callvirt, setMethod, null);
                 }
                 index++;
             }
 
+            //var endLabel = il.DefineLabel();
+            //il.BeginCatchBlock(typeof(Exception));
+            //il.Emit(OpCodes.Pop);
+            //il.Emit(OpCodes.Nop);
+            //il.Emit(OpCodes.Nop);
+            //il.Emit(OpCodes.Leave_S, endLabel);
+            //il.EndExceptionBlock();
+            //il.MarkLabel(endLabel);
+            //il.Emit(OpCodes.Nop);
+
             il.Emit(OpCodes.Ret);
 
             return (SetInstanceValuesDelegate)dyn.CreateDelegate(typeof(SetInstanceValuesDelegate));
+        }
+
+        private static MethodInfo GetToStringForType(Type type)
+        {
+            var methods = type.GetMethods();
+            return methods.First(m => m.Name == "ToString");
+        }
+
+        private static void EmitInt32(ILGenerator il, int value)
+        {
+            switch (value)
+            {
+                case -1:
+                    il.Emit(OpCodes.Ldc_I4_M1);
+                    return;
+
+                case 0:
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    return;
+
+                case 1:
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    return;
+
+                case 2:
+                    il.Emit(OpCodes.Ldc_I4_2);
+                    return;
+
+                case 3:
+                    il.Emit(OpCodes.Ldc_I4_3);
+                    return;
+
+                case 4:
+                    il.Emit(OpCodes.Ldc_I4_4);
+                    return;
+
+                case 5:
+                    il.Emit(OpCodes.Ldc_I4_5);
+                    return;
+
+                case 6:
+                    il.Emit(OpCodes.Ldc_I4_6);
+                    return;
+
+                case 7:
+                    il.Emit(OpCodes.Ldc_I4_7);
+                    return;
+
+                case 8:
+                    il.Emit(OpCodes.Ldc_I4_8);
+                    return;
+
+                default:
+                    if (value >= -128 && value <= 127)
+                    {
+                        il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
+                        return;
+                    }
+                    il.Emit(OpCodes.Ldc_I4, value);
+                    return;
+            }
         }
     }
 }
