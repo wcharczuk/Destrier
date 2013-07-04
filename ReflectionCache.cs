@@ -608,7 +608,7 @@ namespace Destrier
                 { TypeCode.Double, () => { il.Emit(OpCodes.Conv_R8); } },
             };
 
-            //il.BeginExceptionBlock();
+            il.BeginExceptionBlock();
 
             int index = 0;
             foreach (var c in dr.ColumnMemberIndexMap)
@@ -712,15 +712,15 @@ namespace Destrier
                 index++;
             }
 
-            //var endLabel = il.DefineLabel();
-            //il.BeginCatchBlock(typeof(Exception));
-            //il.Emit(OpCodes.Pop);
-            //il.Emit(OpCodes.Nop);
-            //il.Emit(OpCodes.Nop);
-            //il.Emit(OpCodes.Leave_S, endLabel);
-            //il.EndExceptionBlock();
-            //il.MarkLabel(endLabel);
-            //il.Emit(OpCodes.Nop);
+            var endLabel = il.DefineLabel();
+            il.BeginCatchBlock(typeof(Exception));
+            il.Emit(OpCodes.Ldc_I4, index);
+            il.Emit(OpCodes.Ldarg_0);
+
+            il.EmitCall(OpCodes.Call, idr.GetMethod("ThrowDataException"), null);
+            il.EndExceptionBlock();
+            il.MarkLabel(endLabel);
+            il.Emit(OpCodes.Nop);
 
             il.Emit(OpCodes.Ret);
 
