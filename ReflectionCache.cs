@@ -7,6 +7,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.IO;
 using System.Collections.Specialized;
+using System.Data;
+using System.Reflection.Emit;
 
 namespace Destrier
 {
@@ -536,6 +538,116 @@ namespace Destrier
                     }
                 }
             }
+        }
+
+        public delegate void SetInstanceValuesDelegate(IndexedSqlDataReader dr, object instance);
+
+        public static SetInstanceValuesDelegate EmitILMappedMethod(IndexedSqlDataReader dr)
+        {
+            Type idr = dr.GetType();
+            var idr_methods = new Dictionary<String, MethodInfo>();
+            foreach (var mi in idr.GetMethods())
+            {
+                if (mi.Name.StartsWith("Get") || mi.Name == "IsDBNull")
+                {
+                    if (!idr_methods.ContainsKey(mi.Name))
+                        idr_methods.Add(mi.Name, mi);
+                }
+            }
+
+            var is_dbnull = idr_methods["IsDBNull"];
+
+            //use this with the type code on the dr field.
+            var type_accessors = new Dictionary<TypeCode, MethodInfo>()
+            {
+                { TypeCode.Boolean, idr_methods["GetBoolean"] },
+                { TypeCode.DateTime, idr_methods["GetDateTime"] },
+                { TypeCode.UInt16, idr_methods["GetInt16"] },
+                { TypeCode.Int16, idr_methods["GetInt16"] },
+                { TypeCode.UInt32, idr_methods["GetInt32"] },
+                { TypeCode.Int32, idr_methods["GetInt32"] },
+                { TypeCode.UInt64, idr_methods["GetInt64"] },
+                { TypeCode.Int64, idr_methods["GetInt64"] },
+                { TypeCode.Single, idr_methods["GetDouble"] },
+                { TypeCode.Double, idr_methods["GetDouble"] },
+                { TypeCode.Decimal, idr_methods["GetDecimal"] },
+                { TypeCode.String, idr_methods["GetString"] },
+                { TypeCode.Char, idr_methods["GetString"] },
+                { TypeCode.Byte, idr_methods["GetByte"] },
+                { TypeCode.Object, idr_methods["GetValue"] }
+            };
+
+            DynamicMethod dyn = new DynamicMethod("SetInstanceValues", typeof(void), new Type[] { typeof(IndexedSqlDataReader), typeof(object) });
+            ILGenerator il = dyn.GetILGenerator();
+
+            int index = 0;
+            foreach (var c in dr.ColumnMemberIndexMap)
+            {
+                var setMethod = c.Property.GetSetMethod();
+                if (c.IsNullableType)
+                {
+                    //nullable with branching!
+                    var nullable_local = il.DeclareLocal(c.Property.PropertyType);
+                    var underlyingType = c.NullableUnderlyingType;
+
+                    var originType = Type.GetTypeCode(dr.GetFieldType(index));
+
+                    var was_not_null = il.DefineLabel();
+                    var set_column = il.DefineLabel();
+
+                    //load up our object .. again.
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
+                    //test if it was null
+
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4, index);
+                    il.Emit(OpCodes.Callvirt, is_dbnull);
+                    il.Emit(OpCodes.Brfalse_S, was_not_null);
+
+                    //new up a nullable<datetime>
+                    il.Emit(OpCodes.Ldloca_S, nullable_local.LocalIndex);
+                    il.Emit(OpCodes.Initobj, c.Property.PropertyType);
+                    il.Emit(OpCodes.Ldloc, nullable_local.LocalIndex);
+                    il.Emit(OpCodes.Br_S, set_column);
+
+                    //grab the value
+                    il.MarkLabel(was_not_null);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4, index);
+                    il.Emit(OpCodes.Callvirt, type_accessors[originType]);
+                    il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+
+                    il.MarkLabel(set_column);
+                    il.EmitCall(OpCodes.Callvirt, setMethod, null);
+                }
+                else
+                {
+                    var originType = Type.GetTypeCode(dr.GetFieldType(index));
+                    var destinationType = Type.GetTypeCode(c.Property.PropertyType);
+
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4, index);
+
+                    //get the value
+                    il.Emit(OpCodes.Callvirt, type_accessors[originType]);
+
+                    if (originType != destinationType)
+                    {
+                        //we need to cast ...
+                        il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+                    }
+
+                    il.EmitCall(OpCodes.Callvirt, setMethod, null);
+                }
+                index++;
+            }
+
+            il.Emit(OpCodes.Ret);
+
+            return (SetInstanceValuesDelegate)dyn.CreateDelegate(typeof(SetInstanceValuesDelegate));
         }
     }
 }
