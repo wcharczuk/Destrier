@@ -231,12 +231,15 @@ namespace Destrier
             }
             else
             {
+                dr.SetInstanceValues(instance);
+
+                /*
                 for (int x = 0; x < dr.FieldCount; x++)
                 {
                     ColumnMember member = dr.ColumnMemberIndexMap[x];
                     var value = dr.Get(member, x);
                     member.SetValue(instance, value);
-                }
+                }*/
             }
 
             if (dr.HasChildCollectionMembers && objectLookups != null)

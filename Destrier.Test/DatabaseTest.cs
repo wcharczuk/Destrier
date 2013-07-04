@@ -45,12 +45,15 @@ CREATE TABLE TestObjects
     modified datetime,
     nullableId int,
     referencedObjectId int,
+    [type] int,
+    [nullableType] smallint
 );
 
 DECLARE @id int;
 DECLARE @i int;
 DECLARE @subId int;
 DECLARE @typeId smallint;
+DECLARE @nullableTypeId smallint;
 
 SET @i = 0;
 SET @subId = 1;
@@ -58,8 +61,10 @@ SET @typeId = 1;
 
 WHILE @i < 5001
 BEGIN
-    INSERT INTO TestObjects ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId]) VALUES ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId);
-
+    INSERT INTO TestObjects ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType]) VALUES ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId);
+    
+    IF(@nullableTypeId is null) BEGIN; set @nullableTypeId = 1; END;
+    IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
     IF(@subId = 100) BEGIN; SET @subId = 1; END;
     IF(@typeId = 10) BEGIN; SET @typeId = 1; END;
 
