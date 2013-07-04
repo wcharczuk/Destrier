@@ -46,8 +46,8 @@ CREATE TABLE TestObjects
     modified datetime,
     nullableId int,
     referencedObjectId int,
-    [type] smallint,
-    [nullableType] smallint
+    [type] int,
+    [nullableType] int
 );
 
 DECLARE @id int;
@@ -65,7 +65,8 @@ BEGIN
     INSERT INTO TestObjects ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType]) VALUES ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId);
     
     IF(@nullableTypeId is null) BEGIN; set @nullableTypeId = 1; END;
-    IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
+    ELSE IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
+    
     IF(@subId = 100) BEGIN; SET @subId = 1; END;
     IF(@typeId = 10) BEGIN; SET @typeId = 1; END;
 
@@ -73,7 +74,6 @@ BEGIN
     SET @typeId = @typeId + 1;
     SET @i = @i + 1;
 END
-
 ";
             Destrier.Execute.NonQuery(initDbScript);
         }

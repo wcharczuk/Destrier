@@ -76,7 +76,7 @@ namespace ORMComparison
         public Int32 ReferencedObjectId { get; set; }
 
         [Destrier.Column]
-        public short? NullableId { get; set; }
+        public Int32? NullableId { get; set; }
         
         [Destrier.Column]
         public TestObjectTypeId Type { get; set; }
@@ -99,10 +99,10 @@ namespace ORMComparison
             ((TestObject)instance).Active = dr.GetBoolean(3);
             ((TestObject)instance).Created = dr.GetDateTime(4);
             ((TestObject)instance).Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
-            ((TestObject)instance).NullableId = !dr.IsDBNull(6) ? (short?)dr.GetInt32(6) : null;
+            ((TestObject)instance).NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
             ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(Int32);
-            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt16(8);
-            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (TestObjectTypeId?)dr.GetInt16(9) : null;
+            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt32(8);
+            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (TestObjectTypeId?)dr.GetInt32(9) : null;
         }
 
         static void Main(string[] args)

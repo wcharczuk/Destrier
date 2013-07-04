@@ -556,22 +556,30 @@ namespace Destrier
             Exception toThrow;
             try
             {
-                string name = "(n/a)";
-                string value = "(n/a)";
+                string name = "-";
+                string value = "-";
+                string memberName = "-";
+                string memberType = "-";
                 if (reader != null && columnIndex >= 0 && columnIndex < reader.FieldCount)
                 {
                     name = reader.GetName(columnIndex);
                     object val = reader.GetValue(columnIndex);
                     if (val == null || val is DBNull)
                     {
-                        value = "<null>";
+                        value = "null";
                     }
                     else
                     {
-                        value = Convert.ToString(val) + " - " + Type.GetTypeCode(val.GetType());
+                        value = Convert.ToString(val) + " as " + Type.GetTypeCode(val.GetType());
+                    }
+
+                    if (reader.ColumnMemberIndexMap != null && reader.ColumnMemberIndexMap.Any())
+                    {
+                        memberName = reader.ColumnMemberIndexMap[columnIndex].Name;
+                        memberType = reader.ColumnMemberIndexMap[columnIndex].Type.ToString();
                     }
                 }
-                toThrow = new DataException(string.Format("Error parsing column {0} ({1}={2})", columnIndex, name, value), ex);
+                toThrow = new DataException(String.Format("Exception reading column {0}: ({1} = {2}) for {3} as {4})", columnIndex, name, value, memberName, memberType), ex);
             }
             catch
             {

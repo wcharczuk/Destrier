@@ -138,7 +138,7 @@ namespace Destrier
 
             foreach (var prop in properties)
                 members.Add(new ColumnMember(prop));
-            
+
             return members;
         }
 
@@ -154,7 +154,7 @@ namespace Destrier
         {
             var list = new List<ReferencedObjectMember>();
             PropertyInfo[] properties = GetReferencedObjectMemberProperties(type);
-            foreach(var prop in properties)            
+            foreach (var prop in properties)
                 list.Add(new ReferencedObjectMember(prop));
 
             return list;
@@ -350,7 +350,7 @@ namespace Destrier
                 return first != null;
             }
         }
-        
+
         public static Action<Object, Object> GetSetAction(PropertyInfo property)
         {
             return _compiledSetFunctions.GetOrAdd(property, (p) =>
@@ -609,17 +609,28 @@ namespace Destrier
             };
 
             il.BeginExceptionBlock();
+            var col_index = il.DeclareLocal(typeof(int));
 
             int index = 0;
             foreach (var c in dr.ColumnMemberIndexMap)
             {
+                il.Emit(OpCodes.Ldc_I4, index);
+                il.Emit(OpCodes.Stloc, col_index.LocalIndex);
+
                 var setMethod = c.Property.GetSetMethod();
                 if (c.IsNullableType)
                 {
                     //nullable with branching!
                     var nullable_local = il.DeclareLocal(c.Property.PropertyType);
 
-                    var originType = Type.GetTypeCode(dr.GetFieldType(index));
+                    
+
+                    var underlyingType = c.NullableUnderlyingType;
+
+                    var origin = dr.GetFieldType(index);
+                    var originType = Type.GetTypeCode(origin);
+
+                    var nullable_constructor = c.Type.GetConstructors().First();
 
                     var was_not_null = il.DefineLabel();
                     var set_column = il.DefineLabel();
@@ -630,22 +641,22 @@ namespace Destrier
                     //test if it was null
 
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldc_I4, index);
+                    EmitInt32(il, index);
                     il.Emit(OpCodes.Callvirt, is_dbnull);
                     il.Emit(OpCodes.Brfalse_S, was_not_null);
 
                     //new up a nullable<t>
                     il.Emit(OpCodes.Ldloca_S, nullable_local.LocalIndex);
-                    il.Emit(OpCodes.Initobj, c.Property.PropertyType);
+                    il.Emit(OpCodes.Initobj, c.Type);
                     il.Emit(OpCodes.Ldloc, nullable_local.LocalIndex);
                     il.Emit(OpCodes.Br_S, set_column);
 
                     //grab the value
                     il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldc_I4, index);
+                    EmitInt32(il, index);
                     il.Emit(OpCodes.Callvirt, type_accessors[originType]);
-                    il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+                    il.Emit(OpCodes.Newobj, nullable_constructor);
 
                     il.MarkLabel(set_column);
                     il.EmitCall(OpCodes.Callvirt, setMethod, null);
@@ -654,7 +665,7 @@ namespace Destrier
                 {
                     var origin = dr.GetFieldType(index);
                     var originType = Type.GetTypeCode(origin);
-                    var destinationType = Type.GetTypeCode(c.Property.PropertyType);
+                    var destinationType = Type.GetTypeCode(c.Type);
 
                     var was_not_null = il.DefineLabel();
                     var set_column = il.DefineLabel();
@@ -663,7 +674,7 @@ namespace Destrier
                     il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
 
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldc_I4, index);
+                    EmitInt32(il, index);
                     il.Emit(OpCodes.Callvirt, is_dbnull);
                     il.Emit(OpCodes.Brfalse_S, was_not_null);
 
@@ -684,7 +695,7 @@ namespace Destrier
                     //get the value
                     il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldc_I4, index);
+                    EmitInt32(il, index);
                     il.Emit(OpCodes.Callvirt, type_accessors[originType]);
 
                     if (originType != destinationType)
@@ -701,9 +712,9 @@ namespace Destrier
                         }
                         else
                             if (on_stack_conversions.ContainsKey(destinationType))
-                            on_stack_conversions[destinationType]();
-                        else
-                            il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+                                on_stack_conversions[destinationType]();
+                            else
+                                il.Emit(OpCodes.Newobj, c.Property.PropertyType);
                     }
 
                     il.MarkLabel(set_column);
@@ -714,14 +725,13 @@ namespace Destrier
 
             var endLabel = il.DefineLabel();
             il.BeginCatchBlock(typeof(Exception));
-            il.Emit(OpCodes.Ldc_I4, index);
+            il.Emit(OpCodes.Ldloc, col_index.LocalIndex);
             il.Emit(OpCodes.Ldarg_0);
-
             il.EmitCall(OpCodes.Call, idr.GetMethod("ThrowDataException"), null);
             il.EndExceptionBlock();
+
             il.MarkLabel(endLabel);
             il.Emit(OpCodes.Nop);
-
             il.Emit(OpCodes.Ret);
 
             return (SetInstanceValuesDelegate)dyn.CreateDelegate(typeof(SetInstanceValuesDelegate));
