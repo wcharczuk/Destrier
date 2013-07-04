@@ -39,13 +39,14 @@ CREATE TABLE TestObjects
 ( 
     id int not null identity(1,1) primary key, 
     name varchar(255) not null,
+    nullName varchar(255),
     mockObjectTypeId smallint not null, 
     active bit not null,
     created datetime not null,
     modified datetime,
     nullableId int,
     referencedObjectId int,
-    [type] int,
+    [type] smallint,
     [nullableType] smallint
 );
 

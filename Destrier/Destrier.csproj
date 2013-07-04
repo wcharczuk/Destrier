@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChildCollectionMember.cs" />
+    <Compile Include="DataException.cs" />
     <Compile Include="IGetMany.cs" />
     <Compile Include="IndexedSqlDataReader.cs" />
     <Compile Include="Member.cs" />
