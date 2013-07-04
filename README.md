@@ -5,22 +5,26 @@ It is designed to leverage both strong typing and model / schema relationships a
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
 ###Features###
+* POCO support; use your existing objects.
+* Code first based on annotations.
 * Speed: It's pretty fast for what it lets you do.
-* Code first, minimal configuration, powerful annotations.
- * "Referenced Objects" let you have associated objects (joined to specified properties)
- * "Child Objects" let you have related sub collections (one-to-many relationships).
- * Enumerable 'streaming' results, means you can query huge datasets
+* Expressive: Strongly typed query syntax and update syntax.
+* Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
+* "Referenced Objects" let you have associated objects (joined to specified properties).
+ * Say an object has a 'UserId' property; Destrier will automatically fill a 'User' object based on the specified reference.
+* "Child Objects" let you have related sub collections (one-to-many relationships).
+* IEnumerable reader let you stream results from large datasets / queries.
 
 ###Speed###
-The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 2000 results.
+The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 5000 results.
 
-| ORM                  | Timing        |
-|----------------------|---------------|
-|Raw Reader            | Avg:	3.49ms | 
-|Dapper                | Avg:	4.03ms | 
-|ServiceStack ORMLite  | Avg:   7.45ms |
-|Destrier              | Avg:   8.16ms |
-|EntityFramework       | Avg:  48.73ms |
+| ORM                  | Timing         |
+|----------------------|----------------|
+|Raw Reader            | Avg:	10.64ms | 
+|Dapper                | Avg:	12.96ms | 
+|ServiceStack ORMLite  | Avg:   33.62ms |
+|Destrier              | Avg:   14.60ms |
+|EntityFramework       | Avg:  112.10ms |
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
@@ -118,6 +122,19 @@ var list = new List<Int32>() { 1, 2, 3, 4 };
 var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)).Execute();
 
 //resulting sql is "WHERE [MockObjectId] in (1,2,3,4)"
+```
+You can update objects by individual properties.
+```C#
+new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Exeute();
+//resulting sql is UPDATE [alias] SET Active = 0 FROM MockObjects [alias] where MockObjectId = 2
+```
+
+Alternately you can update a whole object at once\
+```C#
+var mo = Database.Get<MockObject>(2);
+mo.Active = false;
+Database.Update(mo);
+//this will cause a massive update statement with every property as 'SET's
 ```
 
 ###Pull Requests / Contributions###

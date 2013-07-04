@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
@@ -34,8 +35,17 @@ namespace ORMComparison
             this.Property(t => t.Modified);
             this.Property(t => t.ReferencedObjectId);
             this.Property(t => t.NullableId);
+            //this.Property(t => t.Type);
+            //this.Property(t => t.NullableType);
             this.ToTable("TestObjects");
         }
+    }
+
+    public enum TestObjectTypeId 
+    {
+        One = 1,
+        Two = 2,
+        Three = 3
     }
 
     [Destrier.Table("TestObjects")]
@@ -63,13 +73,32 @@ namespace ORMComparison
 
         [Destrier.Column]
         public Int32? NullableId { get; set; }
+        
+        [Destrier.Column]
+        public TestObjectTypeId Type { get; set; }
+
+        [Destrier.Column]
+        public TestObjectTypeId? NullableType { get; set; }
     }
 
     public class Program
     {
 		public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
-        public const int TRIALS = 100;
-        public const int LIMIT = 2000;
+        public const int TRIALS = 50;
+        public const int LIMIT = 5000;
+
+        static void SetValuesForObject(IDataReader dr, object instance)
+        {
+            ((TestObject)instance).Id = dr.GetInt32(0);
+            ((TestObject)instance).Name = dr.GetString(1);
+            ((TestObject)instance).Active = dr.GetBoolean(2);
+            ((TestObject)instance).Created = dr.GetDateTime(3);
+            ((TestObject)instance).Modified = !dr.IsDBNull(4) ? (DateTime?)dr.GetDateTime(4) : null;
+            ((TestObject)instance).NullableId = !dr.IsDBNull(5) ? (int?)dr.GetInt32(5) : null;
+            ((TestObject)instance).ReferencedObjectId = dr.GetInt32(6);
+            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt32(7);
+            ((TestObject)instance).NullableType = !dr.IsDBNull(8) ? (TestObjectTypeId?)dr.GetInt16(8) : null;
+        }
 
         static void Main(string[] args)
         {
@@ -79,7 +108,7 @@ namespace ORMComparison
 
             Destrier.Test.DatabaseTest.EnsureInitDataStore();
 
-            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, Created, Modified, NullableId, ReferencedObjectId from TestObjects (nolock)", LIMIT);
+            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType from TestObjects (nolock)", LIMIT);
 
             Func<List<TestObject>> rawAction = () =>
             {
@@ -100,16 +129,9 @@ namespace ORMComparison
                             {
                                 while (dr.Read())
                                 {
-                                    var mockObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
-                                    mockObject.Id = dr.GetInt32(0);
-                                    mockObject.Name = dr.GetString(1);
-                                    mockObject.Active = dr.GetBoolean(2);
-                                    mockObject.Created = dr.GetDateTime(3);
-                                    mockObject.Modified = !dr.IsDBNull(4) ? (DateTime?)dr.GetDateTime(4) : null;
-                                    mockObject.NullableId = !dr.IsDBNull(5) ? (int?)dr.GetInt32(5) : null;
-                                    mockObject.ReferencedObjectId = dr.GetInt32(6);
-
-                                    list.Add(mockObject);
+                                    var testObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
+                                    SetValuesForObject(dr, testObject);
+                                    list.Add(testObject);
                                 }
                             }
                         }
@@ -123,8 +145,7 @@ namespace ORMComparison
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
-                    var queryResults = ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
-                    return queryResults.ToList();
+                    return ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
                 }
             };
 

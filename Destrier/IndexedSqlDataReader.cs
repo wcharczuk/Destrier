@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -64,6 +65,8 @@ namespace Destrier
         /// </summary>
         public string[] ColumnIndexMap { get; set; }
 
+        private ReflectionCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
+
         private void InitResultSet()
         {
             //these are standard regardless of if we're using this reader to get a destrier object.
@@ -88,8 +91,8 @@ namespace Destrier
                     }
                 }
                 ColumnMemberIndexMap = cm_index.ToArray();
+                _setInstanceValuesFn = ReflectionCache.EmitILMappedMethod(this);
             }
-
         }
 
         public Boolean HasColumn(String columnName)
@@ -450,6 +453,7 @@ namespace Destrier
         }
         #endregion
 
+        #region Get
         public T Get<T>(String columnName) 
         {
             ColumnMember member = null;
@@ -541,6 +545,14 @@ namespace Destrier
             }
         }
 
+        #endregion
+
+        public void SetInstanceValues(object instance)
+        {
+            _setInstanceValuesFn(this, instance);
+        }
+
+        #region List Processing
         public dynamic ReadDynamic()
         {
             var value = new AgileObject();
@@ -757,5 +769,6 @@ namespace Destrier
             if (advanceToNextResultAfter)
                 this.NextResult();
         }
+        #endregion
     }
 }
