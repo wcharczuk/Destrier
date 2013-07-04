@@ -552,6 +552,35 @@ namespace Destrier
             _setInstanceValuesFn(this, instance);
         }
 
+        public static void ThrowDataException(Exception ex, Int32 columnIndex, IndexedSqlDataReader reader)
+        {
+            Exception toThrow;
+            try
+            {
+                string name = "(n/a)";
+                string value = "(n/a)";
+                if (reader != null && columnIndex >= 0 && columnIndex < reader.FieldCount)
+                {
+                    name = reader.GetName(columnIndex);
+                    object val = reader.GetValue(columnIndex);
+                    if (val == null || val is DBNull)
+                    {
+                        value = "<null>";
+                    }
+                    else
+                    {
+                        value = Convert.ToString(val) + " - " + Type.GetTypeCode(val.GetType());
+                    }
+                }
+                toThrow = new DataException(string.Format("Error parsing column {0} ({1}={2})", columnIndex, name, value), ex);
+            }
+            catch
+            {
+                toThrow = new DataException(ex.Message, ex);
+            }
+            throw toThrow;
+        }
+
         #region List Processing
         public dynamic ReadDynamic()
         {

@@ -30,6 +30,7 @@ namespace ORMComparison
             this.HasKey(t => t.Id);
             this.Property(t => t.Id);
             this.Property(t => t.Name);
+            this.Property(t => t.NullName);
             this.Property(t => t.Active);
             this.Property(t => t.Created);
             this.Property(t => t.Modified);
@@ -63,6 +64,9 @@ namespace ORMComparison
         public String Name { get; set; }
 
         [Destrier.Column]
+        public String NullName { get; set; }
+
+        [Destrier.Column]
         public DateTime Created { get; set; }
 
         [Destrier.Column]
@@ -75,7 +79,7 @@ namespace ORMComparison
         public short? NullableId { get; set; }
         
         [Destrier.Column]
-        public String Type { get; set; }
+        public TestObjectTypeId Type { get; set; }
 
         [Destrier.Column]
         public TestObjectTypeId? NullableType { get; set; }
@@ -91,13 +95,14 @@ namespace ORMComparison
         {
             ((TestObject)instance).Id = dr.GetInt32(0);
             ((TestObject)instance).Name = dr.GetString(1);
-            ((TestObject)instance).Active = dr.GetBoolean(2);
-            ((TestObject)instance).Created = dr.GetDateTime(3);
-            ((TestObject)instance).Modified = !dr.IsDBNull(4) ? (DateTime?)dr.GetDateTime(4) : null;
-            ((TestObject)instance).NullableId = !dr.IsDBNull(5) ? (short?)dr.GetInt32(5) : null;
-            ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(6) ? dr.GetInt32(6) : default(Int32);
-            ((TestObject)instance).Type = dr.GetInt32(7).ToString();
-            ((TestObject)instance).NullableType = !dr.IsDBNull(8) ? (TestObjectTypeId?)dr.GetInt16(8) : null;
+            ((TestObject)instance).Name = !dr.IsDBNull(2) ? dr.GetString(2) : null;
+            ((TestObject)instance).Active = dr.GetBoolean(3);
+            ((TestObject)instance).Created = dr.GetDateTime(4);
+            ((TestObject)instance).Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
+            ((TestObject)instance).NullableId = !dr.IsDBNull(6) ? (short?)dr.GetInt32(6) : null;
+            ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(Int32);
+            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt16(8);
+            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (TestObjectTypeId?)dr.GetInt16(9) : null;
         }
 
         static void Main(string[] args)
@@ -108,7 +113,7 @@ namespace ORMComparison
 
             Destrier.Test.DatabaseTest.EnsureInitDataStore();
 
-            string QUERY = String.Format("SELECT TOP {0} Id, Name, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType from TestObjects (nolock)", LIMIT);
+            string QUERY = String.Format("SELECT TOP {0} Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType from TestObjects (nolock)", LIMIT);
 
             Func<List<TestObject>> rawAction = () =>
             {
