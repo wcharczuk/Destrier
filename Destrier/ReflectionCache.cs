@@ -680,29 +680,31 @@ namespace Destrier
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
 
-                    il.Emit(OpCodes.Ldarg_0);
-                    EmitInt32(il, index);
-                    il.Emit(OpCodes.Callvirt, is_dbnull);
-                    il.Emit(OpCodes.Brfalse_S, was_not_null);
+                    if (c.ColumnAttribute.CanBeNull)
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
+                        EmitInt32(il, index);
+                        il.Emit(OpCodes.Callvirt, is_dbnull);
+                        il.Emit(OpCodes.Brfalse_S, was_not_null);
 
-                    //new up a default(T)
-                    if (defaults.ContainsKey(destinationType))
-                    {
-                        defaults[destinationType]();
+                        //new up a default(T)
+                        if (defaults.ContainsKey(destinationType))
+                        {
+                            defaults[destinationType]();
+                        }
+                        else
+                        {
+                            var local = il.DeclareLocal(c.Property.PropertyType);
+                            il.Emit(OpCodes.Ldloca_S, local.LocalIndex);
+                            il.Emit(OpCodes.Initobj, c.Property.PropertyType);
+                            il.Emit(OpCodes.Ldloc, local.LocalIndex);
+                        }
+                        il.Emit(OpCodes.Br_S, set_column);
+                        il.MarkLabel(was_not_null);
                     }
-                    else
-                    {
-                        var local = il.DeclareLocal(c.Property.PropertyType);
-                        il.Emit(OpCodes.Ldloca_S, local.LocalIndex);
-                        il.Emit(OpCodes.Initobj, c.Property.PropertyType);
-                        il.Emit(OpCodes.Ldloc, local.LocalIndex);
-                    }
-                    il.Emit(OpCodes.Br_S, set_column);
 
                     //get the value
-                    il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
-
                     EmitInt32(il, index);
 
                     MethodInfo get_value = null;
@@ -731,7 +733,7 @@ namespace Destrier
                             if (on_stack_conversions.ContainsKey(destinationType))
                                 on_stack_conversions[destinationType]();
                             else
-                                il.Emit(OpCodes.Newobj, c.Property.PropertyType);
+                                il.Emit(OpCodes.Newobj, c.Type);
                     }
 
                     il.MarkLabel(set_column);

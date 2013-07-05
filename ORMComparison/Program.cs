@@ -38,6 +38,12 @@ namespace ORMComparison
             this.Property(t => t.NullableId);
             //this.Property(t => t.Type);
             //this.Property(t => t.NullableType);
+            this.Property(t => t.SingleChar);
+            //this.Property(t => t.Single);
+            this.Property(t => t.Double);
+            this.Property(t => t.NullableDouble);
+            this.Property(t => t.Guid);
+            this.Property(t => t.NullableGuid);
             this.ToTable("TestObjects");
         }
     }
@@ -53,50 +59,50 @@ namespace ORMComparison
     [ServiceStack.DataAnnotations.Alias("TestObjects")]
     public class TestObject
     {
-        [Destrier.Column(IsPrimaryKey = true)]
+        [Destrier.Column(IsPrimaryKey = true, CanBeNull = false)]
         [ServiceStack.DataAnnotations.PrimaryKey]
         public Int32 Id { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public Boolean Active { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public String Name { get; set; }
 
         [Destrier.Column]
         public String NullName { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public DateTime Created { get; set; }
 
         [Destrier.Column]
         public DateTime? Modified { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public Int32 ReferencedObjectId { get; set; }
 
         [Destrier.Column]
         public Int32? NullableId { get; set; }
-        
-        [Destrier.Column]
+
+        [Destrier.Column(CanBeNull = false)]
         public TestObjectTypeId Type { get; set; }
 
         [Destrier.Column]
         public TestObjectTypeId? NullableType { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public String SingleChar { get; set; }
 
-        [Destrier.Column]
-        public Single Single { get; set; }
+        [Destrier.Column(CanBeNull = false)]
+        public Double Single { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public Double Double { get; set; }
 
         [Destrier.Column]
         public Double? NullableDouble { get; set; }
 
-        [Destrier.Column]
+        [Destrier.Column(CanBeNull = false)]
         public Guid Guid { get; set; }
 
         [Destrier.Column]
@@ -221,9 +227,9 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
-                //{ "ServiceStack ORMLite", ormLiteAction },
+                { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
-                //{ "EntityFramework", entityFrameworkAction }
+                { "EntityFramework", entityFrameworkAction }
             };
 
             var results = new List<Int64>();
