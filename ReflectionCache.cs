@@ -555,6 +555,8 @@ namespace Destrier
                 }
             }
 
+            var get_value_fn = idr_methods["GetValue"];
+            var get_guid_fn = idr_methods["GetGuid"];
             var is_dbnull = idr_methods["IsDBNull"];
 
             //use this with the type code on the dr field.
@@ -573,8 +575,7 @@ namespace Destrier
                 { TypeCode.Decimal, idr_methods["GetDecimal"] },
                 { TypeCode.String, idr_methods["GetString"] },
                 { TypeCode.Char, idr_methods["GetString"] },
-                { TypeCode.Byte, idr_methods["GetByte"] },
-                { TypeCode.Object, idr_methods["GetValue"] }
+                { TypeCode.Byte, idr_methods["GetByte"] }
             };
 
             DynamicMethod dyn = new DynamicMethod("SetInstanceValues", typeof(void), new Type[] { typeof(IndexedSqlDataReader), typeof(object) });
@@ -591,6 +592,7 @@ namespace Destrier
                 { TypeCode.UInt64, () => { il.Emit(OpCodes.Ldc_I8, 0); } },
                 { TypeCode.Single, () => { il.Emit(OpCodes.Ldc_R4, 0.0f); } },
                 { TypeCode.Double, () => { il.Emit(OpCodes.Ldc_R8, 0.0d); } },
+                { TypeCode.String, () => { il.Emit(OpCodes.Ldnull); } },
             };
 
             var on_stack_conversions = new Dictionary<TypeCode, Action>()
@@ -652,7 +654,14 @@ namespace Destrier
                     il.Emit(OpCodes.Ldarg_0);
                     EmitInt32(il, index);
 
-                    var get_value = type_accessors[originType];
+                    MethodInfo get_value = null;
+                    if (type_accessors.ContainsKey(originType))
+                        get_value = type_accessors[originType];
+                    else if (origin == typeof(Guid))
+                        get_value = get_guid_fn;
+                    else
+                        get_value = get_value_fn;
+
                     il.EmitCall(OpCodes.Callvirt, get_value, null);
                     il.Emit(OpCodes.Newobj, nullable_constructor);
 
@@ -693,8 +702,17 @@ namespace Destrier
                     //get the value
                     il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
+
                     EmitInt32(il, index);
-                    var get_value = type_accessors[originType];
+
+                    MethodInfo get_value = null;
+                    if (type_accessors.ContainsKey(originType))
+                        get_value = type_accessors[originType];
+                    else if (origin == typeof(Guid))
+                        get_value = get_guid_fn;
+                    else
+                        get_value = get_value_fn;
+
                     il.EmitCall(OpCodes.Callvirt, get_value, null);
 
                     if (originType != destinationType)
