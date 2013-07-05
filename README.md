@@ -7,12 +7,13 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Features###
 * POCO support; use your existing objects.
 * Code first based on annotations.
+* Stability: Use Enums, nullable types, relative freedom in mapping db types to clr types. 
 * Speed: It's pretty fast for what it lets you do.
-* Expressive: Strongly typed query syntax and update syntax.
+* Expressive: Strongly typed query syntax and update syntax help catch errors on compilation.
 * Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
-* "Referenced Objects" let you have associated objects (joined to specified properties).
+* Referenced Objects: let you have associated objects (joined to specified properties).
  * Say an object has a 'UserId' property; Destrier will automatically fill a 'User' object based on the specified reference.
-* "Child Objects" let you have related sub collections (one-to-many relationships).
+* Child Collections: let you have related sub collections (one-to-many relationships).
 * IEnumerable reader let you stream results from large datasets / queries.
 
 ###Speed###
@@ -20,11 +21,13 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
-|Raw Reader            | Avg:	10.64ms | 
-|Dapper                | Avg:	12.96ms | 
-|Destrier              | Avg:   14.60ms |
-|ServiceStack ORMLite  | Avg:   33.62ms |
-|EntityFramework       | Avg:  112.10ms |
+|Raw Reader            | Avg:	20.82ms | 
+|Dapper                | Avg:	25.72ms | 
+|Destrier              | Avg:   32.49ms |
+|ServiceStack ORMLite  | Avg:   67.65ms |
+|EntityFramework       | Avg:  145.38ms |
+
+It should be noted that EntityFramework had to have some members disabled because it lacks Enum support. Also should be noted that ORMLite failed to cast Doubles=>Singles.
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
