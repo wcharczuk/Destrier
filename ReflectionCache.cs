@@ -589,8 +589,8 @@ namespace Destrier
                 { TypeCode.UInt32, () => { il.Emit(OpCodes.Ldc_I4_0); } },
                 { TypeCode.Int64, () => { il.Emit(OpCodes.Ldc_I8, 0); } },
                 { TypeCode.UInt64, () => { il.Emit(OpCodes.Ldc_I8, 0); } },
-                { TypeCode.Single, () => { il.Emit(OpCodes.Ldc_R4, 0); } },
-                { TypeCode.Double, () => { il.Emit(OpCodes.Ldc_R8, 0); } },
+                { TypeCode.Single, () => { il.Emit(OpCodes.Ldc_R4, 0.0f); } },
+                { TypeCode.Double, () => { il.Emit(OpCodes.Ldc_R8, 0.0d); } },
             };
 
             var on_stack_conversions = new Dictionary<TypeCode, Action>()
@@ -620,11 +620,7 @@ namespace Destrier
                 var setMethod = c.Property.GetSetMethod();
                 if (c.IsNullableType)
                 {
-                    //nullable with branching!
                     var nullable_local = il.DeclareLocal(c.Property.PropertyType);
-
-                    
-
                     var underlyingType = c.NullableUnderlyingType;
 
                     var origin = dr.GetFieldType(index);
@@ -655,7 +651,9 @@ namespace Destrier
                     il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
                     EmitInt32(il, index);
-                    il.Emit(OpCodes.Callvirt, type_accessors[originType]);
+
+                    var get_value = type_accessors[originType];
+                    il.EmitCall(OpCodes.Callvirt, get_value, null);
                     il.Emit(OpCodes.Newobj, nullable_constructor);
 
                     il.MarkLabel(set_column);
@@ -696,7 +694,8 @@ namespace Destrier
                     il.MarkLabel(was_not_null);
                     il.Emit(OpCodes.Ldarg_0);
                     EmitInt32(il, index);
-                    il.Emit(OpCodes.Callvirt, type_accessors[originType]);
+                    var get_value = type_accessors[originType];
+                    il.EmitCall(OpCodes.Callvirt, get_value, null);
 
                     if (originType != destinationType)
                     {
@@ -749,53 +748,46 @@ namespace Destrier
             {
                 case -1:
                     il.Emit(OpCodes.Ldc_I4_M1);
-                    return;
-
+                    break;
                 case 0:
                     il.Emit(OpCodes.Ldc_I4_0);
-                    return;
-
+                    break;
                 case 1:
                     il.Emit(OpCodes.Ldc_I4_1);
-                    return;
-
+                    break;
                 case 2:
                     il.Emit(OpCodes.Ldc_I4_2);
-                    return;
-
+                    break;
                 case 3:
                     il.Emit(OpCodes.Ldc_I4_3);
-                    return;
-
+                    break;
                 case 4:
                     il.Emit(OpCodes.Ldc_I4_4);
-                    return;
-
+                    break;
                 case 5:
                     il.Emit(OpCodes.Ldc_I4_5);
-                    return;
-
+                    break;
                 case 6:
                     il.Emit(OpCodes.Ldc_I4_6);
-                    return;
-
+                    break;
                 case 7:
                     il.Emit(OpCodes.Ldc_I4_7);
-                    return;
-
+                    break;
                 case 8:
                     il.Emit(OpCodes.Ldc_I4_8);
-                    return;
-
+                    break;
                 default:
                     if (value >= -128 && value <= 127)
                     {
                         il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
-                        return;
                     }
-                    il.Emit(OpCodes.Ldc_I4, value);
-                    return;
+                    else
+                    {
+                        il.Emit(OpCodes.Ldc_I4, value);
+                    }
+                    break;
             }
+            return;
         }
     }
 }
