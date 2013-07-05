@@ -114,7 +114,7 @@ namespace Destrier
 
                         var databaseColumn = databaseColumns.FirstOrDefault(c => c.Name.Equals(cm.Name, StringComparison.InvariantCultureIgnoreCase));
 
-                        if (!databaseColumn.CanBeNull && !modelColumn.IsPrimaryKey && modelColumn.CanBeNull)
+                        if (!modelColumn.IsPrimaryKey && databaseColumn.CanBeNull != modelColumn.CanBeNull)
                             throw new ColumnNullabilityException(String.Format("{4} DBColumn: {0} {2} ModelColumn: {1} {3}", databaseColumn.Name, cm.Name, databaseColumn.CanBeNull.ToString(), modelColumn.CanBeNull.ToString(), Model.TableName(t)));
                     }
                 }

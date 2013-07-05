@@ -680,7 +680,7 @@ namespace Destrier
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Castclass, c.Property.DeclaringType);
 
-                    if (c.ColumnAttribute.CanBeNull)
+                    if (!c.ColumnAttribute.IsPrimaryKey && c.ColumnAttribute.CanBeNull)
                     {
                         il.Emit(OpCodes.Ldarg_0);
                         EmitInt32(il, index);
