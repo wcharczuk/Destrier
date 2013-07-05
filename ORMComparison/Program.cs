@@ -95,6 +95,12 @@ namespace ORMComparison
 
         [Destrier.Column]
         public Double? NullableDouble { get; set; }
+
+        [Destrier.Column]
+        public Guid Guid { get; set; }
+
+        [Destrier.Column]
+        public Guid? NullableGuid { get; set; }
     }
 
     public class Program
@@ -119,6 +125,8 @@ namespace ORMComparison
             ((TestObject)instance).Single = (Single)dr.GetDouble(11);
             ((TestObject)instance).Double = !dr.IsDBNull(12) ? dr.GetDouble(12) : default(Double);
             ((TestObject)instance).NullableDouble = !dr.IsDBNull(13) ? (Double?)dr.GetDouble(13) : null;
+            ((TestObject)instance).Guid = !dr.IsDBNull(14) ? dr.GetGuid(14) : default(Guid);
+            ((TestObject)instance).NullableGuid = !dr.IsDBNull(15) ? (Guid?)dr.GetGuid(15) : null;
         }
 
         static void Main(string[] args)
@@ -129,7 +137,7 @@ namespace ORMComparison
 
             Destrier.Test.DatabaseTest.EnsureInitDataStore();
 
-            string QUERY = String.Format("SELECT TOP {0} Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble] from TestObjects (nolock)", LIMIT);
+            string QUERY = String.Format("SELECT TOP {0} Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock)", LIMIT);
 
             Func<List<TestObject>> rawAction = () =>
             {

@@ -32,7 +32,7 @@ namespace Destrier.Test
             var initDbScript = @"
 if (OBJECT_ID('tempdb..TestObjects') is not null)
 BEGIN
-    DROP TABLE TestObjects
+    DROP TABLE tempdb..TestObjects
 END
 
 CREATE TABLE TestObjects
@@ -51,7 +51,9 @@ CREATE TABLE TestObjects
     [singleChar] char,
     [single] float,
     [double] float,
-    [nullableDouble] float
+    [nullableDouble] float,
+    [guid] uniqueidentifier,
+    [nullableGuid] uniqueidentifier
 );
 
 DECLARE @id int;
@@ -59,6 +61,7 @@ DECLARE @i int;
 DECLARE @subId int;
 DECLARE @typeId smallint;
 DECLARE @nullableTypeId smallint;
+DECLARE @nullableGuid uniqueidentifier;
 
 SET @i = 0;
 SET @subId = 1;
@@ -67,13 +70,16 @@ SET @typeId = 1;
 WHILE @i < 5001
 BEGIN
     INSERT INTO TestObjects 
-    ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType], [singleChar], [single], [double], [nullableDouble]) 
+    ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType], [singleChar], [single], [double], [nullableDouble], [guid], [nullableGuid]) 
     VALUES 
-    ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId, 'c', 1, 1, @nullableTypeId);
+    ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId, 'c', 1, 1, @nullableTypeId, newid(), @nullableGuid);
     
     IF(@nullableTypeId is null) BEGIN; set @nullableTypeId = 1; END;
     ELSE IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
     
+    IF(@nullableGuid is null) BEGIN set @nullableGuid = NEWID(); END;
+    ELSE IF(@nullableGuid is not null) BEGIN; set @nullableGuid = null; END;
+
     IF(@subId = 100) BEGIN; SET @subId = 1; END;
     IF(@typeId = 10) BEGIN; SET @typeId = 1; END;
 
