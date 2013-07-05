@@ -47,7 +47,11 @@ CREATE TABLE TestObjects
     nullableId int,
     referencedObjectId int,
     [type] int,
-    [nullableType] int
+    [nullableType] int,
+    [singleChar] char,
+    [single] float,
+    [double] float,
+    [nullableDouble] float
 );
 
 DECLARE @id int;
@@ -62,7 +66,10 @@ SET @typeId = 1;
 
 WHILE @i < 5001
 BEGIN
-    INSERT INTO TestObjects ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType]) VALUES ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId);
+    INSERT INTO TestObjects 
+    ([Name], [mockObjectTypeId], [active], [created], [modified], [nullableId], [referencedObjectId], [type], [nullableType], [singleChar], [single], [double], [nullableDouble]) 
+    VALUES 
+    ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId, 'c', 1, 1, @nullableTypeId);
     
     IF(@nullableTypeId is null) BEGIN; set @nullableTypeId = 1; END;
     ELSE IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
