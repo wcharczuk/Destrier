@@ -199,6 +199,11 @@ namespace ORMComparison
                 return new Destrier.Query<TestObject>().Limit(LIMIT).StreamResults().ToList();
             };
 
+            Func<List<TestObject>> destrierRawQueryAction = () =>
+            {
+                return new Destrier.Query<TestObject>(QUERY).StreamResults().ToList();
+            };
+
             Func<List<TestObject>> dapperAction = () =>
             {
                 using (var conn = new SqlConnection(ConnectionString))
@@ -227,6 +232,7 @@ namespace ORMComparison
             {
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
+                { "Destrier (Raw Query)", destrierRawQueryAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
                 { "EntityFramework", entityFrameworkAction }

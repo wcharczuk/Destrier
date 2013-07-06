@@ -61,6 +61,8 @@ namespace Destrier
             {
                 if (!String.IsNullOrEmpty(DefaultConnectionName))
                     return ConnectionStrings[DefaultConnectionName];
+                else if (ConnectionStrings.Count == 1)
+                    return ConnectionStrings.First().Value;
                 else
                     return String.Empty;
             }
