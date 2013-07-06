@@ -363,7 +363,7 @@ namespace Destrier
                     if (underlyingType.IsEnum)
                         return Enum.ToObject(underlyingType, value);
                     else
-                        return Convert.ChangeType(value, type);
+                        return Convert.ChangeType(value, underlyingType);
                 }
                 return null;
             }
