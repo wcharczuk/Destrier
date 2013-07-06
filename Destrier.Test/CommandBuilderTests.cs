@@ -113,6 +113,15 @@ namespace Destrier.Test
 
             Assert.NotNull(sqlText);
         }
-        
+
+        [Fact]
+        public void Offset_Test()
+        {
+            var cb = new CommandBuilder<MockObject>();
+            cb.Offset = 10;
+            cb.Limit = 100;
+            var sqlText = cb.GenerateSelect();
+            Assert.NotNull(sqlText);
+        }
     }
 }
