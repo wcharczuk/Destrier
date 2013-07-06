@@ -36,9 +36,9 @@ It should be noted that EntityFramework had to have some members disabled becaus
 * Table Attribute: Tells the orm what table to map the class to
 * Column Attribute: Tells the orm what properties to map to columns in the schema.
 * IPopulate: Use this interface to tell the ORM how to populate your objects from data readers (if you don't want to mark columns with the Column attribute).
-* Query<T>: The main construct for querying.
+* Query&lt;T&gt;: The main construct for querying.
 * Database: Main functions for simple CrUD operations.
-* Update<T>: For when you want to do an update and not send down the full contents of an object.
+* Update&lt;T&gt;: For when you want to do an update and not send down the full contents of an object.
 
 ###Examples###
 
