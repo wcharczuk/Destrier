@@ -55,7 +55,6 @@ It should be noted that EntityFramework had to have some members disabled becaus
 First, we set up the database context:
 ```C#
 DatabaseConfigurationContext.ConnectionStrings.Add("default", String.Format("Server={0};Database={1};Trusted_Connection=true", "localhost", "mockDatabase"));
-DatabaseConfigurationContext.DefaultConnectionName = "default";
 ```
 Then, given a model like the following:
 ```C#
