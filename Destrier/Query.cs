@@ -13,7 +13,7 @@ namespace Destrier
     /// <typeparam name="T">Type to populate and return.</typeparam>
     public class Query<T> where T : new()
     {
-        public Query() 
+        public Query()
         {
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
@@ -29,7 +29,8 @@ namespace Destrier
             _queryBody = query;
         }
 
-        public Query(String query, IDictionary<String, Object> parameters) : this(query)
+        public Query(String query, IDictionary<String, Object> parameters)
+            : this(query)
         {
             _parameters = parameters;
         }
@@ -132,7 +133,7 @@ namespace Destrier
         public IEnumerable<T> StreamResults()
         {
             if (_builder != null && _builder.ChildCollections.Any())
-                return _slowPipeline();  
+                return _slowPipeline();
             else
                 return _fastPipeline();
         }
@@ -210,7 +211,7 @@ namespace Destrier
                                     var collection = parentCollectionProperty.GetValue(parentObj);
                                     ((System.Collections.IList)collection).Add(obj);
                                 }
-                            }, populateFullResults: true, advanceToNextResultAfter:false);
+                            }, populateFullResults: true, advanceToNextResultAfter: false);
                         }
                     }
                 }
