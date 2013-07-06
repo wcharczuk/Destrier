@@ -13,29 +13,63 @@ namespace Destrier.Test
         Tertiary = 3
     }
 
+    public enum TestObjectTypeId
+    {
+        One = 1,
+        Two = 2,
+        Three = 3
+    }
+
     [Table("TestObjects")]
     public class TestObject
     {
-        [Column(IsPrimaryKey = true)]
+        [Destrier.Column(IsPrimaryKey = true)]
         public Int32 Id { get; set; }
 
-        [Column]
+        [Destrier.Column(CanBeNull = false)]
         public Boolean Active { get; set; }
 
-        [Column]
+        [Destrier.Column(CanBeNull = false)]
         public String Name { get; set; }
 
-        [Column]
+        [Destrier.Column]
+        public String NullName { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
         public DateTime Created { get; set; }
 
-        [Column]
+        [Destrier.Column]
         public DateTime? Modified { get; set; }
 
-        [Column]
+        [Destrier.Column(CanBeNull = false)]
         public Int32 ReferencedObjectId { get; set; }
 
-        [Column]
+        [Destrier.Column]
         public Int32? NullableId { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
+        public TestObjectTypeId Type { get; set; }
+
+        [Destrier.Column]
+        public TestObjectTypeId? NullableType { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
+        public String SingleChar { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
+        public Double Single { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
+        public Double Double { get; set; }
+
+        [Destrier.Column]
+        public Double? NullableDouble { get; set; }
+
+        [Destrier.Column(CanBeNull = false)]
+        public Guid Guid { get; set; }
+
+        [Destrier.Column]
+        public Guid? NullableGuid { get; set; }
     }
 
     [Table(TableName = "MockObjects")]
