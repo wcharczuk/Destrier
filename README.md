@@ -9,9 +9,10 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Features###
 * POCO support; use your existing objects.
 * Code first based on annotations.
-* Stability: Use Enums, nullable types, relative freedom in mapping db types to clr types. 
+* Stability: Use Enums, nullable types, relative freedom in mapping db types to clr types.
 * Speed: It's pretty fast for what it lets you do.
 * Expressive: Strongly typed query syntax and update syntax help catch errors on compilation.
+* Database Paging Support: use Offset on queries to enable database paging.
 * Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
 * Referenced Objects: let you have associated objects (joined to specified properties).
  * Say an object has a 'UserId' property; Destrier will automatically fill a 'User' object based on the specified reference.
