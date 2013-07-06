@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace Destrier.Test
 {
+    #region Constants
+
     public enum SubObjectTypeId
     {
         Main = 1,
@@ -19,6 +21,10 @@ namespace Destrier.Test
         Two = 2,
         Three = 3
     }
+
+    #endregion
+
+    #region Data Type Tests
 
     [Table("TestObjects")]
     public class TestObject
@@ -72,6 +78,9 @@ namespace Destrier.Test
         public Guid? NullableGuid { get; set; }
     }
 
+    #endregion
+
+    #region Reflection Tests
     [Table(TableName = "MockObjects")]
     public class MockObject
     {
@@ -190,4 +199,107 @@ namespace Destrier.Test
         public String SubCollectionObjectName { get; set; }
     }
 
+    #endregion
+
+    #region Modeling Tests
+
+    [Table("Books")]
+    public class Book : IPreRemove, IPreCreate, IPostUpdate
+    {
+        [Column(IsPrimaryKey=true, IsAutoIdentity=true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull=false)]
+        public string Title { get; set; }
+
+        [Column(CanBeNull=false)]
+        public short Year { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int AuthorId { get; set; }
+
+        [ReferencedObject("AuthorId")]
+        public Person Author { get; set; }
+
+        [Column]
+        public String Notes { get; set; }
+
+        [ChildCollection("BookId", AlwaysInclude = true)]
+        public List<Chapter> Chapters { get; set; }
+
+        public void PreRemove()
+        {
+            Database.RemoveWhere<Page>(p => p.BookId == this.Id);
+            Database.RemoveWhere<Chapter>(c => c.BookId == this.Id);
+        }
+
+        public void PreCreate()
+        {
+            if (Author.Id == 0)
+                Database.Create(Author);
+
+            this.AuthorId = this.Author.Id;
+        }
+
+        public void PostUpdate()
+        {
+            Database.Update(Author);
+        }
+    }
+
+    [Table("People")]
+    public class Person 
+    {
+        [Column(IsPrimaryKey = true, IsAutoIdentity = true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull=false)]
+        public string Name { get; set; }
+    }
+
+    [Table("Chapters")]
+    public class Chapter
+    {
+        [Column(IsPrimaryKey = true, IsAutoIdentity = true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int Number { get; set; }
+
+        [Column(CanBeNull = false)]
+        public string Title { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int BookId { get; set; }
+
+        [ChildCollection("ChapterId")]
+        public List<Page> Pages { get; set; }
+    }
+
+    [Table("Pages")]
+    public class Page
+    {
+        [Column(IsPrimaryKey = true, IsAutoIdentity = true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int Number { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int BookId { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int ChapterId { get; set; }
+
+        [Column(CanBeNull = false, MaxStringLength = 1024, ShouldTrimLongStrings = false)]
+        public String Text { get; set; }
+
+        [ReferencedObject("BookId")]
+        public Book Book { get; set; }
+
+        [ReferencedObject("ChapterId")]
+        public Chapter Chapter { get; set; }
+    }
+
+    #endregion
 }

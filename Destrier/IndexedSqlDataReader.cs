@@ -444,9 +444,9 @@ namespace Destrier
             return value;
         }
 
-        public List<AgileObject> ReadDynamicList(Boolean advanceToNextResultAfter = false)
+        public List<dynamic> ReadDynamicList(Boolean advanceToNextResultAfter = false)
         {
-            List<AgileObject> values = new List<AgileObject>();
+            List<dynamic> values = new List<dynamic>();
             if (this.HasRows)
             {
                 while (this.Read())

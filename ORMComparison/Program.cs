@@ -141,7 +141,7 @@ namespace ORMComparison
             Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
 
-            Destrier.Test.DatabaseTest.EnsureInitDataStore();
+            var testObjectContext = new Destrier.Test.TestObjectContext();
 
             string QUERY = String.Format("SELECT TOP {0} Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock)", LIMIT);
 
@@ -264,6 +264,8 @@ namespace ORMComparison
                 Console.WriteLine(String.Format("\tAvg: {0}ms", results.Average()));
             }
             Console.WriteLine();
+
+            testObjectContext.EnsureDestroyDataStore();
         }
     }
 }

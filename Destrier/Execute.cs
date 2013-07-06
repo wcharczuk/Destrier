@@ -13,7 +13,7 @@ namespace Destrier
 {
     public static class Execute
     {
-        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null, Boolean standardizeCasing = true)
+        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionString = null, Boolean standardizeCasing = true)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
 
@@ -26,9 +26,9 @@ namespace Destrier
                     cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.CommandText = storedProcedure;
 
-                    if (procedureParams != null)
+                    if (parameters != null)
                     {
-                        Utility.AddParametersToCommand(procedureParams, cmd);
+                        Utility.AddParametersToCommand(parameters, cmd);
                     }
 
                     using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
@@ -63,7 +63,7 @@ namespace Destrier
             }
         }
 
-        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic procedureParams = null, String connectionString = null, Boolean standardizeCasing = true)
+        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionString = null, Boolean standardizeCasing = true)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             using (var conn = new SqlConnection(connectionString))
@@ -75,9 +75,9 @@ namespace Destrier
                     cmd.CommandType = System.Data.CommandType.Text;
                     cmd.CommandText = statement;
 
-                    if (procedureParams != null)
+                    if (parameters != null)
                     {
-                        Utility.AddParametersToCommand(procedureParams, cmd);
+                        Utility.AddParametersToCommand(parameters, cmd);
                     }
 
                     using (var dr = cmd.ExecuteReader())
