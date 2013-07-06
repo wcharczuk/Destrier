@@ -1,6 +1,8 @@
 #Destrier#
 Destrier is a flexible yet minimal ORM for .net.
 
+[Documentation](https://github.com/ClothesHorse/Destrier/wiki)
+
 It is designed to leverage both strong typing and model / schema relationships and push the developer towards
 using stored procedures for complicated queries (read: anything with 'group by' or 'join').
 
@@ -63,43 +65,19 @@ Then, given a model like the following:
 public class MockObject
 {
     [Column(IsPrimaryKey = true)]
-    public Int32 MockObjectId { get; set; }
+    public Int32 Id { get; set; }
 
     [Column]
     public Boolean Active { get; set; }
 
     [Column]
-    public String MockObjectName { get; set; }
+    public String Name { get; set; }
 
     [Column]
     public DateTime Created { get; set; }
 
     [Column]
     public DateTime? Modified { get; set; }
-
-    [Column]
-    public Int32 SubObjectId { get; set; }
-
-    [ReferencedObject("SubObjectId")]
-    public SubObject ReferencedSubObject { get; set; }
-
-    [Column]
-    public Int32 AnotherSubObjectId { get; set; }
-
-    [ReferencedObject("AnotherSubObjectId")]
-    public SubObject AnotherReferencedSubObject { get; set; }
-
-    [Column]
-    public Int32 ReferenceLoopObjectId { get; set; }
-
-    [ReferencedObject("ReferenceLoopObjectId")]
-    public ReferenceLoopObject ChildObject { get; set; }
-
-    [ChildCollection]
-    public List<CollectionObject> CollectionObjects { get; set; }
-
-    [ChildCollection(AlwaysInclude = true)]
-    public List<AlwaysIncludeCollectionObject> AlwaysIncludeCollectionObjects { get; set; }
 }
 ```
 You can then do the following:
@@ -111,14 +89,7 @@ Database.Create(mockObj);
 //or query out some existing objects
 var results = new Query<MockObject>().Where(mo => mo.Created > DateTime.Now.AddDays(-30)).OrderBy(mo => mo.Created).Limit(5).Execute();
 ```
-To run the following in a stored proc:
-```C#
-var results = new List<MockObject>();
-Execute.StoredProcedureReader("MyStoredProc_prc", (dr) => {
-  results = dr.ReadList<MockObject>();
-}, { Before = DateTime.Now.AddDays(-30) });
-```
-You can also use lists in predicates, and the Expression Visitor will translate them into SQL "in" statements.
+You can use lists in predicates, and the Expression Visitor will translate them into SQL "in" statements.
 ```C#
 var list = new List<Int32>() { 1, 2, 3, 4 };
 var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)).Execute();
@@ -131,7 +102,7 @@ new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId
 //resulting sql is UPDATE [alias] SET Active = 0 FROM MockObjects [alias] where MockObjectId = 2
 ```
 
-Alternately you can update a whole object at once\
+Alternately you can update a whole object at once
 ```C#
 var mo = Database.Get<MockObject>(2);
 mo.Active = false;
@@ -140,7 +111,7 @@ Database.Update(mo);
 ```
 
 ###Documentation###
-See the [wiki](https://github.com/ClothesHorse/Destrier/wiki)
+See the [wiki](https://github.com/ClothesHorse/Destrier/wiki).
 
 ###Pull Requests / Contributions###
 Keep them coming.
