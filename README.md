@@ -140,6 +140,9 @@ Database.Update(mo);
 //this will cause a massive update statement with every property as 'SET's
 ```
 
+###Documentation###
+See the [wiki](https://github.com/ClothesHorse/Destrier/wiki)
+
 ###Pull Requests / Contributions###
 Keep them coming.
 
