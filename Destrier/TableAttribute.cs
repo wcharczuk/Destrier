@@ -6,7 +6,7 @@ using System.Text;
 namespace Destrier
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple=false)]
-    public class TableAttribute : System.Attribute
+    public class TableAttribute : System.Attribute, IPopulate
     {
         public TableAttribute() { this.SchemaName = "dbo"; }
         public TableAttribute(String tableName) : this()
@@ -34,5 +34,10 @@ namespace Destrier
         /// The connection string for the table. 
         /// </summary>
         public String ConnectionStringName { get; set; }
+
+        public void Populate(IndexedSqlDataReader dr)
+        {
+            this.TableName = dr.Get<String>("name");
+        }
     }
 }
