@@ -47,9 +47,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DatabaseTest.cs" />
+    <Compile Include="DatabaseContext.cs" />
     <Compile Include="CommandBuilderTests.cs" />
+    <Compile Include="DatabaseTests.cs" />
+    <Compile Include="ExecuteTests.cs" />
+    <Compile Include="IndexedSqlDataReaderTests.cs" />
     <Compile Include="Objects.cs" />
+    <Compile Include="QueryTests.cs" />
     <Compile Include="ReflectionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlExpressionVisitorTests.cs" />
