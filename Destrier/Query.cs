@@ -47,6 +47,12 @@ namespace Destrier
             return this;
         }
 
+        public Query<T> Offset(int offsetSize)
+        {
+            _builder.Offset = offsetSize;
+            return this;
+        }
+
         public Query<T> Where(Expression<Func<T, Boolean>> expression)
         {
             _builder.AddWhere(expression);

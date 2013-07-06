@@ -54,6 +54,7 @@ namespace Destrier
 
         #region Select
         public Int32? Limit { get; set; }
+        public Int32? Offset { get; set; }
         public StringBuilder Command { get; set; }
         public IDictionary<String, Object> Parameters { get; set; }
         protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
@@ -381,7 +382,13 @@ namespace Destrier
             Command = new StringBuilder();
             var columnList = String.Join("\n\t, ", GetOutputColumns(_outputMembers));
 
-            if (Limit != null)
+
+            if (Offset != null)
+            {
+                Command.AppendFormat("SELECT TOP {1} * FROM (");
+            }
+
+            if (Limit != null && Offset == null)
             {
                 Command.AppendFormat("SELECT TOP {1} \n\t{0}", columnList, Limit.Value);
                 //Parameters.Add("RESULT_LIMIT", Limit.Value);
@@ -389,6 +396,16 @@ namespace Destrier
             else
             {
                 Command.AppendFormat("SELECT\n\t{0}", columnList);
+            }
+
+            if (Offset != null)
+            {
+                Command.Append("\n\t, ROW_NUMBER()");
+                if (!String.IsNullOrEmpty(_orderByClause))
+                {
+                    Command.AppendFormat(" OVER (order by {0})", _orderByClause);
+                }
+                Command.Append(" as [row_number_for_offset]");
             }
 
             if (_includedChildCollections.Any())
@@ -447,6 +464,12 @@ namespace Destrier
             {
                 Command.Append("\nORDER BY");
                 Command.AppendFormat("\n\t{0}", _orderByClause);
+            }
+
+            if (Offset != null)
+            {
+                Command.Append("\n) as data");
+                Command.Append("\nWHERE [row_number_for_offset] > {0}" + Offset.Value.ToString());
             }
 
             if (_includedChildCollections.Any())
