@@ -289,137 +289,6 @@ namespace Destrier
             return _dr.GetValue(i);
         }
 
-        public object GetValue(int i, TypeCode outputType)
-        {
-            var originType = Type.GetTypeCode(_dr.GetFieldType(i));
-            switch (outputType)
-            {
-                case TypeCode.Boolean:
-                    return _dr.GetBoolean(i);
-                case TypeCode.Byte:
-                    return _dr.GetByte(i);
-                case TypeCode.Char:
-                case TypeCode.String:
-                    switch (originType)
-                    {
-                        case TypeCode.DateTime:
-                            return _dr.GetDateTime(i).ToString();
-                        case TypeCode.Boolean:
-                            return _dr.GetBoolean(i).ToString();
-                        case TypeCode.Int16:
-                            return _dr.GetInt16(i).ToString();
-                        case TypeCode.Int32:
-                            return _dr.GetInt32(i).ToString();
-                        case TypeCode.Int64:
-                            return _dr.GetInt64(i).ToString();
-                        case TypeCode.Double:
-                            return _dr.GetDouble(i).ToString();
-                        case TypeCode.Decimal:
-                            return _dr.GetDecimal(i).ToString();
-                        default:
-                            return _dr.GetString(i);
-                    }
-                case TypeCode.DateTime:
-                    return _dr.GetDateTime(i);
-                case TypeCode.Single:
-                    switch (originType)
-                    {
-                        case TypeCode.Byte:
-                            return (float)_dr.GetByte(i);
-                        case TypeCode.Int64:
-                            return (float)_dr.GetInt64(i); //wut r u doing.
-                        case TypeCode.Int32:
-                            return (float)_dr.GetInt32(i);
-                        case TypeCode.Int16:
-                            return (float)_dr.GetInt16(i);
-                        case TypeCode.Double:
-                            return (float)_dr.GetDouble(i);
-                        case TypeCode.Decimal:
-                            return (float)_dr.GetDecimal(i);
-                        default:
-                            return (float)_dr.GetDouble(i);
-                    }
-                case TypeCode.Double:
-                    switch (originType)
-                    {
-                        case TypeCode.Byte:
-                            return (double)_dr.GetByte(i);
-                        case TypeCode.Int64:
-                            return (double)_dr.GetInt64(i); //wut r u doing.
-                        case TypeCode.Int32:
-                            return (double)_dr.GetInt32(i);
-                        case TypeCode.Int16:
-                            return (double)_dr.GetInt16(i);
-                        case TypeCode.Single:
-                            return (double)_dr.GetDouble(i);
-                        case TypeCode.Decimal:
-                            return (double)_dr.GetDecimal(i);
-                        default:
-                            return _dr.GetDouble(i);
-                    }
-                case TypeCode.Decimal:
-                    return _dr.GetDecimal(i);
-                case TypeCode.UInt16:
-                case TypeCode.Int16:
-                    switch(originType)
-                    {
-                        case TypeCode.Byte:
-                            return (short)_dr.GetByte(i);
-                        case TypeCode.Int64:
-                            return (short)_dr.GetInt64(i); //wut r u doing.
-                        case TypeCode.Int32:
-                            return (short)_dr.GetInt32(i);
-                        case TypeCode.Single:
-                        case TypeCode.Double:
-                            return (short)_dr.GetDouble(i);
-                        case TypeCode.Decimal:
-                            return (short)_dr.GetDecimal(i);
-                        default:
-                            return _dr.GetInt16(i);
-                    }
-                case TypeCode.UInt32:
-                case TypeCode.Int32:
-                    switch (originType)
-                    {
-                        case TypeCode.Byte:
-                            return (int)_dr.GetByte(i);
-                        case TypeCode.Int64:
-                            return (int)_dr.GetInt64(i);
-                        case TypeCode.Int16:
-                            return (int)_dr.GetInt16(i);
-                        case TypeCode.Single:
-                        case TypeCode.Double:
-                            return (int)_dr.GetDouble(i);
-                        case TypeCode.Decimal:
-                            return (int)_dr.GetDecimal(i);
-                        default:
-                            return _dr.GetInt32(i);
-                    }
-                    
-                case TypeCode.UInt64:
-                case TypeCode.Int64:
-                    switch(originType)
-                    {
-                        case TypeCode.Byte:
-                            return (long)_dr.GetByte(i);
-                        case TypeCode.Int16:
-                            return (long)_dr.GetInt16(i);
-                        case TypeCode.Int32:
-                            return (long)_dr.GetInt32(i);
-                        case TypeCode.Single:
-                        case TypeCode.Double:
-                            return (long)_dr.GetDouble(i);
-                        case TypeCode.Decimal:
-                            return (long)_dr.GetDecimal(i);
-                        default:
-                            return _dr.GetInt64(i);
-                    }
-                case TypeCode.Object:
-                    return _dr.GetValue(i);
-            }
-            throw new InvalidOperationException("Cannot retrieve specified type: " + outputType.ToString());
-        }
-
         public int GetValues(object[] values)
         {
             return _dr.GetValues(values);
@@ -453,16 +322,9 @@ namespace Destrier
         #endregion
 
         #region Get
+
         public T Get<T>(String columnName) 
         {
-            ColumnMember member = null;
-            if (ColumnMemberLookup != null)
-            {
-                ColumnMemberLookup.TryGetValue(columnName, out member);
-                if (member != null)
-                    return (T)this.Get(member);
-            }
-            
             var columnIndex = GetColumnIndex(columnName);
             if (columnIndex != null)
                 return (T)Get(typeof(T), columnIndex.Value);
@@ -471,62 +333,36 @@ namespace Destrier
             
         }
 
+        public T Get<T>(Int32 columnIndex)
+        {
+            return (T)Get(typeof(T), columnIndex);
+        }
+
         public object Get(ColumnMember member, String columnName = null)
         {
             var columnIndex = GetColumnIndex(columnName ?? member.Name);
             if (columnIndex != null)
             {
-                return Get(member, columnIndex.Value);
+                return Get(member.Type, columnIndex.Value, member.IsNullableType, member.NullableUnderlyingType);
             }
             return ReflectionCache.GetDefault(member.Type);
         }
 
-        public object Get(ColumnMember member, Int32 columnIndex)
+        public object Get(Type type, Int32 columnIndex, Boolean? isNullableType = null, Type underlyingType = null)
         {
-            if (member.IsNullableType)
-            {
-                if (!_dr.IsDBNull(columnIndex))
-                {
-                    var resultType = member.NullableUnderlyingType;
-                    var convertTo = Type.GetTypeCode(resultType);
-                    object value = this.GetValue(columnIndex, convertTo);
-
-                    if (resultType.IsEnum)
-                        return Enum.ToObject(resultType, value);
-                   
-                    return value;
-                }
-                return null;
-            }
-            else
-            {
-                if (!_dr.IsDBNull(columnIndex))
-                {
-                    var resultType = member.Type;
-                    var convertTo = Type.GetTypeCode(resultType);
-                    object value = this.GetValue(columnIndex, convertTo);
-
-                    if (resultType.IsEnum)
-                        return Enum.ToObject(resultType, value);
-                    
-                    return value;
-                }
-                return ReflectionCache.GetDefault(member.Type);
-            }
-        }
-
-        public object Get(Type type, Int32 columnIndex)
-        {
+            isNullableType = isNullableType ?? ReflectionCache.IsNullableType(type);
             if (ReflectionCache.IsNullableType(type))
             {
                 if (!_dr.IsDBNull(columnIndex))
                 {
-                    var resultType = ReflectionCache.GetUnderlyingTypeForNullable(type);
-                    var value = _dr.GetValue(columnIndex);
-                    if (resultType.IsEnum)
-                        return Enum.ToObject(resultType, value);
+                    underlyingType = underlyingType ?? ReflectionCache.GetUnderlyingTypeForNullable(type);
+
+                    var value = this.GetValue(columnIndex);
+
+                    if (underlyingType.IsEnum)
+                        return Enum.ToObject(underlyingType, value);
                     else
-                        return Convert.ChangeType(value, resultType);
+                        return Convert.ChangeType(value, type);
                 }
                 return null;
             }
@@ -535,6 +371,7 @@ namespace Destrier
                 if (!_dr.IsDBNull(columnIndex))
                 {
                     object value = this.GetValue(columnIndex);
+
                     if (type.IsEnum)
                         return Enum.ToObject(type, value);
                     else
