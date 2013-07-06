@@ -477,11 +477,17 @@ namespace Destrier
                 Command.Append("\nWHERE\n\t1=1");
                 if (_whereParameters is ValueType)
                 {
-                    if (Model.ColumnsPrimaryKey(typeof(T)).FirstOrDefault() == null)
+                    var primaryKey = Members.Values.FirstOrDefault(m => m is ColumnMember && ((ColumnMember)m).IsPrimaryKey) as ColumnMember;
+                    if(primaryKey != null)
+                    {
+                        var parameterName = System.Guid.NewGuid().ToString("N");
+                        Command.AppendLine(String.Format("\n\tAND [{0}].[{1}] = @{2}", primaryKey.TableAlias, primaryKey.FullyQualifiedName, parameterName));
+                        Parameters.Add(parameterName, ((Object)_whereParameters).DBNullCoalese());
+                    }
+                    else
+                    {
                         throw new InvalidOperationException("Trying to select an object by id without a primary key");
-
-                    Command.AppendLine(String.Format("\n\tAND [{0}] = @{0}", Model.ColumnsPrimaryKey(typeof(T)).FirstOrDefault().Name));
-                    Parameters.Add(String.Format("{0}", Model.ColumnsPrimaryKey(typeof(T)).FirstOrDefault().Name), ((Object)_whereParameters).DBNullCoalese());
+                    }
                 }
                 else
                 {
