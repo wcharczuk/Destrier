@@ -37,20 +37,8 @@ It should be noted that EntityFramework had to have some members disabled becaus
 * Column Attribute: Tells the orm what properties to map to columns in the schema.
 * IPopulate: Use this interface to tell the ORM how to populate your objects from data readers (if you don't want to mark columns with the Column attribute).
 * Query<T>: The main construct for querying.
-  * Where(predicate): Add a where constraint by lambda
-  * Include(collection_prop): Tells the ORM to include a child collection.
-  * OrderBy(prop): Order the results by the specified member.
-  * Limit(int): Limit the results to N rows.
-  * Execute(): Run the query, return a list of <T>
-* Database<T>: Main functions for simple CRUD operations.
-  * Get(id): Get an object by id.
-  * Remove(obj): Remove an object instance.
-  * RemoveWhere(predicate): Remove by a predicate.
-  * Create(obj): Create a new row for the object. Will set the ID column if it's marked AutoIncrement.
-  * Update(obj): Update an object. Requires the object to have columns marked as primary key, will update the table with all properties of the object passed in.
+* Database: Main functions for simple CrUD operations.
 * Update<T>: For when you want to do an update and not send down the full contents of an object.
-  * Set(member, value): Sets the column in the database for the specified member to the value.
-  * Where(predicate): The 'Where' constraint on the update (typically, super important).
 
 ###Examples###
 
