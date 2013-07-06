@@ -205,7 +205,7 @@ namespace Destrier
         #region Update Publics
         public void AddSet<F>(Expression<Func<T, F>> expression, Object value)
         {
-            if(expression == null)
+            if (expression == null)
                 throw new ArgumentNullException("expression");
 
             var memberExp = expression.Body as MemberExpression;
@@ -263,6 +263,19 @@ namespace Destrier
             return outputColumns;
         }
 
+        private static List<String> GetOutputPrimaryKeyMembers(IEnumerable<Member> members)
+        {
+            var outputColumns = new List<String>();
+
+            foreach (var m in members.Select(m => m as ColumnMember).Where(cm => cm != null && cm.IsPrimaryKey && cm.Parent == null))
+            {
+                outputColumns.Add(String.Format("[{0}].[{1}] asc"
+                    , m.TableAlias
+                    , m.Name
+                    ));
+            }
+            return outputColumns;
+        }
 
         private static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
         {
@@ -382,16 +395,24 @@ namespace Destrier
             Command = new StringBuilder();
             var columnList = String.Join("\n\t, ", GetOutputColumns(_outputMembers));
 
-
             if (Offset != null)
             {
-                Command.AppendFormat("SELECT TOP {1} * FROM (");
+                if (Limit != null)
+                    Command.AppendFormat("SELECT TOP {0} * ", Limit.Value);
+                else
+                    Command.AppendFormat("SELECT * ");
+
+                if (_includedChildCollections.Any())
+                {
+                    Command.AppendFormat("\nINTO #{0}", this.OutputTableName);
+                }
+
+                Command.AppendFormat("\nFROM \n(\n");
             }
 
             if (Limit != null && Offset == null)
             {
                 Command.AppendFormat("SELECT TOP {1} \n\t{0}", columnList, Limit.Value);
-                //Parameters.Add("RESULT_LIMIT", Limit.Value);
             }
             else
             {
@@ -405,18 +426,20 @@ namespace Destrier
                 {
                     Command.AppendFormat(" OVER (order by {0})", _orderByClause);
                 }
+                else
+                {
+                    var primaryKeys = GetOutputPrimaryKeyMembers(_outputMembers);
+                    var _primaryKeyOrderBy = String.Join(",", primaryKeys);
+                    Command.AppendFormat(" OVER (order by {0})", _primaryKeyOrderBy);
+                }
                 Command.Append(" as [row_number_for_offset]");
             }
 
-            if (_includedChildCollections.Any())
+            if (_includedChildCollections.Any() && Offset == null)
             {
                 Command.AppendFormat("\nINTO #{0}", this.OutputTableName);
-                Command.Append("\nFROM");
             }
-            else
-            {
-                Command.Append("\nFROM");
-            }
+            Command.Append("\nFROM");
 
             Command.AppendFormat("\n\t{0} [{1}] (NOLOCK)", this.FullyQualifiedTableName, this.TableAlias);
             AddJoins(_t, Members.Values.ToList(), Command);
@@ -469,7 +492,7 @@ namespace Destrier
             if (Offset != null)
             {
                 Command.Append("\n) as data");
-                Command.Append("\nWHERE [row_number_for_offset] > {0}" + Offset.Value.ToString());
+                Command.AppendFormat("\nWHERE [row_number_for_offset] > {0}", Offset.Value.ToString());
             }
 
             if (_includedChildCollections.Any())
