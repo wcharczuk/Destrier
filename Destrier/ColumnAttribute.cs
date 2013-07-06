@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 
@@ -72,6 +73,8 @@ namespace Destrier
         /// </remarks>
         public Boolean ShouldTrimLongStrings { get; set; }
 
+        public Schema.SqlSysType SqlSysType { get; set; }
+
         public ColumnAttribute()
             : base()
         {
@@ -87,6 +90,7 @@ namespace Destrier
         {
             this.Name = dr.Get<String>("name");
             this.CanBeNull = dr.Get<Boolean>("is_nullable");
+            this.SqlSysType = dr.Get<Schema.SqlSysType>("system_type_id");
             this.MaxStringLength = dr.Get<Int32>("max_length");
             this.IsAutoIdentity = dr.Get<Boolean>("is_identity");
             this.IsPrimaryKey = dr.Get<Boolean>("is_primarykey");
