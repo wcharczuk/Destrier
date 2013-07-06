@@ -31,6 +31,7 @@ namespace Destrier
         private void Initialize()
         {
             this._t = typeof(T);
+            this._orderByClause = new List<OrderByElement>();
             this.Parameters = new Dictionary<String, Object>();
             this.FullyQualifiedTableName = Model.TableNameFullyQualified(_t);
 
@@ -61,7 +62,14 @@ namespace Destrier
         protected List<Member> _outputMembers = new List<Member>();
         public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
         public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
-        private String _orderByClause = null;
+        private List<OrderByElement> _orderByClause = null;
+
+        public class OrderByElement
+        {
+            public Member Member { get; set; }
+            public Boolean Ascending { get; set; }
+        }
+
         #endregion
 
         #region Update
@@ -94,7 +102,7 @@ namespace Destrier
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
 
-            _orderByClause = String.Format("[{0}].[{1}] ASC", columnMember.TableAlias, columnMember.Name);
+            _orderByClause.Add(new OrderByElement() { Member = columnMember, Ascending = true });//String.Format("[{0}].[{1}] ASC", columnMember.TableAlias, columnMember.Name);
         }
 
         public void AddOrderByDescending<F>(Expression<Func<T, F>> expression)
@@ -106,12 +114,12 @@ namespace Destrier
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
 
-            _orderByClause = String.Format("[{0}].[{1}] DESC", columnMember.TableAlias, columnMember.Name);
+            _orderByClause.Add(new OrderByElement() { Member = columnMember, Ascending = false });
         }
 
         public void AddThenOrderBy<F>(Expression<Func<T, F>> expression)
         {
-            if (String.IsNullOrEmpty(_orderByClause))
+            if (!_orderByClause.Any())
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
@@ -120,12 +128,12 @@ namespace Destrier
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
 
-            _orderByClause = _orderByClause + String.Format(", [{0}].[{1}] ASC", columnMember.TableAlias, columnMember.Name);
+            _orderByClause.Add(new OrderByElement() { Member = columnMember, Ascending = true });
         }
 
         public void AddThenOrderByDescending<F>(Expression<Func<T, F>> expression)
         {
-            if (String.IsNullOrEmpty(_orderByClause))
+            if (!_orderByClause.Any())
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
@@ -134,7 +142,8 @@ namespace Destrier
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
 
-            _orderByClause = _orderByClause + String.Format(", [{0}].[{1}] DESC", columnMember.TableAlias, columnMember.Name);
+            _orderByClause.Add(new OrderByElement() { Member = columnMember, Ascending = false });
+            //_orderByClause = _orderByClause + String.Format(", [{0}].[{1}] DESC", columnMember.TableAlias, columnMember.Name);
         }
 
         public void AddIncludedChildCollection<F>(Expression<Func<T, F>> expression)
@@ -275,6 +284,18 @@ namespace Destrier
                     ));
             }
             return outputColumns;
+        }
+
+        private String GetOrderByClause()
+        {
+            var values = _orderByClause.Select(o => String.Format("[{0}].[{1}] {2}", ((ColumnMember)o.Member).TableAlias, ((ColumnMember)o.Member).Name, o.Ascending ? "ASC" : "DESC"));
+            return string.Join(",", values);
+        }
+
+        private String GetOuterOrderByClause()
+        {
+            var values = _orderByClause.Select(o => String.Format("[data].[{1}] {2}", ((ColumnMember)o.Member).TableAlias, ((ColumnMember)o.Member).FullyQualifiedName, o.Ascending ? "ASC" : "DESC"));
+            return string.Join(",", values);
         }
 
         private static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
@@ -422,9 +443,9 @@ namespace Destrier
             if (Offset != null)
             {
                 Command.Append("\n\t, ROW_NUMBER()");
-                if (!String.IsNullOrEmpty(_orderByClause))
+                if (_orderByClause.Any())
                 {
-                    Command.AppendFormat(" OVER (order by {0})", _orderByClause);
+                    Command.AppendFormat(" OVER (order by {0})", GetOrderByClause());
                 }
                 else
                 {
@@ -483,16 +504,22 @@ namespace Destrier
                 }
             }
 
-            if (!String.IsNullOrEmpty(_orderByClause))
+            if (Offset == null && _orderByClause.Any())
             {
                 Command.Append("\nORDER BY");
-                Command.AppendFormat("\n\t{0}", _orderByClause);
+                Command.AppendFormat("\n\t{0}", GetOrderByClause());
             }
 
             if (Offset != null)
             {
                 Command.Append("\n) as data");
                 Command.AppendFormat("\nWHERE [row_number_for_offset] > {0}", Offset.Value.ToString());
+            }
+
+            if (Offset != null && _orderByClause.Any())
+            {
+                Command.Append("\nORDER BY");
+                Command.AppendFormat("\n\t{0}", GetOuterOrderByClause());
             }
 
             if (_includedChildCollections.Any())
