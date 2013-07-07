@@ -20,6 +20,24 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void RawQuery()
+        {
+            var people = new Query<Person>("select * from people").Execute();
+
+            Assert.NotNull(people);
+            Assert.NotEmpty(people);
+        }
+
+        [Fact]
+        public void RawQuery_WithParamters()
+        {
+            var people = new Query<Person>("select * from people where id = @id", new Dictionary<String, Object>() { { "id", 1 } }).Execute();
+
+            Assert.NotNull(people);
+            Assert.NotEmpty(people);
+        }
+
+        [Fact]
         public void ReferencedObjects()
         {
             var pages = new Query<Page>().Execute();
@@ -90,6 +108,26 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void ChildCollections_DontInclude()
+        {
+            var books = new Query<Book>().DontInclude(b => b.Chapters).Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.Null(books.First().Chapters);
+        }
+
+        [Fact]
+        public void ChildCollections_DontIncludeByName()
+        {
+            var books = new Query<Book>().DontInclude("Chapters").Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.Null(books.First().Chapters);
+        }
+
+        [Fact]
         public void ChildCollections_DontIncludeAny()
         {
             var books = new Query<Book>().DontIncludeAny().Execute();
@@ -113,6 +151,30 @@ namespace Destrier.Test
         public void Where_Referenced()
         {
             var books = new Query<Book>().Where(b => b.Author.Name.Contains("Ernest")).Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.True(books.All(b => b.AuthorId == 1));
+
+            books = new Query<Book>().Where(b => b.Author.Name.StartsWith("Ernest")).Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.True(books.All(b => b.AuthorId == 1));
+
+            books = new Query<Book>().Where(b => b.Author.Name.EndsWith("Hemingway")).Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.True(books.All(b => b.AuthorId == 1));
+
+            books = new Query<Book>().Where(b => b.Author.Name.Trim() == "Ernest Hemingway").Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.True(books.All(b => b.AuthorId == 1));
+
+            books = new Query<Book>().Where(b => b.Author.Name.Replace("Ernest", "Bob") == "Bob Hemingway").Execute();
 
             Assert.NotNull(books);
             Assert.NotEmpty(books);
@@ -143,6 +205,16 @@ namespace Destrier.Test
         public void OrderBy_ThenBy()
         {
             var books = new Query<Book>().OrderBy(b => b.Author.Name).ThenOrderBy(b => b.Title).Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.Equal("The Old Man and the Sea", books.First().Title);
+        }
+
+        [Fact]
+        public void OrderBy_ThenByDescending()
+        {
+            var books = new Query<Book>().OrderBy(b => b.Author.Name).ThenOrderByDescending(b => b.Title).Execute();
 
             Assert.NotNull(books);
             Assert.NotEmpty(books);
@@ -190,6 +262,14 @@ namespace Destrier.Test
             Assert.True(chapters.Count() == 10);
         }
 
+        [Fact]
+        public void Offset_OrderBy()
+        {
+            var chapters = new Query<Chapter>().Offset(10).OrderByDescending(c => c.Number).Execute();
+
+            Assert.NotNull(chapters);
+            Assert.NotEmpty(chapters);
+        }
 
         [Fact]
         public void Update_Basic()

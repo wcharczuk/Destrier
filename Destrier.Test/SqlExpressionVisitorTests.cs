@@ -13,6 +13,10 @@ namespace Destrier.Test
         [Fact]
         public void SqlExpressionVisitor()
         {
+            var ctorTest = new SqlExpressionVisitor<MockObject>(new StringBuilder());
+            ctorTest = new SqlExpressionVisitor<MockObject>(new Dictionary<String, Object>());
+            ctorTest = new SqlExpressionVisitor<MockObject>(new Dictionary<String, Member>());
+
             //basic constant equality test
             var visitor = new SqlExpressionVisitor<MockObject>();
             Expression<Func<MockObject, bool>> exp = (u) => u.MockObjectId == 1;

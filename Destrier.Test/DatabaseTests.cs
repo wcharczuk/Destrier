@@ -21,6 +21,16 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void All()
+        {
+            var book = Database.All<Book>();
+            Assert.NotNull(book);
+            Assert.NotEmpty(book.First().Title);
+            Assert.NotNull(book.First().Author);
+            Assert.NotEmpty(book.First().Chapters);
+        }
+
+        [Fact]
         public void Update()
         {
             var book = Database.Get<Book>(1);
@@ -104,6 +114,17 @@ namespace Destrier.Test
 
             var bookCheck = Database.Get<Book>(3);
             Assert.Equal("Not Whoever This Was.", book.Author.Name);
+        }
+
+        [Fact]
+        public void CheckSchema()
+        {
+            Model.CheckColumns(typeof(Person));
+            Model.CheckColumns(typeof(Book));
+            Model.CheckColumns(typeof(Chapter));
+            Model.CheckColumns<Page>(); //just another way of doing this.
+
+            Assert.NotEmpty(Schema.GetTables(DatabaseConfigurationContext.DefaultConnectionString));
         }
     }
 }
