@@ -24,9 +24,10 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
-|Raw Reader            | Avg:	20.82ms | 
-|Dapper                | Avg:	25.72ms | 
-|Destrier              | Avg:   32.49ms |
+|Raw Reader            | Avg:	22.27ms | 
+|Peta POCO             | Avg:   25.55ms | 
+|Dapper                | Avg:	27.11ms | 
+|Destrier              | Avg:   30.37ms |
 |ServiceStack ORMLite  | Avg:   67.65ms |
 |EntityFramework       | Avg:  145.38ms |
 
