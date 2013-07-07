@@ -20,7 +20,7 @@ namespace Destrier
             if (obj == null)
                 return null;
 
-            dynamic value = new AgileObject();
+            dynamic value = new ExpandoObject();
 
             Type objectType = obj.GetType();
 
