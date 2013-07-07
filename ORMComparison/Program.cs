@@ -88,7 +88,7 @@ namespace ORMComparison
         public TestObjectTypeId Type { get; set; }
 
         [Destrier.Column]
-        public TestObjectTypeId? NullableType { get; set; }
+        public Int32? NullableType { get; set; }
 
         [Destrier.Column(CanBeNull = false)]
         public String SingleChar { get; set; }
@@ -126,7 +126,7 @@ namespace ORMComparison
             ((TestObject)instance).NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
             ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(Int32);
             ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt32(8);
-            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (TestObjectTypeId?)dr.GetInt32(9) : null;
+            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (Int32?)dr.GetInt32(9) : null;
             ((TestObject)instance).SingleChar = dr.GetString(10);
             ((TestObject)instance).Single = (Single)dr.GetDouble(11);
             ((TestObject)instance).Double = !dr.IsDBNull(12) ? dr.GetDouble(12) : default(Double);
@@ -143,7 +143,24 @@ namespace ORMComparison
 
             var testObjectContext = new Destrier.Test.TestObjectContext();
 
-            string QUERY = String.Format("SELECT TOP {0} Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock)", LIMIT);
+            string QUERY = String.Format(@"SELECT TOP {0} 
+Id
+, Name
+, NullName
+, Active
+, Created
+, Modified
+, NullableId
+, ReferencedObjectId
+, Type
+, NullableType
+, SingleChar
+, [Single]
+, [Double]
+, [NullableDouble]
+, [Guid]
+, [NullableGuid] 
+from TestObjects (nolock)", LIMIT);
 
             Func<List<TestObject>> rawAction = () =>
             {
@@ -204,6 +221,12 @@ namespace ORMComparison
                 return new Destrier.Query<TestObject>(QUERY).StreamResults().ToList();
             };
 
+            Func<List<TestObject>> petaPocoAction = () =>
+                {
+                    var db = new PetaPoco.Database(ConnectionString, "System.Data.SqlClient");
+                    return db.Query<TestObject>(QUERY).ToList();
+                };
+
             Func<List<TestObject>> dapperAction = () =>
             {
                 using (var conn = new SqlConnection(ConnectionString))
@@ -233,6 +256,7 @@ namespace ORMComparison
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
                 { "Destrier (Raw Query)", destrierRawQueryAction },
+                { "PetaPoco", petaPocoAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
                 { "EntityFramework", entityFrameworkAction }
