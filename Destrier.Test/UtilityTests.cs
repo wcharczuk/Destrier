@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit;
-using Destrier;
+using Destrier.Extensions;
 
 namespace Destrier.Test
 {
@@ -17,15 +17,6 @@ namespace Destrier.Test
             Parallel.Execute(() => { counter = counter + 1; }, () => { counter2 = counter2 + 1; });
             Assert.NotEqual(0, counter);
             Assert.NotEqual(0, counter2);
-        }
-
-        [Fact]
-        public void DisplayIfNull()
-        {
-            object nullObj = null;
-            object obj = new object();
-            Assert.Equal("-", nullObj.DisplayIfNull("-"));
-            Assert.NotEqual("-", obj.DisplayIfNull("-"));
         }
 
         [Fact]

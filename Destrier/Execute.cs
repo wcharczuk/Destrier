@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Collections;
 using Microsoft.SqlServer.Server;
 using System.Data;
+using Destrier.Extensions;
 
 namespace Destrier
 {

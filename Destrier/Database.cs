@@ -5,6 +5,7 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Reflection;
 using System.Linq.Expressions;
+using Destrier.Extensions;
 
 namespace Destrier
 {
