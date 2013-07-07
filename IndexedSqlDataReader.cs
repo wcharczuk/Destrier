@@ -58,6 +58,7 @@ namespace Destrier
         /// <summary>
         /// This is the mapping of column names to array indices.
         /// </summary>
+
         public Dictionary<String, Int32> ColumnMap { get; set; }
 
         /// <summary>

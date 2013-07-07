@@ -6,7 +6,7 @@ using System.Text;
 using System.Dynamic;
 using System.Reflection;
 
-namespace Destrier
+namespace Destrier.Extensions
 {
     public static class ObjectDynamicExtension
     {

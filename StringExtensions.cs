@@ -8,7 +8,7 @@ using System.Web.UI;
 using System.Net.Mail;
 using System.Globalization;
 
-namespace Destrier
+namespace Destrier.Extensions
 {
     public static class StringExtensions
     {
