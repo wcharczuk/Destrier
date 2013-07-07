@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -429,7 +430,7 @@ namespace Destrier
         #region List Processing
         public dynamic ReadDynamic()
         {
-            var value = new AgileObject();
+            var value = new ExpandoObject();
             if (this.HasRows)
             {
                 while (this.Read())
@@ -451,7 +452,7 @@ namespace Destrier
             {
                 while (this.Read())
                 {
-                    dynamic value = new AgileObject();
+                    dynamic value = new ExpandoObject();
                     for (int i = 0; i < this.FieldCount; i++)
                     {
                         var name = this.GetName(i);

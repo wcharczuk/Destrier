@@ -55,14 +55,12 @@
     <Compile Include="ColumnMember.cs" />
     <Compile Include="CommandBuilder.cs" />
     <Compile Include="DatabaseAction.cs" />
-    <Compile Include="AgileObject.cs" />
     <Compile Include="IAuditable.cs" />
     <Compile Include="IEnumerableExtensions.cs" />
     <Compile Include="IGet.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="ColumnAttribute.cs" />
     <Compile Include="ColumnNullIncorrectException.cs" />
-    <Compile Include="Enum.cs" />
     <Compile Include="InvalidColumnDataException.cs" />
     <Compile Include="Model.cs" />
     <Compile Include="ObjectDynamicExtension.cs" />
