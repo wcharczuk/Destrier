@@ -29,14 +29,6 @@ namespace Destrier.Test
         }
 
         [Fact]
-        public void EnumExplode_Test()
-        {
-            var values = EnumUtil.Explode<TestObjectTypeId>();
-            Assert.NotNull(values);
-            Assert.NotEmpty(values);
-        }
-
-        [Fact]
         public void AgileObject_Test()
         {
             var obj = new { id = 1, name = "name" };
