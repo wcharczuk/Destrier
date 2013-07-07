@@ -154,7 +154,23 @@ namespace Destrier
                 foreach (KeyValuePair<String, Object> member in (IDictionary<String, Object>)procedureParams)
                 {
                     object propertyValue = member.Value;
-                    cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), propertyValue.DBNullCoalese());
+                    if (propertyValue is IList)
+                    {
+                        DataTable values = new DataTable();
+                        values.Columns.Add(new DataColumn("value"));
+                        foreach (object value in (IEnumerable)propertyValue)
+                        {
+                            if (value.GetType().IsEnum)
+                                values.Rows.Add((int)value);
+                            else
+                                values.Rows.Add(value);
+                        }
+
+                        SqlParameter param = cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), values);
+                        param.SqlDbType = System.Data.SqlDbType.Structured; //NOTE: this breaks MONO compatibility
+                    }
+                    else
+                        cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), propertyValue.DBNullCoalese());
                 }
             }
         }
