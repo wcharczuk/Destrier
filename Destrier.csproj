@@ -41,9 +41,6 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\lib\Newtonsoft.Json.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChildCollectionMember.cs" />
@@ -67,7 +64,6 @@
     <Compile Include="ColumnNullIncorrectException.cs" />
     <Compile Include="Enum.cs" />
     <Compile Include="InvalidColumnDataException.cs" />
-    <Compile Include="JsonSerializer.cs" />
     <Compile Include="Model.cs" />
     <Compile Include="ObjectDynamicExtension.cs" />
     <Compile Include="ReflectionExtensions.cs" />
