@@ -25,7 +25,7 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 | ORM                  | Timing         |
 |----------------------|----------------|
 |Raw Reader            | Avg:	22.27ms | 
-|Peta POCO             | Avg:   25.55ms | 
+|PetaPoco              | Avg:   25.55ms | 
 |Dapper                | Avg:	27.11ms | 
 |Destrier              | Avg:   30.37ms |
 |ServiceStack ORMLite  | Avg:   67.65ms |
@@ -33,7 +33,7 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 It should be noted that EntityFramework had to have some members disabled because it lacks Enum support. 
 Also should be noted that ORMLite failed to cast Doubles=>Singles. 
-Also PETA Poco doesn't handle nullable enums.
+Also PetaPoco doesn't handle nullable enums.
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
