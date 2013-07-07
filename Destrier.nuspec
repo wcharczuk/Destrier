@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
-<package >
-  <metadata>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata schemaVersion="2">
     <id>Destrier</id>
     <version>1.0.0</version>
     <authors>Will Charczuk</authors>
     <owners>Will Charcuzk</owners>
     <projectUrl>https://github.com/clotheshorse/destrier</projectUrl>
-    <licenceUrl>http://www.apache.org/licenses/LICENSE-2.0</licenceUrl>
-    <!--<iconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</iconUrl>-->
+    <licenceUrl>https://raw.github.com/ClothesHorse/Destrier/master/LICENSE.md</licenceUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A high performance mini-orm enabling expressive queries and data models.</description>
+    <summary>A high performance mini-orm.</summary>
+    <description>A high performance mini-orm enabling expressive queries and data models. Supports MSSQL.</description>
     <releaseNotes>
-    * 1.0 beta 1    - Initial Release. Targets .net 4.0 only.
+      * 1.0 beta 1    - Initial Release.
     </releaseNotes>
     <copyright>Copyright ClothesHorse, 2013</copyright>
     <tags>orm sql mini-orm micro-orm mssql</tags>
@@ -24,7 +24,9 @@
     <dependencies>
     </dependencies>
     <files>
-      <file src="Destrier\bin\Release\Destrier.dll" target="lib\net45" />
+      <file src="Destrier\bin\Release\Destrier.dll" target="lib\net40" />
+      <file src="Destrier\bin\Release\Destrier.pdb" target="lib\net40" />
+      <file src="Destrier\bin\Release\Destrier.xml" target="lib\net40" />
     </files>
   </metadata>
 </package>
