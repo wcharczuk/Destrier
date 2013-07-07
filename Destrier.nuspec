@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Destrier</id>
+    <version>1.0.0</version>
+    <authors>Will Charczuk</authors>
+    <owners>Will Charcuzk</owners>
+    <projectUrl>https://github.com/clotheshorse/destrier</projectUrl>
+    <licenceUrl>http://www.apache.org/licenses/LICENSE-2.0</licenceUrl>
+    <!--<iconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</iconUrl>-->
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A high performance mini-orm enabling expressive queries and data models.</description>
+    <releaseNotes>
+    * 1.0 beta 1    - Initial Release. Targets .net 4.0 only.
+    </releaseNotes>
+    <copyright>Copyright ClothesHorse, 2013</copyright>
+    <tags>orm sql mini-orm micro-orm mssql</tags>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Core"/>
+      <frameworkAssembly assemblyName="System"/>
+      <frameworkAssembly assemblyName="System.Data"/>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.0" />
+    </frameworkAssemblies>
+    <dependencies>
+    </dependencies>
+    <files>
+      <file src="Destrier\bin\Release\Destrier.dll" target="lib\net45" />
+    </files>
+  </metadata>
+</package>
