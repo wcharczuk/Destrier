@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Dynamic;
 
-namespace Destrier
+namespace Destrier.Extensions
 {
     public static class ObjectExtensions
     {
@@ -20,20 +20,6 @@ namespace Destrier
                 return DBNull.Value;
 
             return obj;
-        }
-
-        public static String DisplayIfNull(this Object obj, String text)
-        {
-            if (obj == null)
-                return text;
-
-            Type t = obj.GetType();
-            var defaultValue = ReflectionCache.GetDefault(t);
-
-            if (obj.Equals(defaultValue))
-                return text;
-
-            return obj.ToString();
         }
 
         /// <summary>
