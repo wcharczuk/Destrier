@@ -25,6 +25,39 @@ namespace Destrier.Test
                 }
             }
         }
+        
+        [Fact]
+        public void Metadata_Test()
+        {
+            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
+            {
+                cmd.CommandText = SingleStatment;
+                cmd.CommandType = System.Data.CommandType.Text;
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
+                {
+                    dr.ReadFullControl((reader) =>
+                    {
+                        Assert.True(reader.HasColumn("id"));
+                        Assert.True(reader.GetColumnIndex("id") == reader.GetOrdinal("id"));
+                        Assert.False(reader.IsClosed);
+                    });
+
+                    DataException de = null;
+                    try
+                    {
+                        IndexedSqlDataReader.ThrowDataException(new Exception("Test Exception"), 0, dr);
+                    }
+                    catch (DataException e)
+                    {
+                        de = e;
+                    }
+
+                    Assert.NotNull(de);
+                }
+            }
+
+
+        }
 
         [Fact]
         public void InitializeTest_NoType_Test()
@@ -196,6 +229,15 @@ namespace Destrier.Test
                     testObject.NullableGuid = dr.Get<Guid?>("nullableGuid");
                 });
             });
+        }
+
+        [Fact]
+        public void FastPipelineTest()
+        {
+            var testObjects = new Query<TestObject>().Limit(100).Execute();
+
+            Assert.NotNull(testObjects);
+            Assert.NotEmpty(testObjects);
         }
     }
 }

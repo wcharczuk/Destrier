@@ -57,6 +57,26 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void NonQuery_WithParam_Test()
+        {
+            Execute.NonQuery("update TestObjects set name = @name where id = @id", new { name = "name_zero", id = 1 });
+
+            String newName = String.Empty;
+            Execute.StatementReader("select name from testobjects where id = 1", (dr) =>
+            {
+                if (dr.HasRows)
+                {
+                    while (dr.Read())
+                    {
+                        newName = dr.Get<String>(0);
+                    }
+                }
+            });
+
+            Assert.Equal("name_zero", newName);
+        }
+
+        [Fact]
         public void StatementReader_WithParameter()
         {
             String newName = String.Empty;
@@ -73,6 +93,18 @@ namespace Destrier.Test
 
             Assert.NotNull(newName);
             Assert.NotEmpty(newName);
+        }
+
+        [Fact]
+        public void Utility_AddWhereClauseVariables()
+        {
+            StringBuilder builder = new StringBuilder();
+            var parameters = new { name = "test" };
+            Execute.Utility.AddWhereClauseVariables(parameters, builder);
+            var text = builder.ToString();
+
+            Assert.NotEmpty(text);
+            Assert.Equal("and [name] = @name\r\n", text);
         }
     }
 }
