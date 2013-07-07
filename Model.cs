@@ -14,7 +14,15 @@ namespace Destrier
     {
         public static String TableName(Type t)
         {
-            return ReflectionCache.GetTableAttribute(t).TableName;
+            var ta = ReflectionCache.GetTableAttribute(t);
+
+            if (ta == null)
+                return null;
+
+            if (!String.IsNullOrEmpty(ta.TableName))
+                return ta.TableName;
+            else
+                return t.Name;
         }
 
         public static String TableNameFullyQualified(Type t)
