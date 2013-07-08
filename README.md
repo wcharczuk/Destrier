@@ -9,7 +9,7 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 ###Features###
 * POCO support; use your existing objects.
 * Code first based on annotations.
-* Stability: Use Enums, nullable types, relative freedom in mapping db types to clr types.
+* Type stability: Use Enums and nullable types while mapping db types to your objects.
 * Speed: It's pretty fast for what it lets you do.
 * Expressive: Strongly typed query syntax and update syntax help catch errors on compilation.
 * Database Paging Support: use Offset on queries to enable database paging.
