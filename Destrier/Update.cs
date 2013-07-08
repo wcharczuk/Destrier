@@ -20,7 +20,7 @@ namespace Destrier
         private IDictionary<String, Object> _parameters = null;
 
         private CommandBuilder<T> _builder = null;
-        public Update<T> Set<F>(Expression<Func<T, F>> expression, Object value)
+        public Update<T> Set<F>(Expression<Func<T, F>> expression, F value)
         {
             _builder.AddSet(expression, value);
             return this;

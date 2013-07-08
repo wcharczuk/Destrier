@@ -1,3 +1,4 @@
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier", "Destrier\Destrier.csproj", "{CA71CE76-44F8-46D2-8BBC-AAAA31CD3E5D}"
@@ -8,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORMComparison", "ORMCompari
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Meta", "Meta", "{ECCE471E-6D0A-4911-9B37-E007288BCC61}"
 	ProjectSection(SolutionItems) = preProject
+		Destrier.nuspec = Destrier.nuspec
+		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
 EndProject
