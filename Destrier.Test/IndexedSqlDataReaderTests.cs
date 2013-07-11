@@ -68,8 +68,6 @@ namespace Destrier.Test
                     Assert.NotNull(de);
                 }
             }
-
-
         }
 
         [Fact]
