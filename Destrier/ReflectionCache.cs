@@ -45,7 +45,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static ConcurrentDictionary<IndexedSqlDataReader, SetInstanceValuesDelegate> _setInstanceValuesDelegateCache = new ConcurrentDictionary<IndexedSqlDataReader, SetInstanceValuesDelegate>();
+        private static ConcurrentDictionary<String, SetInstanceValuesDelegate> _setInstanceValuesDelegateCache = new ConcurrentDictionary<String, SetInstanceValuesDelegate>();
 
         public delegate void SetInstanceValuesDelegate(IndexedSqlDataReader dr, object instance);
 
@@ -545,9 +545,9 @@ namespace Destrier
 
         public static SetInstanceValuesDelegate GetSetInstanceValuesDelegate(IndexedSqlDataReader reader)
         {
-            return _setInstanceValuesDelegateCache.GetOrAdd(reader, (dr) =>
+            return _setInstanceValuesDelegateCache.GetOrAdd(reader.GetCacheId(), (id) =>
             {
-                return GenerateSetInstanceValuesDelegate(dr);
+                return GenerateSetInstanceValuesDelegate(reader);
             });
         }
 
@@ -754,6 +754,7 @@ namespace Destrier
             var endLabel = il.DefineLabel();
             il.BeginCatchBlock(typeof(Exception));
             il.Emit(OpCodes.Ldloc, col_index.LocalIndex);
+            il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldarg_0);
             il.EmitCall(OpCodes.Call, idr.GetMethod("ThrowDataException"), null);
             il.EndExceptionBlock();
