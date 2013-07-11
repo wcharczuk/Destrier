@@ -424,7 +424,7 @@ namespace Destrier
         /// <param name="ex"></param>
         /// <param name="columnIndex"></param>
         /// <param name="reader"></param>
-        public static void ThrowDataException(Exception ex, Int32 columnIndex, IndexedSqlDataReader reader)
+        public static void ThrowDataException(Exception ex, Int32 columnIndex, Object instance, IndexedSqlDataReader reader)
         {
             Exception toThrow;
             try
@@ -703,16 +703,21 @@ namespace Destrier
 
             return isEqual;
         }
-        
-        public override int GetHashCode()
+
+        public string GetCacheId()
         {
             var bigString = String.Join("|", this.ColumnIndexMap);
             if (this.CurrentOutputType != null)
             {
-                return String.Format("{0}__{1}__{2}", this.CurrentOutputType.ToString(), this.ResultSetIndex, bigString).GetHashCode();
+                return String.Format("{0}__{1}__{2}", this.CurrentOutputType.ToString(), this.ResultSetIndex, bigString);
             }
             else
-                return String.Format("{0}__{1}", this.ResultSetIndex, bigString).GetHashCode();
+                return String.Format("{0}__{1}", this.ResultSetIndex, bigString);
+        }
+
+        public override int GetHashCode()
+        {
+            throw new InvalidOperationException("Don't try and cache these in a dictionary!");            
         }
 
         void IDisposable.Dispose()
