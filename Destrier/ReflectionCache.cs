@@ -45,6 +45,9 @@ namespace Destrier
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static ConcurrentDictionary<IndexedSqlDataReader, SetInstanceValuesDelegate> _setInstanceValuesDelegateCache = new ConcurrentDictionary<IndexedSqlDataReader, SetInstanceValuesDelegate>();
+
+        public delegate void SetInstanceValuesDelegate(IndexedSqlDataReader dr, object instance);
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
@@ -540,11 +543,17 @@ namespace Destrier
             }
         }
 
-        public delegate void SetInstanceValuesDelegate(IndexedSqlDataReader dr, object instance);
+        public static SetInstanceValuesDelegate GetSetInstanceValuesDelegate(IndexedSqlDataReader reader)
+        {
+            return _setInstanceValuesDelegateCache.GetOrAdd(reader, (dr) =>
+            {
+                return GenerateSetInstanceValuesDelegate(dr);
+            });
+        }
 
         public static SetInstanceValuesDelegate GenerateSetInstanceValuesDelegate(IndexedSqlDataReader dr)
         {
-            Type idr = dr.GetType();
+            Type idr = typeof(IndexedSqlDataReader);
             var idr_methods = new Dictionary<String, MethodInfo>();
             foreach (var mi in idr.GetMethods())
             {

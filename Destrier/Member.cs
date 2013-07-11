@@ -106,9 +106,10 @@ namespace Destrier
 
         public override bool Equals(object obj)
         {
-            if (!(obj is Member)) return false;
+            var them = obj as Member;
+            if (them == null) return false;
 
-            return (obj as Member).FullyQualifiedName == this.FullyQualifiedName;
+            return them.FullyQualifiedName.Equals(this.FullyQualifiedName);
         }
 
         public override string ToString()

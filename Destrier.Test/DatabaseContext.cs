@@ -72,6 +72,11 @@ CREATE TABLE TestObjects
     [nullableGuid] uniqueidentifier
 );
 
+CREATE TABLE Ids
+(
+    id int not null primary key
+);
+
 DECLARE @id int;
 DECLARE @i int;
 DECLARE @subId int;
@@ -90,6 +95,8 @@ BEGIN
     VALUES 
     ( 'name' + cast(@i as varchar), @typeId, 1, getdate(), null, null, @subId, 1, @nullableTypeId, 'c', 1, 1, @nullableTypeId, newid(), @nullableGuid);
     
+    INSERT INTO Ids VALUES (@i);
+
     IF(@nullableTypeId is null) BEGIN; set @nullableTypeId = 1; END;
     ELSE IF(@nullableTypeId is not null) BEGIN; set @nullableTypeId = null; END;
     
@@ -132,6 +139,11 @@ END";
 if (OBJECT_ID('tempdb..TestObjects') is not null)
 BEGIN
     DROP TABLE tempdb..TestObjects
+END
+
+if (OBJECT_ID('tempdb..Ids') is not null)
+BEGIN
+    DROP TABLE tempdb..Ids
 END
 
 IF(OBJECT_ID('tempdb..GetTestObjects_prc') is not null)
