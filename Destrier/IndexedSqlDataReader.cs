@@ -423,6 +423,7 @@ namespace Destrier
         /// </summary>
         /// <param name="ex"></param>
         /// <param name="columnIndex"></param>
+        /// <param name="instance"></param>
         /// <param name="reader"></param>
         public static void ThrowDataException(Exception ex, Int32 columnIndex, Object instance, IndexedSqlDataReader reader)
         {
@@ -698,7 +699,7 @@ namespace Destrier
                 var themColumn = them.ColumnIndexMap[x];
                 isEqual = isEqual && thisColumn.Equals(themColumn);
             }
-
+            isEqual = isEqual && them.CurrentOutputType.Equals(this.CurrentOutputType);
             isEqual = isEqual && them.ResultSetIndex.Equals(this.ResultSetIndex);
 
             return isEqual;

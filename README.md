@@ -24,16 +24,19 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
-|Raw Reader            | Avg:	22.27ms | 
-|PetaPoco              | Avg:   25.55ms | 
-|Dapper                | Avg:	27.11ms | 
-|Destrier              | Avg:   30.37ms |
+|Destrier (Raw Query)  | Avg:   18.44ms |
+|Raw Reader            | Avg:	18.74ms | 
+|PetaPoco              | Avg:   22.48ms | 
+|Destrier              | Avg:   23.42ms |
+|Dapper                | Avg:	29.24ms | 
 |ServiceStack ORMLite  | Avg:   67.65ms |
-|EntityFramework       | Avg:  145.38ms |
+|EntityFramework       | Avg:  112.37ms |
 
 It should be noted that EntityFramework had to have some members disabled because it lacks Enum support. 
 Also should be noted that ORMLite failed to cast Doubles=>Singles. 
 Also PetaPoco doesn't handle nullable enums.
+
+Test was run in .net 4.5, Release without debugger attached.
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.
