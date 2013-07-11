@@ -10,18 +10,21 @@ using System.Text;
 
 namespace Destrier
 {
-    public class IndexedSqlDataReader : IDataReader
+    public class IndexedSqlDataReader : IDataReader, IDisposable
     {
-        public IndexedSqlDataReader() : base() { }
+        public IndexedSqlDataReader() : base() 
+        {
+            ResultSetIndex = 0;
+        }
 
-        public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true)
+        public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true) : this()
         {
             _dr = hostReader;
             StandardizeCasing = standardizeCasing;
             InitResultSet();
         }
 
-        public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false)
+        public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false) : this()
         {
             _dr = hostReader;
             StandardizeCasing = standardizeCasing;
@@ -32,6 +35,9 @@ namespace Destrier
         public Boolean StandardizeCasing { get; set; }
 
         private SqlDataReader _dr = null;
+
+        private Int32 _resultSetIndex = 0;
+        public Int32 ResultSetIndex { get { return _resultSetIndex; } private set { _resultSetIndex = value; } }
 
         public Type CurrentOutputType { get; set; }
 
@@ -58,7 +64,6 @@ namespace Destrier
         /// <summary>
         /// This is the mapping of column names to array indices.
         /// </summary>
-
         public Dictionary<String, Int32> ColumnMap { get; set; }
 
         /// <summary>
@@ -92,10 +97,19 @@ namespace Destrier
                     }
                 }
                 ColumnMemberIndexMap = cm_index.ToArray();
-                _setInstanceValuesFn = ReflectionCache.GenerateSetInstanceValuesDelegate(this);
+
+                if (!HasReferencedObjectMembers)
+                {
+                    _setInstanceValuesFn = ReflectionCache.GetSetInstanceValuesDelegate(this);
+                }
             }
         }
 
+        /// <summary>
+        /// Returns true if the result set contains the columnName
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
         public Boolean HasColumn(String columnName)
         {
             if (this.StandardizeCasing)
@@ -104,6 +118,11 @@ namespace Destrier
                 return ColumnMap.ContainsKey(columnName);
         }
 
+        /// <summary>
+        /// Returns the column index of the column name. Will standardize the name, does a dictionary lookup and will return null if not present.
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
         public Int32? GetColumnIndex(String columnName)
         {
             if (this.StandardizeCasing)
@@ -124,11 +143,19 @@ namespace Destrier
 
         }
 
+        /// <summary>
+        /// Gets the name of the column at the index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public String GetColumnName(Int32 index)
         {
             return ColumnIndexMap[index];
         }
 
+        /// <summary>
+        /// Returns whether or not the result set has rows.
+        /// </summary>
         public Boolean HasRows
         {
             get
@@ -161,6 +188,7 @@ namespace Destrier
         public bool NextResult()
         {
             var result = _dr.NextResult();
+            ResultSetIndex++;
             InitResultSet();
             return result;
         }
@@ -390,6 +418,12 @@ namespace Destrier
             _setInstanceValuesFn(this, instance);
         }
 
+        /// <summary>
+        /// Throws a data exception produced by the _setInstanceValuesFn.
+        /// </summary>
+        /// <param name="ex"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="reader"></param>
         public static void ThrowDataException(Exception ex, Int32 columnIndex, IndexedSqlDataReader reader)
         {
             Exception toThrow;
@@ -645,5 +679,49 @@ namespace Destrier
                 this.NextResult();
         }
         #endregion
+
+        public override bool Equals(object obj)
+        {
+            var them = obj as IndexedSqlDataReader;
+            if (obj == null)
+            {
+                return false;
+            }
+
+            if(this.ColumnIndexMap.Length != them.ColumnIndexMap.Length)
+                return false;
+
+            Boolean isEqual = true;
+            for(int x = 0; x < this.ColumnIndexMap.Length; x++)
+            {
+                var thisColumn = this.ColumnIndexMap[x];
+                var themColumn = them.ColumnIndexMap[x];
+                isEqual = isEqual && thisColumn.Equals(themColumn);
+            }
+
+            isEqual = isEqual && them.ResultSetIndex.Equals(this.ResultSetIndex);
+
+            return isEqual;
+        }
+        
+        public override int GetHashCode()
+        {
+            var bigString = String.Join("|", this.ColumnIndexMap);
+            if (this.CurrentOutputType != null)
+            {
+                return String.Format("{0}__{1}__{2}", this.CurrentOutputType.ToString(), this.ResultSetIndex, bigString).GetHashCode();
+            }
+            else
+                return String.Format("{0}__{1}", this.ResultSetIndex, bigString).GetHashCode();
+        }
+
+        void IDisposable.Dispose()
+        {
+            if (_dr != null)
+            {
+                _dr.Dispose();
+                _dr = null;
+            }
+        }
     }
 }
