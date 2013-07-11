@@ -25,6 +25,19 @@ namespace Destrier.Test
                 }
             }
         }
+
+        [Fact]
+        public void UsedAsHashKey_Test()
+        {
+            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
+            {
+                cmd.CommandText = SingleStatment;
+                cmd.CommandType = System.Data.CommandType.Text;
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
+                {
+                }
+            }
+        }
         
         [Fact]
         public void Metadata_Test()
