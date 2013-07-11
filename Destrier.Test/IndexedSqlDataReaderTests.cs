@@ -58,7 +58,7 @@ namespace Destrier.Test
                     DataException de = null;
                     try
                     {
-                        IndexedSqlDataReader.ThrowDataException(new Exception("Test Exception"), 0, dr);
+                        IndexedSqlDataReader.ThrowDataException(new Exception("Test Exception"), 0, null, dr);
                     }
                     catch (DataException e)
                     {
@@ -68,8 +68,6 @@ namespace Destrier.Test
                     Assert.NotNull(de);
                 }
             }
-
-
         }
 
         [Fact]
