@@ -113,7 +113,7 @@ namespace Destrier.Test
             Database.Update(book);
 
             var bookCheck = Database.Get<Book>(3);
-            Assert.Equal("Not Whoever This Was.", book.Author.Name);
+            Assert.Equal("Not Whoever This Was.", bookCheck.Author.Name);
         }
 
         [Fact]

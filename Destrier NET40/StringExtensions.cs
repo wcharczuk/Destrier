@@ -20,12 +20,12 @@ namespace Destrier.Extensions
                 {
                     foreach (var recipient in str.Split(','))
                     {
-                        var a = new MailAddress(recipient);
+                        new MailAddress(recipient);
                     }
                 }
                 else
                 {
-                    var a = new MailAddress(str);
+                    new MailAddress(str);
                 }
             }
             catch
