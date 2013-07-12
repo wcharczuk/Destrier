@@ -447,7 +447,7 @@ namespace Destrier
         {
             return _rootMemberCache.GetOrAdd(type, (t) =>
             {
-                return new RootMember(t) { TableAlias = Model.GenerateAlias(), OutputTableName = Model.GenerateAlias() };
+                return new RootMember(t) { TableAlias = Model.GenerateAlias(), OutputTableName = Model.GenerateAlias(), UseNoLock = Model.UseNoLock(t) };
             });
         }
 

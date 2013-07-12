@@ -42,6 +42,11 @@ namespace Destrier
             return !String.IsNullOrEmpty(schemaName) ? schemaName : DatabaseConfigurationContext.DefaultSchemaName;
         }
 
+        public static Boolean UseNoLock(Type t)
+        {
+            return ReflectionCache.GetTableAttribute(t).UseNoLock;
+        }
+
         public static String ColumnName(PropertyInfo pi)
         {
             ColumnAttribute ca = ReflectionCache.GetColumnAttribute(pi);

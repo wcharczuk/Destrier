@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Web;
-using System.Web.UI;
 using System.Net.Mail;
 using System.Globalization;
 
@@ -39,18 +38,9 @@ namespace Destrier.Extensions
 
         public static string ToTitleCase(this String mText)
         {
-            string rText = "";
-            try
-            {
-                System.Globalization.CultureInfo cultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
-                System.Globalization.TextInfo TextInfo = cultureInfo.TextInfo;
-                rText = TextInfo.ToTitleCase(mText);
-            }
-            catch
-            {
-                rText = mText;
-            }
-            return rText;
+            System.Globalization.CultureInfo cultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Globalization.TextInfo TextInfo = cultureInfo.TextInfo;
+            return TextInfo.ToTitleCase(mText);
         }
 
         public static string ToLowerCaseFirstLetter(this String mText)

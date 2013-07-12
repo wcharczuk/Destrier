@@ -23,11 +23,11 @@ namespace Destrier.Test
         [Fact]
         public void All()
         {
-            var book = Database.All<Book>();
-            Assert.NotNull(book);
-            Assert.NotEmpty(book.First().Title);
-            Assert.NotNull(book.First().Author);
-            Assert.NotEmpty(book.First().Chapters);
+            var books = Database.All<Book>();
+            Assert.NotNull(books);
+            Assert.NotEmpty(books.First().Title);
+            Assert.NotNull(books.First().Author);
+            Assert.NotEmpty(books.First().Chapters);
         }
 
         [Fact]

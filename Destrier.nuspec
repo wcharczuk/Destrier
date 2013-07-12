@@ -2,16 +2,19 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata schemaVersion="2">
     <id>Destrier</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <authors>Will Charczuk</authors>
     <owners>Will Charcuzk</owners>
     <projectUrl>https://github.com/clotheshorse/destrier</projectUrl>
-    <licenceUrl>https://raw.github.com/ClothesHorse/Destrier/master/LICENSE.md</licenceUrl>
+    <licenseUrl>https://raw.github.com/ClothesHorse/Destrier/master/LICENSE.md</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A high performance mini-orm.</summary>
     <description>A high performance mini-orm enabling expressive queries and data models. Supports MSSQL.</description>
     <releaseNotes>
-      * 1.0 beta 1    - Initial Release.
+      * 1.0.1       - Speed improvements on FastPipeline by caching DynamicMethod implementations.
+                    - Added the ability to disable (NOLOCK) usage on TableAttribute.
+                    - Added support for .net framework version 4.5.
+      * 1.0.0       - Initial Release.
     </releaseNotes>
     <copyright>Copyright ClothesHorse, 2013</copyright>
     <tags>orm sql mini-orm micro-orm mssql</tags>
@@ -19,14 +22,17 @@
       <frameworkAssembly assemblyName="System.Core"/>
       <frameworkAssembly assemblyName="System"/>
       <frameworkAssembly assemblyName="System.Data"/>
-      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.0" />
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.0-Client, .NETFramework4.0" />
     </frameworkAssemblies>
     <dependencies>
     </dependencies>
-    <files>
-      <file src="Destrier\bin\Release\Destrier.dll" target="lib\net40" />
-      <file src="Destrier\bin\Release\Destrier.pdb" target="lib\net40" />
-      <file src="Destrier\bin\Release\Destrier.xml" target="lib\net40" />
-    </files>
   </metadata>
+    <files>
+        <file src="Destrier NET40\bin\Release\Destrier.dll" target="lib\net40" />
+        <file src="Destrier NET40\bin\Release\Destrier.pdb" target="lib\net40" />
+        <file src="Destrier NET40\bin\Release\Destrier.xml" target="lib\net40" />
+        <file src="Destrier NET45\bin\Release\Destrier.dll" target="lib\net45" />
+        <file src="Destrier NET45\bin\Release\Destrier.pdb" target="lib\net45" />
+        <file src="Destrier NET45\bin\Release\Destrier.xml" target="lib\net45" />
+    </files>
 </package>

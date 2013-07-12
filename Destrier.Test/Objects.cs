@@ -78,6 +78,13 @@ namespace Destrier.Test
         public Guid? NullableGuid { get; set; }
     }
 
+    [Table(UseNoLock=false)]
+    public class Ids
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+    }
+
     #endregion
 
     #region Reflection Tests
@@ -224,7 +231,7 @@ namespace Destrier.Test
         [Column]
         public String Notes { get; set; }
 
-        [ChildCollection("BookId", AlwaysInclude = true)]
+        [ChildCollection("BookId", true)]
         public List<Chapter> Chapters { get; set; }
 
         public void PreRemove()

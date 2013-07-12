@@ -20,6 +20,7 @@ namespace Destrier
             this.TableName = Model.TableName(this.Type); 
             this.DatabaseName = Model.DatabaseName(this.Type); 
             this.SchemaName = Model.SchemaName(this.Type);
+            this.UseNoLock = Model.UseNoLock(this.Type);
         }
         public ReferencedObjectAttribute ReferencedObjectAttribute { get; set; }
 
@@ -33,6 +34,7 @@ namespace Destrier
         public String TableName { get; private set; }
         public String DatabaseName { get; private set; }
         public String SchemaName { get; set; }
+        public Boolean UseNoLock { get; set; }
 
         public String JoinType { get { return ReferencedColumnIsNullable ? "LEFT" : "INNER"; } }
         public String FullyQualifiedTableName { get { return String.Format("{0}.{1}.{2}", this.DatabaseName, this.SchemaName, this.TableName); } }

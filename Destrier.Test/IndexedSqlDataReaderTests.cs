@@ -347,5 +347,13 @@ namespace Destrier.Test
             Assert.NotEmpty(text);
             Assert.Equal("and [name] = @name\r\n", text);
         }
+
+        [Fact]
+        public void NoLock_Query_Test()
+        {
+            var ids = Database.All<Ids>();
+            Assert.NotNull(ids);
+            Assert.False(ids.Last().Id == default(int));
+        }
     }
 }

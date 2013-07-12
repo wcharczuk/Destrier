@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Destrier</RootNamespace>
     <AssemblyName>Destrier</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -87,7 +87,6 @@
     <Compile Include="ReflectionCache.cs" />
     <Compile Include="Parallel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TablePrimitive.cs" />
     <Compile Include="IPreCreate.cs" />
     <Compile Include="IPostCreate.cs" />
     <Compile Include="IPreUpdate.cs" />

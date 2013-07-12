@@ -57,6 +57,12 @@ namespace Destrier.Test
             Assert.NotNull(fullyQualifiedTableName);
             Assert.NotEmpty(fullyQualifiedTableName);
             Assert.Equal(fullyQualifiedTableName, "DestrierTest.dbo.MockObjects");
+
+            Assert.True(tableAttribute.UseNoLock);
+
+            var idTableAttribute = ReflectionCache.GetTableAttribute(typeof(Ids));
+            Assert.False(idTableAttribute.UseNoLock);
+            Assert.False(Model.UseNoLock(typeof(Ids)));
         }
 
         [Fact]
@@ -70,7 +76,6 @@ namespace Destrier.Test
             Assert.True(members.Any(m => m is ReferencedObjectMember));
             Assert.True(members.Any(m => m is ChildCollectionMember));
         }
-
         
         [Fact]
         public void SetPropertyValue_Test()

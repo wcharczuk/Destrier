@@ -1,4 +1,7 @@
 #Destrier#
+
+[![Build Status](https://travis-ci.org/ClothesHorse/Destrier.png?branch=master)](https://travis-ci.org/ClothesHorse/Destrier)
+
 Destrier is a flexible yet minimal ORM for .net.
 
 [Documentation](https://github.com/ClothesHorse/Destrier/wiki)

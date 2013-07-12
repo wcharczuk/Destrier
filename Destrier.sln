@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier", "Destrier\Destrier.csproj", "{CA71CE76-44F8-46D2-8BBC-AAAA31CD3E5D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier NET40", "Destrier NET40\Destrier NET40.csproj", "{CA71CE76-44F8-46D2-8BBC-AAAA31CD3E5D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Test", "Destrier.Test\Destrier.Test.csproj", "{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}"
 EndProject
@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Meta", "Meta", "{ECCE471E-6
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.GenerateModels", "Destrier.GenerateModels\Destrier.GenerateModels.csproj", "{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier NET45", "Destrier NET45\Destrier NET45.csproj", "{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +40,10 @@ Global
 		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

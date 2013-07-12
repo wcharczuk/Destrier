@@ -46,7 +46,7 @@ namespace Destrier
 
         public virtual String TableAlias { get; set; }
         public virtual String OutputTableName { get; set; }
-
+        
         public virtual Member Root { get; set; }
         public virtual Member Parent { get; set; }
 
