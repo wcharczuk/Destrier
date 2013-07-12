@@ -123,17 +123,5 @@ namespace Destrier.Test
             var sqlText = cb.GenerateSelect();
             Assert.NotNull(sqlText);
         }
-
-        [Fact]
-        public void NoLock_Test()
-        {
-            var cb = new CommandBuilder<Book>();
-            var sqlText = cb.GenerateSelect();
-            Assert.True(sqlText.Contains("(NOLOCK)"));
-
-            var cb2 = new CommandBuilder<Ids>();
-            var sqlText2 = cb2.GenerateSelect();
-            Assert.False(sqlText2.Contains("(NOLOCK)"));
-        }
     }
 }

@@ -19,7 +19,6 @@ namespace Destrier.Test
             if (!Destrier.DatabaseConfigurationContext.ConnectionStrings.ContainsKey("default"))
             {
                 Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
-                Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             }
         }
     }
@@ -50,6 +49,7 @@ namespace Destrier.Test
 
         public void EnsureInitDataStore()
         {
+            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
 CREATE TABLE TestObjects
 ( 
@@ -126,6 +126,7 @@ BEGIN;
         SELECT TOP (@limit) Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock);
     END;
 END";
+
             if (!TestIfSchemaExists())
             {
                 Destrier.Execute.NonQuery(initDbScript);
@@ -187,6 +188,7 @@ END
 
         public void EnsureInitDataStore()
         {
+            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
 CREATE TABLE People
 (
@@ -282,6 +284,7 @@ INSERT INTO Pages VALUES (1, 1, 1, 'He was an old man who fished alone in a skif
 INSERT INTO Pages VALUES (2, 1, 1, 'Five and you nearly were killed when I brought the fish in too green and he nearly tore the boat to pieces. Can you remember?');
 INSERT INTO Pages VALUES (3, 1, 1, 'They picked up the gear from the boat. The old man carried the mast on his shoulder and the boy carried the wooden boat with the coiled, hard-braided brown lines, the gaff and the harpoon with its shaft.');
 ";
+
             if (!TestIfSchemaExists())
             {
                 Destrier.Execute.NonQuery(initDbScript);

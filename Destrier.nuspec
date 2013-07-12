@@ -13,6 +13,7 @@
     <releaseNotes>
       * 1.0 beta 2      - Speed improvements on FastPipeline by caching DynamicMethod implementations.
                         - Added the ability to disable (NOLOCK) usage on TableAttribute.
+                        - Added support for .net framework version 4.5.
       * 1.0 beta 1      - Initial Release.
     </releaseNotes>
     <copyright>Copyright ClothesHorse, 2013</copyright>
