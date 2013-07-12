@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Destrier</RootNamespace>
+    <AssemblyName>Destrier</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Compile Include="..\Destrier NET40\Properties\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ChildCollectionAttribute.cs">
+      <Link>ChildCollectionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ChildCollectionMember.cs">
+      <Link>ChildCollectionMember.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ColumnAttribute.cs">
+      <Link>ColumnAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ColumnMember.cs">
+      <Link>ColumnMember.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ColumnMissingException.cs">
+      <Link>ColumnMissingException.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ColumnNullIncorrectException.cs">
+      <Link>ColumnNullIncorrectException.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\CommandBuilder.cs">
+      <Link>CommandBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Database.cs">
+      <Link>Database.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\DatabaseAction.cs">
+      <Link>DatabaseAction.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\DatabaseConfigurationContext.cs">
+      <Link>DatabaseConfigurationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\DataException.cs">
+      <Link>DataException.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Execute.cs">
+      <Link>Execute.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ExpressionExtensions.cs">
+      <Link>ExpressionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IAuditable.cs">
+      <Link>IAuditable.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IEnumerableExtensions.cs">
+      <Link>IEnumerableExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IGet.cs">
+      <Link>IGet.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IGetMany.cs">
+      <Link>IGetMany.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IndexedSqlDataReader.cs">
+      <Link>IndexedSqlDataReader.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\InvalidColumnDataException.cs">
+      <Link>InvalidColumnDataException.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPopulate.cs">
+      <Link>IPopulate.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPostCreate.cs">
+      <Link>IPostCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPostRemove.cs">
+      <Link>IPostRemove.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPostUpdate.cs">
+      <Link>IPostUpdate.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPreCreate.cs">
+      <Link>IPreCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPreRemove.cs">
+      <Link>IPreRemove.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\IPreUpdate.cs">
+      <Link>IPreUpdate.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Member.cs">
+      <Link>Member.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Model.cs">
+      <Link>Model.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\MonkeyPatch.cs">
+      <Link>MonkeyPatch.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ObjectDynamicExtension.cs">
+      <Link>ObjectDynamicExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ObjectExtensions.cs">
+      <Link>ObjectExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Parallel.cs">
+      <Link>Parallel.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Query.cs">
+      <Link>Query.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ReferencedObjectAttribute.cs">
+      <Link>ReferencedObjectAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ReferencedObjectMember.cs">
+      <Link>ReferencedObjectMember.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ReflectionCache.cs">
+      <Link>ReflectionCache.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ReflectionExtensions.cs">
+      <Link>ReflectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\RootMember.cs">
+      <Link>RootMember.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Schema.cs">
+      <Link>Schema.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\SchemaMetadataException.cs">
+      <Link>SchemaMetadataException.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\SqlDataReaderExtensions.cs">
+      <Link>SqlDataReaderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\SqlExpressionVisitor.cs">
+      <Link>SqlExpressionVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\StringExtensions.cs">
+      <Link>StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\TableAttribute.cs">
+      <Link>TableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\TablePrimitive.cs">
+      <Link>TablePrimitive.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\Update.cs">
+      <Link>Update.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

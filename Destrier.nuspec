@@ -11,7 +11,9 @@
     <summary>A high performance mini-orm.</summary>
     <description>A high performance mini-orm enabling expressive queries and data models. Supports MSSQL.</description>
     <releaseNotes>
-      * 1.0 beta 1    - Initial Release.
+      * 1.0 beta 2      - Speed improvements on FastPipeline by caching DynamicMethod implementations.
+                        - Added the ability to disable (NOLOCK) usage on TableAttribute.
+      * 1.0 beta 1      - Initial Release.
     </releaseNotes>
     <copyright>Copyright ClothesHorse, 2013</copyright>
     <tags>orm sql mini-orm micro-orm mssql</tags>
@@ -24,9 +26,12 @@
     <dependencies>
     </dependencies>
     <files>
-      <file src="Destrier\bin\Release\Destrier.dll" target="lib\net40" />
-      <file src="Destrier\bin\Release\Destrier.pdb" target="lib\net40" />
-      <file src="Destrier\bin\Release\Destrier.xml" target="lib\net40" />
+        <file src="Destrier NET40\bin\Release\Destrier.dll" target="lib\net40" />
+        <file src="Destrier NET40\bin\Release\Destrier.pdb" target="lib\net40" />
+        <file src="Destrier NET40\bin\Release\Destrier.xml" target="lib\net40" />
+        <file src="Destrier NET45\bin\Release\Destrier.dll" target="lib\net45" />
+        <file src="Destrier NET45\bin\Release\Destrier.pdb" target="lib\net45" />
+        <file src="Destrier NET45\bin\Release\Destrier.xml" target="lib\net45" />
     </files>
   </metadata>
 </package>

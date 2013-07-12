@@ -48,9 +48,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Destrier\Destrier.csproj">
-      <Project>{ca71ce76-44f8-46d2-8bbc-aaaa31cd3e5d}</Project>
-      <Name>Destrier</Name>
+    <ProjectReference Include="..\Destrier NET45\Destrier NET45.csproj">
+      <Project>{8162c35e-0c7d-40a9-b25d-fe560eebd7c5}</Project>
+      <Name>Destrier NET45</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
