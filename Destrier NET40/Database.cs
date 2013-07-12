@@ -176,7 +176,7 @@ namespace Destrier
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
             var connectionString = Model.ConnectionString(myObjectType);
-            using (var cmd = Execute.Command())
+            using (var cmd = Execute.Command(connectionString))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
                 command.Append("DELETE FROM ");
