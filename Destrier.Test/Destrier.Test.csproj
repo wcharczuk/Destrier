@@ -12,7 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <ProductVersion>12.0.0</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -65,9 +65,9 @@
     <Compile Include="UtilityTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Destrier NET40\Destrier NET40.csproj">
-      <Project>{ca71ce76-44f8-46d2-8bbc-aaaa31cd3e5d}</Project>
-      <Name>Destrier NET40</Name>
+    <ProjectReference Include="..\Destrier NET45\Destrier NET45.csproj">
+      <Project>{8162c35e-0c7d-40a9-b25d-fe560eebd7c5}</Project>
+      <Name>Destrier NET45</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
