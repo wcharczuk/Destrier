@@ -17,6 +17,8 @@ namespace Destrier.Test
             ctorTest = new SqlExpressionVisitor<MockObject>(new Dictionary<String, Object>());
             ctorTest = new SqlExpressionVisitor<MockObject>(new Dictionary<String, Member>());
 
+			ctorTest.ToString(); //getting rid of the usage warning.
+
             //basic constant equality test
             var visitor = new SqlExpressionVisitor<MockObject>();
             Expression<Func<MockObject, bool>> exp = (u) => u.MockObjectId == 1;
