@@ -231,7 +231,7 @@ namespace Destrier.Test
         [Column]
         public String Notes { get; set; }
 
-        [ChildCollection("BookId", AlwaysInclude = true)]
+        [ChildCollection("BookId", true)]
         public List<Chapter> Chapters { get; set; }
 
         public void PreRemove()

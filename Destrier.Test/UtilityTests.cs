@@ -23,6 +23,9 @@ namespace Destrier.Test
         [Fact]
         public void AgileObject_Test()
         {
+            Book nullObject = null;
+            Assert.Null(nullObject.ToDynamic());
+
             var obj = new { id = 1, name = "name" };
             var agile = obj.ToDynamic();
             Assert.NotNull(agile);
@@ -42,6 +45,9 @@ namespace Destrier.Test
         [Fact]
         public void NumericsOnly_Test()
         {
+            var empty = String.Empty;
+            Assert.Equal(empty, empty.ToNumericsOnly());
+
             var str = "not123only";
             var numerics = str.ToNumericsOnly();
             Assert.NotNull(numerics);
@@ -50,8 +56,35 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void NumericsOnly_100Plus_Test()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int x = 0; x < 10; x++)
+            {
+                for (int y = 0; y < 100; y++)
+                {
+                    if (x % 2 == 0)
+                    {
+                        sb.Append("a");
+                    }
+                    else
+                    {
+                        sb.Append("1");
+                    }
+                }
+            }
+
+            var numericsOnly = sb.ToString().ToNumericsOnly();
+            Assert.True(numericsOnly.Contains("1"));
+            Assert.False(numericsOnly.Contains("a"));
+        }
+
+        [Fact]
         public void NonNumericsOnly_Test()
         {
+            var empty = String.Empty;
+            Assert.Equal(empty, empty.ToNonNumericsOnly());
+
             var str = "not123only";
             var numerics = str.ToNonNumericsOnly();
             Assert.NotNull(numerics);
@@ -60,8 +93,35 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void NonNumericsOnly_100Plus_Test()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int x = 0; x < 10; x++)
+            {
+                for (int y = 0; y < 100; y++)
+                {
+                    if (x % 2 == 0)
+                    {
+                        sb.Append("a");
+                    }
+                    else
+                    {
+                        sb.Append("1");
+                    }
+                }
+            }
+
+            var numericsOnly = sb.ToString().ToNonNumericsOnly();
+            Assert.False(numericsOnly.Contains("1"));
+            Assert.True(numericsOnly.Contains("a"));
+        }
+
+        [Fact]
         public void ToLowerCaseFirstLetter_Test()
         {
+            var empty = String.Empty;
+            Assert.Equal(empty, empty.ToLowerCaseFirstLetter());
+
             var str = "UPPERCASE";
             var lowerFirst = str.ToLowerCaseFirstLetter();
             Assert.NotNull(lowerFirst);
@@ -77,6 +137,44 @@ namespace Destrier.Test
 
             Assert.True(valid.IsValidEmailAddress());
             Assert.False(notValid.IsValidEmailAddress());
+
+            var validList = "someone@somewhere.com, someoneElse@somewhere.com";
+
+            Assert.True(validList.IsValidEmailAddress());
+        }
+
+        [Fact]
+        public void SetPropertiesFrom_Test()
+        {
+            Book nullBook = null;
+            Book setFromNull = new Book();
+            setFromNull.SetPropertiesFrom(nullBook);
+
+
+            var book1 = new Book() { Id = 1, Title = "Book 1", Notes = "This is Book 1", Year = 2013 };
+            var book2 = new Book();
+            book2.SetPropertiesFrom(book1);
+
+            Assert.Equal(book1.Id, book2.Id);
+            Assert.Equal(book1.Title, book2.Title);
+            Assert.Equal(book1.Notes, book2.Notes);
+            Assert.Equal(book1.Year, book2.Year);
+        }
+
+        [Fact]
+        public void DBNullCoalese_Test()
+        {
+            String nullString = null;
+            String emptyString = String.Empty;
+
+            DateTime defaultDateTime = default(DateTime);
+
+            Assert.True(nullString.DBNullCoalese() is DBNull);
+            Assert.True(emptyString.DBNullCoalese() is DBNull);
+            Assert.True(defaultDateTime.DBNullCoalese() is DBNull);
+
+            Int32 notNullOrDefault = 1;
+            Assert.False(notNullOrDefault.DBNullCoalese() is DBNull);
         }
     }
 }
