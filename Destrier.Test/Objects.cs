@@ -78,6 +78,13 @@ namespace Destrier.Test
         public Guid? NullableGuid { get; set; }
     }
 
+    [Table(UseNoLock=false)]
+    public class Ids
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+    }
+
     #endregion
 
     #region Reflection Tests

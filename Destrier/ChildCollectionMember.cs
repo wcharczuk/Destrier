@@ -26,6 +26,7 @@ namespace Destrier
             this.TableName = Model.TableName(this.CollectionType); 
             this.DatabaseName = Model.DatabaseName(this.CollectionType);
             this.SchemaName = Model.SchemaName(this.CollectionType);
+            this.UseNoLock = Model.UseNoLock(this.CollectionType);
         }
 
         public ColumnMember ParentPrimaryKey { get; set; }
@@ -43,6 +44,7 @@ namespace Destrier
         public String TableName { get; private set; }
         public String DatabaseName { get; private set; }
         public String SchemaName { get; set; }
+        public Boolean UseNoLock { get; set; }
 
         public String FullyQualifiedTableName { get { return String.Format("{0}.{1}.{2}", this.DatabaseName, this.SchemaName, this.TableName); } }
 

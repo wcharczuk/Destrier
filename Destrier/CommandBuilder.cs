@@ -50,6 +50,7 @@ namespace Destrier
 
         public String FullyQualifiedTableName { get; private set; }
         public String TableAlias { get { return this.AsRootMember.TableAlias; } }
+        public Boolean UseNoLock { get { return this.AsRootMember.UseNoLock; } }
 
         private Expression<Func<T, bool>> _whereClause = null;
         private dynamic _whereParameters = null;
@@ -348,12 +349,13 @@ namespace Destrier
             {
                 foreach (var rom in members.Where(m => m is ReferencedObjectMember && !m.ParentAny(rm => rm is ChildCollectionMember)).Select(m => m as ReferencedObjectMember))
                 {
-                    command.AppendFormat("\n\t{0} JOIN {1} [{2}] (NOLOCK) on {3} = {4}",
+                    command.AppendFormat("\n\t{0} JOIN {1} [{2}] {5} on {3} = {4}",
                         rom.JoinType,
                         rom.FullyQualifiedTableName,
                         rom.TableAlias,
                         rom.AliasedParentColumnName,
-                        rom.AliasedColumnName
+                        rom.AliasedColumnName,
+                        rom.UseNoLock ? "(NOLOCK)" : String.Empty
                     );
                 }
             }
@@ -386,7 +388,7 @@ namespace Destrier
                 var parent = cm.Parent ?? root;
                 Command.AppendFormat("\n\t#{0} [{1}]", parent.OutputTableName ?? root.OutputTableName, parent.TableAlias);
 
-                Command.AppendFormat("\n\t{0} JOIN {1} [{2}] (NOLOCK) ON {3} = {4}", cm.JoinType, cm.FullyQualifiedTableName, cm.TableAlias, cm.AliasedParentColumnName, cm.AliasedColumnName);
+                Command.AppendFormat("\n\t{0} JOIN {1} [{2}] {5} ON {3} = {4}", cm.JoinType, cm.FullyQualifiedTableName, cm.TableAlias, cm.AliasedParentColumnName, cm.AliasedColumnName, cm.UseNoLock ? "(NOLOCK)" : String.Empty);
                 AddJoins(cm.CollectionType, subMembers, Command);
 
                 if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
@@ -463,7 +465,7 @@ namespace Destrier
             }
             Command.Append("\nFROM");
 
-            Command.AppendFormat("\n\t{0} [{1}] (NOLOCK)", this.FullyQualifiedTableName, this.TableAlias);
+            Command.AppendFormat("\n\t{0} [{1}] {2}", this.FullyQualifiedTableName, this.TableAlias, this.UseNoLock ? "(NOLOCK)" : String.Empty);
             AddJoins(_t, Members.Values.ToList(), Command);
 
             if (_whereClause != null)

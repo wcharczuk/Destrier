@@ -5,10 +5,25 @@ using System.Text;
 
 namespace Destrier
 {
+    /// <summary>
+    /// Class used to tell Destrier what SQL/Schema table to map the model to.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple=false)]
     public class TableAttribute : System.Attribute, IPopulate
     {
-        public TableAttribute() { this.SchemaName = "dbo"; }
+        /// <summary>
+        /// Default Constructor
+        /// </summary>
+        public TableAttribute() 
+        { 
+            this.SchemaName = "dbo"; 
+            this.UseNoLock = true; 
+        }
+
+        /// <summary>
+        /// Constructor with TableName.
+        /// </summary>
+        /// <param name="tableName"></param>
         public TableAttribute(String tableName) : this()
         {
             this.TableName = tableName;
@@ -35,6 +50,15 @@ namespace Destrier
         /// </summary>
         public String ConnectionStringName { get; set; }
 
+        /// <summary>
+        /// Whether to apply the SQL query modifier "(NOLOCK)" when accessing the table.
+        /// </summary>
+        public Boolean UseNoLock { get; set; }
+
+        /// <summary>
+        /// Implementation of Populate.
+        /// </summary>
+        /// <param name="dr"></param>
         public void Populate(IndexedSqlDataReader dr)
         {
             this.TableName = dr.Get<String>("name");

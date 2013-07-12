@@ -10,5 +10,7 @@ namespace Destrier
         public RootMember() : base() { }
         public RootMember(Type type) : base(type) { }
         public RootMember(Member member) : base(member) { }
+
+        public Boolean UseNoLock { get; set; }
     }
 }
