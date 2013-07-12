@@ -178,9 +178,6 @@
     <Compile Include="..\Destrier NET40\TableAttribute.cs">
       <Link>TableAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\Destrier NET40\TablePrimitive.cs">
-      <Link>TablePrimitive.cs</Link>
-    </Compile>
     <Compile Include="..\Destrier NET40\Update.cs">
       <Link>Update.cs</Link>
     </Compile>
