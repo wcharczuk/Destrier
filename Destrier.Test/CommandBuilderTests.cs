@@ -91,18 +91,6 @@ namespace Destrier.Test
         }
 
         [Fact]
-        public void CommandBuilder_Cache_Test()
-        {
-            var commandBuilder = new CommandBuilder<MockObject>();
-
-            var visitor = new SqlExpressionVisitor<MockObject>();
-            Expression<Func<MockObject, bool>> exp = (u) => u.MockObjectId == 1;
-            visitor.Visit(exp);
-            var sqlText = visitor.Buffer.ToString();
-            Assert.Equal(sqlText, String.Format("[MockObjectId] = @{0}", visitor.Parameters.First().Key));
-        }
-
-        [Fact]
         public void Update_Test()
         {
             var cb = new CommandBuilder<MockObject>();
