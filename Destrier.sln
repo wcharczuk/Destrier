@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORMComparison", "ORMCompari
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Meta", "Meta", "{ECCE471E-6D0A-4911-9B37-E007288BCC61}"
 	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
 		Destrier.nuspec = Destrier.nuspec
+		Destrier.xbuild = Destrier.xbuild
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
