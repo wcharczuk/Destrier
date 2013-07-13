@@ -20,7 +20,7 @@ namespace PostgresTestApp
             InitDb();
             Console.WriteLine("Complete!");
 
-            var books = new Query<Person>().Execute();
+            var books = new Query<Book>().Execute();
 
             Console.ReadKey();
         }

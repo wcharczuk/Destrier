@@ -283,7 +283,7 @@ namespace Destrier
 
         #region Select Internals
 
-        public String AliasedParentColumnName(ChildCollectionMember cm)
+        public String AliasedParentColumnName(ChildCollectionMember cm, Boolean isInChildSection = false)
         {
             var parentAlias = String.Empty;
             if (cm.Parent != null)
@@ -291,7 +291,7 @@ namespace Destrier
             else if (cm.Root != null)
                 parentAlias = cm.Root.TableAlias;
 
-            return String.Format("{0}.{1}", WrapName(parentAlias, isTableAlias: true), WrapName(cm.ParentPrimaryKeyColumnName, isTableAlias: false));
+            return String.Format("{0}.{1}", WrapName(parentAlias, isTableAlias: true), WrapName(cm.ParentPrimaryKeyColumnName, isTableAlias: isInChildSection));
         }
 
         public String AliasedColumnName(ChildCollectionMember cm)
@@ -465,7 +465,7 @@ namespace Destrier
                     , cm.JoinType //0
                     , cm.FullyQualifiedTableName //1
                     , WrapName(cm.TableAlias, isTableAlias: true) //2
-                    , AliasedParentColumnName(cm)
+                    , AliasedParentColumnName(cm, isInChildSection:true)
                     , AliasedColumnName(cm)
                     , cm.UseNoLock ? NOLOCK() : String.Empty);
                 AddJoins(cm.CollectionType, subMembers, Command);
