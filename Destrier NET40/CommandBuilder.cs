@@ -8,6 +8,12 @@ using Destrier.Extensions;
 
 namespace Destrier
 {
+    public interface ICommandBuilderMetaProvider
+    {
+        string GenerateSelectLastId();
+        string GenerateSwitchDatabase(string databaseName);
+    }
+
     public class CommandBuilderFactory
     {
         public static CommandBuilder<T> GetCommandBuilder<T>()
@@ -20,19 +26,29 @@ namespace Destrier
             else
                 return new SqlServerCommandBuilder<T>();
         }
+
+        public static ICommandBuilderMetaProvider GetMetaProvider(Type type)
+        {
+            var connectionName = Model.ConnectionName(type);
+            var provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
+
+            if (provider is Npgsql.NpgsqlFactory)
+                return ReflectionCache.GetNewObject(typeof(PostgresCommandBuilder<>).MakeGenericType(type)) as ICommandBuilderMetaProvider;
+            else
+                return ReflectionCache.GetNewObject(typeof(SqlServerCommandBuilder<>).MakeGenericType(type)) as ICommandBuilderMetaProvider;
+        }
     }
 
-    public abstract class CommandBuilder<T>
+    public abstract class CommandBuilder<T> : ICommandBuilderMetaProvider
     {
         public CommandBuilder()
         {
-            this._t = typeof(T);
+            _t = typeof(T);
             Initialize();
         }
 
         protected void Initialize()
         {
-            this._t = typeof(T);
             this._orderByClause = new List<OrderByElement>();
             this.Parameters = new Dictionary<String, Object>();
             this.FullyQualifiedTableName = Model.TableNameFullyQualified(_t);

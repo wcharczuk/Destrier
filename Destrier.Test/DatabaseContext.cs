@@ -10,22 +10,51 @@ namespace Destrier.Test
     {
         public DatabaseContext()
         {
+            ConnectionName = "default";
+            ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
             SetupDatabaseContext();
         }
 
-        public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
+        public DatabaseContext(String connectionName, String connectionString, String providerName)
+        {
+            this.ConnectionName = connectionName;
+            this.ConnectionString = connectionString;
+            this.ProviderName = providerName;
+            this.SetupDatabaseContext();
+        }
+
+        public String ConnectionName { get; set; }
+        public String ConnectionString { get; set; }
+        public String ProviderName { get; set; }
+
         public void SetupDatabaseContext()
         {
-            if (!Destrier.DatabaseConfigurationContext.ConnectionStrings.ContainsKey("default"))
+            if (!Destrier.DatabaseConfigurationContext.ConnectionStrings.ContainsKey(ConnectionName))
             {
-                Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
+                if (String.IsNullOrEmpty(ProviderName))
+                {
+                    Destrier.DatabaseConfigurationContext.ConnectionStrings.Add(ConnectionName, ConnectionString);
+                }
+                else
+                {
+                    Destrier.DatabaseConfigurationContext.AddConnectionString(ConnectionName, ConnectionString, ProviderName);
+                }
             }
         }
     }
 
+    /// <summary>
+    /// This context uses MSSQL specific features and is not recommended for PSQL testing.
+    /// </summary>
     public class TestObjectContext : DatabaseContext, IDisposable
     {
         public TestObjectContext() : base() 
+        {
+            EnsureInitDataStore();
+        }
+
+        public TestObjectContext(String connectionName, String connectionString, String providerName)
+            : base(connectionName, connectionString, providerName)
         {
             EnsureInitDataStore();
         }
@@ -64,7 +93,7 @@ CREATE TABLE TestObjects
     [single] float,
     [double] float,
     [nullableDouble] float,
-    [guid] uniqueidentifier,
+    [guid] uniqueidentifier not null,
     [nullableGuid] uniqueidentifier
 );
 
@@ -165,6 +194,12 @@ END
             EnsureInitDataStore();
         }
 
+        public LibraryContext(String connectionName, String connectionString, String providerName)
+            : base(connectionName, connectionString, providerName)
+        {
+            EnsureInitDataStore();
+        }
+
         public Boolean TestIfSchemaExists()
         {
             var exists = false;
@@ -180,7 +215,6 @@ END
 
         public void EnsureInitDataStore()
         {
-            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
 CREATE TABLE People
 (

@@ -55,7 +55,8 @@ namespace Destrier
 
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
-                    command.Append("SELECT @@IDENTITY;");
+                    var metaProvider = CommandBuilderFactory.GetMetaProvider(myObjectType);
+                    command.Append(metaProvider.GenerateSelectLastId());
                     cmd.CommandText = command.ToString();
 
                     object o = cmd.ExecuteScalar();

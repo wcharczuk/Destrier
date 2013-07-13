@@ -62,11 +62,11 @@ namespace Destrier
         /// <param name="providerName"></param>
         public static void AddConnectionString(String connectionName, String connectionString, String providerName = null)
         {
-            _connectionStrings.AddOrUpdate(connectionName, connectionString, (name, old) => connectionString);
+            ConnectionStrings.AddOrUpdate(connectionName, connectionString, (name, old) => connectionString);
             if (providerName != null)
             {
                 var factory = DbProviderFactories.GetFactory(providerName);
-                _providerFactories.AddOrUpdate(connectionName, factory, (name, oldFactory) => factory);
+                DbProviders.AddOrUpdate(connectionName, factory, (name, oldFactory) => factory);
             }
         }
 
@@ -115,6 +115,8 @@ namespace Destrier
                 {
                     if (!String.IsNullOrEmpty(DefaultConnectionName) && DbProviders.ContainsKey(DefaultConnectionName))
                         _defaultProvider = DbProviders[DefaultConnectionName];
+                    else if (DbProviders.Any() && DbProviders.Count == 1)
+                        _defaultProvider = DbProviders.First().Value;
                     else
                         _defaultProvider = DbProviderFactories.GetFactory("System.Data.SqlClient");
                 }
