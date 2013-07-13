@@ -17,14 +17,15 @@ namespace Destrier
             ResultSetIndex = 0;
         }
 
-        public IndexedSqlDataReader(SqlDataReader hostReader, Boolean standardizeCasing = true) : this()
+        public IndexedSqlDataReader(IDataReader hostReader, Boolean standardizeCasing = true) : this()
         {
             _dr = hostReader;
             StandardizeCasing = standardizeCasing;
             InitResultSet();
         }
 
-        public IndexedSqlDataReader(SqlDataReader hostReader, Type type, Boolean standardizeCasing = false) : this()
+        public IndexedSqlDataReader(IDataReader hostReader, Type type, Boolean standardizeCasing = false)
+            : this()
         {
             _dr = hostReader;
             StandardizeCasing = standardizeCasing;
@@ -34,7 +35,7 @@ namespace Destrier
 
         public Boolean StandardizeCasing { get; set; }
 
-        private SqlDataReader _dr = null;
+        private IDataReader _dr = null;
 
         private Int32 _resultSetIndex = 0;
         public Int32 ResultSetIndex { get { return _resultSetIndex; } private set { _resultSetIndex = value; } }
@@ -151,17 +152,6 @@ namespace Destrier
         public String GetColumnName(Int32 index)
         {
             return ColumnIndexMap[index];
-        }
-
-        /// <summary>
-        /// Returns whether or not the result set has rows.
-        /// </summary>
-        public Boolean HasRows
-        {
-            get
-            {
-                return _dr.HasRows;
-            }
         }
 
         #region IDataReader
@@ -466,36 +456,32 @@ namespace Destrier
         public dynamic ReadDynamic()
         {
             var value = new ExpandoObject();
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
+                for (int i = 0; i < this.FieldCount; i++)
                 {
-                    for (int i = 0; i < this.FieldCount; i++)
-                    {
-                        var name = this.GetName(i);
-                        ((IDictionary<string, object>)value)[name] = this.GetValue(i);
-                    }
+                    var name = this.GetName(i);
+                    ((IDictionary<string, object>)value)[name] = this.GetValue(i);
                 }
             }
+            
             return value;
         }
 
         public List<dynamic> ReadDynamicList(Boolean advanceToNextResultAfter = false)
         {
             List<dynamic> values = new List<dynamic>();
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
+                dynamic value = new ExpandoObject();
+                for (int i = 0; i < this.FieldCount; i++)
                 {
-                    dynamic value = new ExpandoObject();
-                    for (int i = 0; i < this.FieldCount; i++)
-                    {
-                        var name = this.GetName(i);
-                        ((IDictionary<string, object>)value)[name] = this.GetValue(i);
-                    }
-                    values.Add(value);
+                    var name = this.GetName(i);
+                    ((IDictionary<string, object>)value)[name] = this.GetValue(i);
                 }
+                values.Add(value);
             }
+            
             return values;
         }
 
@@ -503,13 +489,10 @@ namespace Destrier
         {
             T value = default(T);
 
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    if (!this.IsDBNull(0))
-                        value = (T)Convert.ChangeType(this.GetValue(0), typeof(T));
-                }
+                if (!this.IsDBNull(0))
+                    value = (T)Convert.ChangeType(this.GetValue(0), typeof(T));
             }
 
             if (advanceToNextResultAfter)
@@ -523,19 +506,12 @@ namespace Destrier
             T newObject = ReflectionCache.GetNewObject<T>();
 			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
 
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-					if(hasPopulate)
-						((IPopulate)newObject).Populate(this);
-					else
-						Model.Populate(newObject, this);
-                }
-            }
-            else if (returnNullOnEmpty)
-            {
-                newObject = default(T);
+				if(hasPopulate)
+					((IPopulate)newObject).Populate(this);
+				else
+					Model.Populate(newObject, this);
             }
 
             if (advanceToNextResultAfter)
@@ -548,14 +524,11 @@ namespace Destrier
         {
             List<T> list = new List<T>();
 
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    list.Add((T)Convert.ChangeType(this.GetValue(0), typeof(T)));
-                }
+                list.Add((T)Convert.ChangeType(this.GetValue(0), typeof(T)));
             }
-
+            
             if (advanceToNextResultAfter)
                 this.NextResult();
 
@@ -567,18 +540,15 @@ namespace Destrier
             List<T> list = new List<T>();
 
 			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    T newObject = ReflectionCache.GetNewObject<T>();
-					if(hasPopulate)
-						((IPopulate)newObject).Populate(this);
-					else
-						Model.Populate(newObject, this);
+                T newObject = ReflectionCache.GetNewObject<T>();
+				if(hasPopulate)
+					((IPopulate)newObject).Populate(this);
+				else
+					Model.Populate(newObject, this);
 
-                    list.Add(newObject);
-                }
+                list.Add(newObject);
             }
 
             if (advanceToNextResultAfter)
@@ -592,23 +562,21 @@ namespace Destrier
             Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>();
 			bool hasPopulate = ReflectionCache.HasInterface(typeof(TValue), typeof(IPopulate));
 
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    TValue newObject = ReflectionCache.GetNewObject<TValue>();
+                TValue newObject = ReflectionCache.GetNewObject<TValue>();
 
-					if(hasPopulate)
-						((IPopulate)newObject).Populate(this);
-					else
-						Model.Populate(newObject, this);
+				if(hasPopulate)
+					((IPopulate)newObject).Populate(this);
+				else
+					Model.Populate(newObject, this);
 
-                    TKey keyValue = keySelector(newObject);
+                TKey keyValue = keySelector(newObject);
 
-                    if (!dict.ContainsKey(keyValue))
-                        dict.Add(keyValue, newObject);
-                }
+                if (!dict.ContainsKey(keyValue))
+                    dict.Add(keyValue, newObject);
             }
+            
 
             if (advanceToNextResultAfter)
                 this.NextResult();
@@ -619,27 +587,25 @@ namespace Destrier
         public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
 		{
 			bool hasPopulate = populateFullResults ? false : ReflectionCache.HasInterface(type, typeof(IPopulate));
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
+                var newObject = ReflectionCache.GetNewObject(type);
+
+                if (populateFullResults)
                 {
-                    var newObject = ReflectionCache.GetNewObject(type);
-
-                    if (populateFullResults)
-                    {
-                        Model.PopulateFullResults(newObject, this, type);
-                    }
-                    else
-					{
-						if(hasPopulate)
-							((IPopulate)newObject).Populate(this);
-						else
-							Model.Populate(newObject, this);
-					}
-
-                    doStuffToAddToParent(this, newObject);
+                    Model.PopulateFullResults(newObject, this, type);
                 }
+                else
+				{
+					if(hasPopulate)
+						((IPopulate)newObject).Populate(this);
+					else
+						Model.Populate(newObject, this);
+				}
+
+                doStuffToAddToParent(this, newObject);
             }
+            
 
             if (advanceToNextResultAfter)
                 this.NextResult();
@@ -648,19 +614,17 @@ namespace Destrier
         public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : new()
         {
 			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    T newObject = ReflectionCache.GetNewObject<T>();
-					if(hasPopulate)
-						((IPopulate)newObject).Populate(this);
-					else
-						Model.Populate(newObject, this);
+                T newObject = ReflectionCache.GetNewObject<T>();
+				if(hasPopulate)
+					((IPopulate)newObject).Populate(this);
+				else
+					Model.Populate(newObject, this);
 
-                    doStuffToAddToParent(this, newObject);
-                }
+                doStuffToAddToParent(this, newObject);
             }
+            
 
             if (advanceToNextResultAfter)
                 this.NextResult();
@@ -668,12 +632,9 @@ namespace Destrier
 
         public void ReadFullControl(Action<IndexedSqlDataReader> action, Boolean advanceToNextResultAfter = true)
         {
-            if (this.HasRows)
+            while (this.Read())
             {
-                while (this.Read())
-                {
-                    action(this);
-                }
+                action(this);
             }
 
             if (advanceToNextResultAfter)

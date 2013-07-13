@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Meta", "Meta", "{ECCE471E-6
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.GenerateModels", "Destrier.GenerateModels\Destrier.GenerateModels.csproj", "{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier NET45", "Destrier NET45\Destrier NET45.csproj", "{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}"
 EndProject
 Global
@@ -38,10 +36,6 @@ Global
 		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C51E3F04-21D3-4B51-8768-7876BAA0D292}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU

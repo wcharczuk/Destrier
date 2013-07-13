@@ -258,7 +258,7 @@ namespace Destrier.Test
             var hasRows = false;
             Execute.StoredProcedureReader("GetTestObjects_prc", (dr) =>
             {
-                hasRows = dr.HasRows;
+                hasRows = dr.Read();
             });
 
             Assert.True(hasRows);
@@ -285,13 +285,11 @@ namespace Destrier.Test
             String newName = String.Empty;
             Execute.StatementReader("select name from testobjects where id = 1", (dr) =>
             {
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        newName = dr.Get<String>(0);
-                    }
+                    newName = dr.Get<String>(0);
                 }
+                
             });
 
             Assert.Equal("name_zero", newName);
@@ -305,12 +303,9 @@ namespace Destrier.Test
             String newName = String.Empty;
             Execute.StatementReader("select name from testobjects where id = 1", (dr) =>
             {
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        newName = dr.Get<String>(0);
-                    }
+                    newName = dr.Get<String>(0);
                 }
             });
 
@@ -323,29 +318,14 @@ namespace Destrier.Test
             String newName = String.Empty;
             Execute.StatementReader("select name from testobjects where id = @id", (dr) =>
             {
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        newName = dr.Get<String>(0);
-                    }
+                    newName = dr.Get<String>(0);
                 }
             }, parameters: new { id = 1 });
 
             Assert.NotNull(newName);
             Assert.NotEmpty(newName);
-        }
-
-        [Fact]
-        public void Execute_Utility_AddWhereClauseVariables()
-        {
-            StringBuilder builder = new StringBuilder();
-            var parameters = new { name = "test" };
-            Execute.Utility.AddWhereClauseVariables(parameters, builder);
-            var text = builder.ToString();
-
-            Assert.NotEmpty(text);
-            Assert.Equal("and [name] = @name\r\n", text);
         }
 
         [Fact]

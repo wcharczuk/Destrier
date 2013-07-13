@@ -32,6 +32,9 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Npgsql">
+      <HintPath>..\lib\npgsql\Npgsql.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -43,6 +46,9 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Compile Include="..\Destrier NET40\ConcurrentDictionaryExtensions.cs">
+      <Link>ConcurrentDictionaryExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\Destrier NET40\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
@@ -166,8 +172,8 @@
     <Compile Include="..\Destrier NET40\SchemaMetadataException.cs">
       <Link>SchemaMetadataException.cs</Link>
     </Compile>
-    <Compile Include="..\Destrier NET40\SqlDataReaderExtensions.cs">
-      <Link>SqlDataReaderExtensions.cs</Link>
+    <Compile Include="..\Destrier NET40\IDataReaderExtensions.cs">
+      <Link>IDataReaderExtensions.cs</Link>
     </Compile>
     <Compile Include="..\Destrier NET40\SqlExpressionVisitor.cs">
       <Link>SqlExpressionVisitor.cs</Link>

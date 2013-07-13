@@ -8,7 +8,21 @@ using Destrier.Extensions;
 
 namespace Destrier
 {
-    public class CommandBuilder<T>
+    public class CommandBuilderFactory
+    {
+        public static CommandBuilder<T> GetCommandBuilder<T>()
+        {
+            var connectionName = Model.ConnectionName(typeof(T));
+            var provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
+
+            if (provider is Npgsql.NpgsqlFactory)
+                return new PostgresCommandBuilder<T>();
+            else
+                return new SqlServerCommandBuilder<T>();
+        }
+    }
+
+    public abstract class CommandBuilder<T>
     {
         public CommandBuilder()
         {
@@ -16,20 +30,7 @@ namespace Destrier
             Initialize();
         }
 
-        public CommandBuilder(StringBuilder command)
-            : this()
-        {
-            this.Command = command;
-        }
-
-        public CommandBuilder(StringBuilder command, IDictionary<String, Object> parameters)
-            : this()
-        {
-            this.Command = command;
-            this.Parameters = parameters;
-        }
-
-        private void Initialize()
+        protected void Initialize()
         {
             this._t = typeof(T);
             this._orderByClause = new List<OrderByElement>();
@@ -44,28 +45,32 @@ namespace Destrier
         }
 
         protected Type _t { get; set; }
-        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
         protected Dictionary<String, String> _tableAliases = new Dictionary<String, String>();
+        
+        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
         public Dictionary<String, Member> Members { get; set; }
 
         public String FullyQualifiedTableName { get; private set; }
+        public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
         public String TableAlias { get { return this.AsRootMember.TableAlias; } }
         public Boolean UseNoLock { get { return this.AsRootMember.UseNoLock; } }
 
-        private Expression<Func<T, bool>> _whereClause = null;
-        private dynamic _whereParameters = null;
+        public StringBuilder Command { get; set; }
+        public IDictionary<String, Object> Parameters { get; set; }
+
+        protected Expression<Func<T, bool>> _whereClause = null;
+        protected dynamic _whereParameters = null;
 
         #region Select
         public Int32? Limit { get; set; }
         public Int32? Offset { get; set; }
-        public StringBuilder Command { get; set; }
-        public IDictionary<String, Object> Parameters { get; set; }
+        protected List<OrderByElement> _orderByClause = null;
+
         protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
         protected List<Member> _outputMembers = new List<Member>();
-        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
-        public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
-        private List<OrderByElement> _orderByClause = null;
 
+        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
+        
         public class OrderByElement
         {
             public Member Member { get; set; }
@@ -259,7 +264,7 @@ namespace Destrier
 
         #region Select Internals
 
-        private static List<String> GetOutputColumns(IEnumerable<Member> members)
+        protected static List<String> GetOutputColumns(IEnumerable<Member> members)
         {
             var outputColumns = new List<String>();
 
@@ -274,7 +279,7 @@ namespace Destrier
             return outputColumns;
         }
 
-        private static List<String> GetOutputPrimaryKeyMembers(IEnumerable<Member> members)
+        protected static List<String> GetOutputPrimaryKeyMembers(IEnumerable<Member> members)
         {
             var outputColumns = new List<String>();
 
@@ -288,19 +293,19 @@ namespace Destrier
             return outputColumns;
         }
 
-        private String GetOrderByClause()
+        protected String GetOrderByClause()
         {
             var values = _orderByClause.Select(o => String.Format("[{0}].[{1}] {2}", ((ColumnMember)o.Member).TableAlias, ((ColumnMember)o.Member).Name, o.Ascending ? "ASC" : "DESC"));
             return string.Join(",", values);
         }
 
-        private String GetOuterOrderByClause()
+        protected String GetOuterOrderByClause()
         {
             var values = _orderByClause.Select(o => String.Format("[data].[{1}] {2}", ((ColumnMember)o.Member).TableAlias, ((ColumnMember)o.Member).FullyQualifiedName, o.Ascending ? "ASC" : "DESC"));
             return string.Join(",", values);
         }
 
-        private static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
+        protected static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
         {
             foreach (ReferencedObjectMember refm in members.Where(m => m is ReferencedObjectMember))
             {
@@ -343,7 +348,7 @@ namespace Destrier
             }
         }
 
-        private static void AddJoins(Type t, List<Member> members, StringBuilder command)
+        protected static void AddJoins(Type t, List<Member> members, StringBuilder command)
         {
             if (ReflectionCache.HasReferencedObjectMembers(t))
             {
@@ -361,7 +366,7 @@ namespace Destrier
             }
         }
 
-        private void ProcessChildCollections()
+        protected void ProcessChildCollections()
         {
             List<String> tablesToDrop = new List<String>();
             foreach (var cm in ChildCollections)
@@ -407,14 +412,48 @@ namespace Destrier
 
         #endregion
 
-        #region Update Internals
-        protected void ProcessSetStatements()
+        public abstract String GenerateSelect();
+
+        public virtual String GenerateUpdate()
         {
+            Command = new StringBuilder();
+            Command.Append("UPDATE\n");
+            Command.AppendFormat("\t[{0}]", this.TableAlias);
+            Command.Append("\nSET\n");
 
+            Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
+            Command.Append("\nFROM");
+            Command.AppendFormat("\n\t{0} [{1}]", this.FullyQualifiedTableName, this.TableAlias);
+            if (_whereClause != null)
+            {
+                Command.Append("\nWHERE\n");
+
+                SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
+                visitor.Visit(_whereClause);
+            }
+
+            return Command.ToString();
         }
-        #endregion
 
-        public String GenerateSelect()
+        public abstract String GenerateSwitchDatabase(String databaseName);
+        public abstract String GenerateSelectLastId();
+    }
+
+    public class SqlServerCommandBuilder<T> : CommandBuilder<T>
+    {
+        public SqlServerCommandBuilder() : base() {}
+        
+        public override string GenerateSwitchDatabase(string databaseName)
+        {
+            return String.Format("USE {0};", databaseName);
+        }
+
+        public override string GenerateSelectLastId()
+        {
+            return "SELECT @@IDENTITY";
+        }
+
+        public override String GenerateSelect()
         {
             Command = new StringBuilder();
             var columnList = String.Join("\n\t, ", GetOutputColumns(_outputMembers));
@@ -540,23 +579,123 @@ namespace Destrier
 
             return Command.ToString();
         }
+    }
 
-        public String GenerateUpdate()
+    public class PostgresCommandBuilder<T> : CommandBuilder<T>
+    {
+        public PostgresCommandBuilder() : base() {}
+        
+        public override string GenerateSwitchDatabase(string databaseName)
         {
-            Command = new StringBuilder();
-            Command.Append("UPDATE\n");
-            Command.AppendFormat("\t[{0}]", this.TableAlias);
-            Command.Append("\nSET\n");
+            return String.Format("USE {0};", databaseName);
+        }
 
-            Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
+        public override string GenerateSelectLastId()
+        {
+            return "SELECT lastval();";
+        }
+
+        public override string GenerateSelect()
+        {
+ 	        Command = new StringBuilder();
+            var columnList = String.Join("\n\t, ", GetOutputColumns(_outputMembers));
+
+            
+            Command.AppendFormat("SELECT * ");
+
+            if (_includedChildCollections.Any())
+            {
+                Command.AppendFormat("\nINTO #{0}", this.OutputTableName);
+            }
+
+            Command.AppendFormat("\nFROM \n(\n");
+
+            if (_includedChildCollections.Any())
+            {
+                Command.AppendFormat("\nINTO #{0}", this.OutputTableName);
+            }
             Command.Append("\nFROM");
-            Command.AppendFormat("\n\t{0} [{1}]", this.FullyQualifiedTableName, this.TableAlias);
+
+            Command.AppendFormat("\n\t{0} [{1}] {2}", this.FullyQualifiedTableName, this.TableAlias, this.UseNoLock ? "(NOLOCK)" : String.Empty);
+            AddJoins(_t, Members.Values.ToList(), Command);
+
             if (_whereClause != null)
             {
                 Command.Append("\nWHERE\n");
 
                 SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
                 visitor.Visit(_whereClause);
+            }
+            else if (_whereParameters != null)
+            {
+                Command.Append("\nWHERE\n\t1=1");
+                if (_whereParameters is ValueType)
+                {
+                    var primaryKey = Members.Values.FirstOrDefault(m => m is ColumnMember && ((ColumnMember)m).IsPrimaryKey) as ColumnMember;
+                    if(primaryKey != null)
+                    {
+                        var parameterName = System.Guid.NewGuid().ToString("N");
+                        Command.AppendLine(String.Format("\n\tAND [{0}].[{1}] = @{2}", primaryKey.TableAlias, primaryKey.FullyQualifiedName, parameterName));
+                        Parameters.Add(parameterName, ((Object)_whereParameters).DBNullCoalese());
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Trying to select an object by id without a primary key");
+                    }
+                }
+                else
+                {
+                    foreach (KeyValuePair<String, Object> kvp in Execute.Utility.DecomposeObject(_whereParameters))
+                    {
+                        if (Members.ContainsKey(kvp.Key))
+                        {
+                            var member = Members[kvp.Key];
+                            var paramName = System.Guid.NewGuid();
+                            Parameters.Add(paramName.ToString("N"), kvp.Value);
+                            Command.AppendFormat("\n\tAND [{0}].[{1}] = @{2}", member.TableAlias, member.Name, paramName.ToString("N"));
+                        }
+                        else
+                        {
+                            var paramName = System.Guid.NewGuid();
+                            Parameters.Add(paramName.ToString("N"), kvp.Value);
+                            Command.AppendFormat("\n\tAND [{0}] = @{1}", kvp.Key, paramName.ToString("N"));
+                        }
+                    }
+                }
+            }
+
+            if (Offset == null && _orderByClause.Any())
+            {
+                Command.Append("\nORDER BY");
+                Command.AppendFormat("\n\t{0}", GetOrderByClause());
+            }
+
+            if (Offset != null)
+            {
+                Command.Append("\n) as data");
+                Command.AppendFormat("\nWHERE [row_number_for_offset] > {0}", Offset.Value.ToString());
+            }
+
+            if (Offset != null && _orderByClause.Any())
+            {
+                Command.Append("\nORDER BY");
+                Command.AppendFormat("\n\t{0}", GetOuterOrderByClause());
+            }
+
+            if(Limit != null)
+            {
+                Command.AppendFormat("\nLIMIT {0}", Limit.Value);
+            }
+            if(Offset != null)
+            {
+                Command.AppendFormat("\nOFFSET {0}", Limit.Value);
+            }
+
+            if (_includedChildCollections.Any())
+            {
+                Command.AppendFormat("\n\nSELECT * FROM #{0};", this.OutputTableName);
+                ProcessChildCollections();
+                Command.AppendFormat("\nDROP TABLE #{0}", this.OutputTableName);
             }
 
             return Command.ToString();

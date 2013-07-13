@@ -26,7 +26,7 @@ namespace Destrier
         /// <remarks>
         /// Defaults to whatever type the property is.
         /// </remarks>
-        public System.Data.SqlDbType SqlDbType { get; set; }
+        public System.Data.DbType? SqlDbType { get; set; }
 
         /// <summary>
         /// Denotes if the column is, or is part of, the primary key for the table.
@@ -73,8 +73,6 @@ namespace Destrier
         /// </remarks>
         public Boolean ShouldTrimLongStrings { get; set; }
 
-        public Schema.SqlSysType SqlSysType { get; set; }
-
         public ColumnAttribute()
             : base()
         {
@@ -83,14 +81,12 @@ namespace Destrier
             IsForReadOnly = false;
             CanBeNull = true;
             ShouldTrimLongStrings = true;
-            SqlDbType = (System.Data.SqlDbType)(-1);
         }
 
         public void Populate(IndexedSqlDataReader dr)
         {
             this.Name = dr.Get<String>("name");
             this.CanBeNull = dr.Get<Boolean>("is_nullable");
-            this.SqlSysType = dr.Get<Schema.SqlSysType>("system_type_id");
             this.MaxStringLength = dr.Get<Int32>("max_length");
             this.IsAutoIdentity = dr.Get<Boolean>("is_identity");
             this.IsPrimaryKey = dr.Get<Boolean>("is_primarykey");

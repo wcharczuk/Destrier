@@ -12,7 +12,9 @@ namespace Destrier
         {
             _t = typeof(T);
             _parameters = new Dictionary<String, Object>();
-            _builder = new CommandBuilder<T>(_command, _parameters);
+            _builder = CommandBuilderFactory.GetCommandBuilder<T>();
+            _builder.Command = _command;
+            _builder.Parameters = _parameters; 
         }
 
         private StringBuilder _command = null;
@@ -34,11 +36,12 @@ namespace Destrier
 
         public void Execute()
         {
-            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            var connectionName = Model.ConnectionName(_t);
+            using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = _builder.GenerateUpdate();
                 cmd.CommandType = System.Data.CommandType.Text;
-                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
                 cmd.ExecuteNonQuery();
             }
         }

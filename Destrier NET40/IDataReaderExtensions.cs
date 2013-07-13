@@ -8,9 +8,9 @@ using System.Dynamic;
 
 namespace Destrier
 {
-    public static class SqlDataReaderExtensions
+    public static class IDataReaderExtensions
     {
-        public static Dictionary<String, Int32> GetColumnMap(this SqlDataReader dr, Boolean standardizeCasing = false)
+        public static Dictionary<String, Int32> GetColumnMap(this IDataReader dr, Boolean standardizeCasing = false)
         {
             var hash = new Dictionary<String, Int32>();
             for (int i = 0; i < dr.FieldCount; i++)
@@ -22,7 +22,7 @@ namespace Destrier
             return hash;
         }
 
-        public static string[] GetColumnIndexMap(this SqlDataReader dr, Boolean standardizeCasing = false)
+        public static string[] GetColumnIndexMap(this IDataReader dr, Boolean standardizeCasing = false)
         {
             String[] strings = new string[dr.FieldCount];
             for (int i = 0; i < dr.FieldCount; i++)

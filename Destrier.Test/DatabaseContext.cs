@@ -35,13 +35,9 @@ namespace Destrier.Test
             var exists = false;
             Execute.StatementReader("SELECT OBJECT_ID('tempdb..TestObjects')", (dr) =>
             {
-
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        exists = !dr.IsDBNull(0);
-                    }
+                    exists = !dr.IsDBNull(0);
                 }
             });
             return exists;
@@ -174,13 +170,9 @@ END
             var exists = false;
             Execute.StatementReader("SELECT OBJECT_ID('tempdb..Books')", (dr) =>
             {
-
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        exists = !dr.IsDBNull(0);
-                    }
+                    exists = !dr.IsDBNull(0);
                 }
             });
             return exists;
