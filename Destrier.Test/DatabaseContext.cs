@@ -215,6 +215,7 @@ END
 
         public void EnsureInitDataStore()
         {
+            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
 CREATE TABLE People
 (

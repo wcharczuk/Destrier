@@ -57,6 +57,7 @@ namespace Destrier
             this.Members = members;
         }
 
+        public ISqlDialectVariant Dialect { get; set; }
         public Type Type { get; set; }
         public StringBuilder Buffer { get; set; }
         public IDictionary<String, object> Parameters { get; set; }
@@ -533,11 +534,11 @@ namespace Destrier
         {
             if (!String.IsNullOrEmpty(column.TableAlias))
             {
-                Buffer.AppendFormat("[{0}].[{1}]", column.TableAlias, column.Name);
+                Buffer.AppendFormat("{0}.{1}", WrapName(column.TableAlias, true), WrapName(column.Name));
             }
             else
             {
-                Buffer.AppendFormat("[{0}]", column.Name);
+                Buffer.AppendFormat("[{0}]", WrapName(column.Name));
             }
         }
 
@@ -546,6 +547,14 @@ namespace Destrier
             var paramName = System.Guid.NewGuid();
             Buffer.AppendFormat("@{0}", paramName.ToString("N"));
             Parameters.Add(paramName.ToString("N"), value);
+        }
+
+        private String WrapName(String name, Boolean isTableAlias = false)
+        {
+            if (this.Dialect != null)
+                return this.Dialect.WrapName(name, isTableAlias);
+
+            return name;
         }
 
         private object Evaluate(Expression e)

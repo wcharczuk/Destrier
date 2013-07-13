@@ -52,6 +52,10 @@
       <Project>{8162c35e-0c7d-40a9-b25d-fe560eebd7c5}</Project>
       <Name>Destrier NET45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Destrier.Test\Destrier.Test.csproj">
+      <Project>{3d5d72f5-92d2-4ad6-9ed0-b4667560f713}</Project>
+      <Name>Destrier.Test</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

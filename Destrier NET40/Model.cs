@@ -39,7 +39,7 @@ namespace Destrier
         public static String SchemaName(Type t)
         {
             var schemaName = ReflectionCache.GetTableAttribute(t).SchemaName;
-            return !String.IsNullOrEmpty(schemaName) ? schemaName : DatabaseConfigurationContext.DefaultSchemaName;
+            return schemaName ?? DatabaseConfigurationContext.DefaultSchemaName ?? "dbo"; //the mssql backup.
         }
 
         public static Boolean UseNoLock(Type t)

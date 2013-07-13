@@ -55,7 +55,7 @@ namespace Destrier
 
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
-                    var metaProvider = CommandBuilderFactory.GetMetaProvider(myObjectType);
+                    var metaProvider = CommandBuilderFactory.GetSqlDialect(myObjectType);
                     command.Append(metaProvider.GenerateSelectLastId());
                     cmd.CommandText = command.ToString();
 

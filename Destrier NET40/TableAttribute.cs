@@ -16,7 +16,6 @@ namespace Destrier
         /// </summary>
         public TableAttribute() 
         { 
-            this.SchemaName = "dbo"; 
             this.UseNoLock = true; 
         }
 
