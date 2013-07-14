@@ -194,7 +194,7 @@ namespace Destrier
 
         public static String StandardizeCasing(String input)
         {
-            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower(input);
         }
 
 		public static void Populate(object instance, IndexedSqlDataReader dr)

@@ -113,8 +113,8 @@ namespace ORMComparison
 
     public class Program
 	{
-        public const int TRIALS = 100;
-        public const int LIMIT = 5000;
+		public const int TRIALS = 10;
+		public const int LIMIT = 5000;
 
         static void SetValuesForObject(IDataReader dr, object instance)
         {
@@ -174,16 +174,30 @@ from TestObjects LIMIT {0};", LIMIT);
                         cmd.CommandText = QUERY;
                         cmd.CommandType = System.Data.CommandType.Text;
 
-                        using (var dr = cmd.ExecuteReader(System.Data.CommandBehavior.Default))
+                        using (var dr = cmd.ExecuteReader())
                         {
-                            if (dr.HasRows)
+                            while (dr.Read())
                             {
-                                while (dr.Read())
-                                {
-                                    var testObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
-                                    SetValuesForObject(dr, testObject);
-                                    list.Add(testObject);
-                                }
+                                var testObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
+                               
+								testObject.Id = dr.GetInt32(0);
+								testObject.Name = dr.GetString(1);
+								testObject.Name = !dr.IsDBNull(2) ? dr.GetString(2) : null;
+								testObject.Active = dr.GetBoolean(3);
+								testObject.Created = dr.GetDateTime(4);
+								testObject.Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
+								testObject.NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
+								testObject.ReferencedObjectId = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(Int32);
+								testObject.Type = (TestObjectTypeId)dr.GetInt32(8);
+								testObject.NullableType = !dr.IsDBNull(9) ? (Int32?)dr.GetInt32(9) : null;
+								testObject.SingleChar = dr.GetString(10);
+								testObject.Single = (Single)dr.GetDouble(11);
+								testObject.Double = !dr.IsDBNull(12) ? dr.GetDouble(12) : default(Double);
+								testObject.NullableDouble = !dr.IsDBNull(13) ? (Double?)dr.GetDouble(13) : null;
+								testObject.Guid = !dr.IsDBNull(14) ? dr.GetGuid(14) : default(Guid);
+								testObject.NullableGuid = !dr.IsDBNull(15) ? (Guid?)dr.GetGuid(15) : null;
+
+                                list.Add(testObject);
                             }
                         }
                     }
@@ -265,6 +279,17 @@ from TestObjects LIMIT {0};", LIMIT);
             };
 
             var results = new List<Int64>();
+
+			foreach (var kvp in testSteps)
+			{
+				stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start();
+				var queryResults = kvp.Value();
+				stopwatch.Stop();
+
+				if (!queryResults.Any())
+					throw new Exception("No results.");
+			}
 
             foreach (var kvp in testSteps)
             {

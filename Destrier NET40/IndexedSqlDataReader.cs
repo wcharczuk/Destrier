@@ -33,14 +33,12 @@ namespace Destrier
             InitResultSet();
         }
 
+		private IDataReader _dr = null;
+		private Int32 _resultSetIndex = 0;
+
         public Boolean StandardizeCasing { get; set; }
-
-        private IDataReader _dr = null;
-
-        private Int32 _resultSetIndex = 0;
+		public Type CurrentOutputType { get; set; }
         public Int32 ResultSetIndex { get { return _resultSetIndex; } private set { _resultSetIndex = value; } }
-
-        public Type CurrentOutputType { get; set; }
 
         /// <summary>
         /// Whether or not the output type needs to have child collections populated.
@@ -85,7 +83,7 @@ namespace Destrier
                 this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
 
-                ColumnMemberLookup = ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+                ColumnMemberLookup = this.StandardizeCasing ? ReflectionCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
 
                 var cm_index = new List<ColumnMember>();
                 //column member index map gen
