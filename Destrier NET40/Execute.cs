@@ -2,102 +2,94 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Data.SqlClient;
 using System.Dynamic;
 using System.Reflection;
 using System.Collections;
-using Microsoft.SqlServer.Server;
 using System.Data;
+using System.Data.Common;
 using Destrier.Extensions;
 
 namespace Destrier
 {
     public static class Execute
     {
-        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionString = null, Boolean standardizeCasing = true)
+        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null, Boolean standardizeCasing = true)
         {
-            connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
-
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Command(connectionName))
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                cmd.CommandText = storedProcedure;
+
+                if (parameters != null)
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                    cmd.CommandText = storedProcedure;
-
-                    if (parameters != null)
-                    {
-                        Utility.AddParametersToCommand(parameters, cmd);
-                    }
-
-                    using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
-                    {
-                        action(new IndexedSqlDataReader(dr, standardizeCasing));
-                    }
+                    Utility.AddParametersToCommand(parameters, cmd);
                 }
-                conn.Close();
+
+                using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+                {
+                    action(new IndexedSqlDataReader(dr, standardizeCasing));
+                }
             }
         }
 
-        public static void NonQuery(String statement, dynamic procedureParams = null, String connectionString = null)
+        public static void NonQuery(String statement, dynamic procedureParams = null, String connectionName = null)
         {
-            connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
-            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = Command(connectionName))
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+                cmd.CommandText = statement;
+
+                if (procedureParams != null)
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    cmd.CommandText = statement;
-
-                    if (procedureParams != null)
-                    {
-                        Utility.AddParametersToCommand(procedureParams, cmd);
-                    }
-
-                    cmd.ExecuteNonQuery();
+                    Utility.AddParametersToCommand(procedureParams, cmd);
                 }
-                conn.Close();
+
+                cmd.ExecuteNonQuery();
             }
         }
 
-        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionString = null, Boolean standardizeCasing = true)
+        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null, Boolean standardizeCasing = true)
         {
-            connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
-            using (var conn = new SqlConnection(connectionString))
+            using(var cmd = Command(connectionName))
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand())
+                cmd.CommandType = System.Data.CommandType.Text;
+                cmd.CommandText = statement;
+
+                if (parameters != null)
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    cmd.CommandText = statement;
-
-                    if (parameters != null)
-                    {
-                        Utility.AddParametersToCommand(parameters, cmd);
-                    }
-
-                    using (var dr = cmd.ExecuteReader())
-                    {
-                        action(new IndexedSqlDataReader(dr, standardizeCasing));
-                    }
+                    Utility.AddParametersToCommand(parameters, cmd);
                 }
-                conn.Close();
+
+                using (var dr = cmd.ExecuteReader())
+                {
+                    action(new IndexedSqlDataReader(dr, standardizeCasing));
+                }
             }
         }
 
-        public static SqlCommand Command(String connectionString = null)
+        public static System.Data.Common.DbCommand Command(String connectionName = null)
+        {
+            String connectionString = null; 
+            DbProviderFactory provider = null;
+            if (!String.IsNullOrEmpty(connectionName))
+            {
+                connectionString = DatabaseConfigurationContext.ConnectionStrings.ContainsKey(connectionName) ? DatabaseConfigurationContext.ConnectionStrings[connectionName] : DatabaseConfigurationContext.DefaultConnectionString;
+                DatabaseConfigurationContext.DbProviders.TryGetValue(connectionName, out provider);
+            }
+            provider = provider ?? DatabaseConfigurationContext.DefaultProviderFactory;
+            return Command(connectionString, provider);
+        }
+
+        public static System.Data.Common.DbCommand Command(String connectionString = null, DbProviderFactory providerFactory = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
+            providerFactory = providerFactory ?? DatabaseConfigurationContext.DefaultProviderFactory;
 
-            SqlConnection conn = new SqlConnection(connectionString);
-            conn.Open();
-            SqlCommand cmd = new SqlCommand();
-            cmd.Connection = conn;
+            var connection = providerFactory.CreateConnection();
+            connection.ConnectionString = connectionString;
+            connection.Open();
+            var cmd = providerFactory.CreateCommand();
+            cmd.Connection = connection;
             cmd.Disposed += new EventHandler(cmd_Disposed);
             return cmd;
         }
@@ -106,8 +98,8 @@ namespace Destrier
         {
             try
             {
-                ((SqlCommand)sender).Connection.Close();
-                ((SqlCommand)sender).Connection.Dispose();
+                ((DbCommand)sender).Connection.Close();
+                ((DbCommand)sender).Connection.Dispose();
             }
             catch { }
         }
@@ -129,24 +121,38 @@ namespace Destrier
                 return decomposed as IDictionary<String, Object>;
             }
 
-            public static void AddWhereClauseVariables(dynamic procedureParams, StringBuilder commandText)
+            public static void AddParameterToCommand(String name, Object value, DbCommand cmd, String connectionName = null, DbType? dbType = null)
             {
-                if (procedureParams == null)
-                    return;
-
-                if (!(procedureParams is IDictionary<String, Object>))
-                    procedureParams = ((object)procedureParams).ToDynamic();
-
-                foreach (KeyValuePair<string, object> member in (IDictionary<String, Object>)procedureParams)
-                {
-                    commandText.AppendLine(String.Format("and [{0}] = @{0}", member.Key));
-                }
+                DbProviderFactory provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
+                AddParameterToCommand(name, value, cmd, provider: provider);
             }
 
-            public static void AddParametersToCommand(dynamic procedureParams, SqlCommand cmd)
+            public static void AddParameterToCommand(String name, Object value, DbCommand cmd, DbProviderFactory provider = null, DbType? dbType = null)
+            {
+                provider = provider ?? DatabaseConfigurationContext.DefaultProviderFactory;
+
+                var dbParameter = provider.CreateParameter();
+                dbParameter.ParameterName = String.Format("@{0}", name);
+                dbParameter.Value = value.DBNullCoalese();
+
+                if (dbType != null)
+                    dbParameter.DbType = dbType.Value;
+
+                cmd.Parameters.Add(dbParameter);
+            }
+
+            public static void AddParametersToCommand(dynamic procedureParams, DbCommand cmd, String connectionName = null)
+            {
+                DbProviderFactory provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
+                AddParametersToCommandFromProvider(procedureParams, cmd, provider);
+            }
+
+            public static void AddParametersToCommandFromProvider(dynamic procedureParams, DbCommand cmd, DbProviderFactory provider = null)
             {
                 if (procedureParams == null)
                     return;
+
+                provider = provider ?? DatabaseConfigurationContext.DefaultProviderFactory;
 
                 if (!(procedureParams is IDictionary<String, Object>))
                     procedureParams = ((object)procedureParams).ToDynamic();
@@ -154,7 +160,10 @@ namespace Destrier
                 foreach (KeyValuePair<String, Object> member in (IDictionary<String, Object>)procedureParams)
                 {
                     object propertyValue = member.Value;
-                    cmd.Parameters.AddWithValue(String.Format("@{0}", member.Key), propertyValue.DBNullCoalese());
+                    var dbParameter = provider.CreateParameter();
+                    dbParameter.ParameterName = String.Format("@{0}", member.Key);
+                    dbParameter.Value = propertyValue.DBNullCoalese();
+                    cmd.Parameters.Add(dbParameter);
                 }
             }
         }

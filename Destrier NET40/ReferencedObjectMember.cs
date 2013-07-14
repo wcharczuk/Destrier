@@ -38,40 +38,5 @@ namespace Destrier
 
         public String JoinType { get { return ReferencedColumnIsNullable ? "LEFT" : "INNER"; } }
         public String FullyQualifiedTableName { get { return String.Format("{0}.{1}.{2}", this.DatabaseName, this.SchemaName, this.TableName); } }
-
-        public String AliasedParentColumnName 
-        { 
-            get 
-            {
-                var parentAlias = String.Empty;
-                if (this.Parent != null)
-                {
-                    parentAlias = this.Parent.TableAlias;
-                }
-                else if (this.Root != null)
-                {
-                    parentAlias = this.Root.TableAlias;
-                }
-                return String.Format("[{0}].[{1}]", parentAlias, ReferencedColumnMember.Name);
-            }
-        }
-
-        public String AliasedColumnName 
-        { 
-            get 
-            {
-                var pks = Model.ColumnsPrimaryKey(this.Type);
-                if (pks.Count() > 1)
-                {
-                    throw new Exception("Multiple Primary Key, cannot join on this type yet.");
-                }
-                var pk = pks.FirstOrDefault();
-                if (pk == null)
-                {
-                    throw new Exception("No Primary Key to join on.");
-                }
-                return String.Format("[{0}].[{1}]", this.TableAlias, pk.Name);
-            }
-        }
     }
 }

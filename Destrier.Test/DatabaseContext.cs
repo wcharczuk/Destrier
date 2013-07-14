@@ -10,15 +10,35 @@ namespace Destrier.Test
     {
         public DatabaseContext()
         {
+            ConnectionName = "default";
+            ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
             SetupDatabaseContext();
         }
 
-        public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
+        public DatabaseContext(String connectionName, String connectionString, String providerName)
+        {
+            this.ConnectionName = connectionName;
+            this.ConnectionString = connectionString;
+            this.ProviderName = providerName;
+            this.SetupDatabaseContext();
+        }
+
+        public String ConnectionName { get; set; }
+        public String ConnectionString { get; set; }
+        public String ProviderName { get; set; }
+
         public void SetupDatabaseContext()
         {
-            if (!Destrier.DatabaseConfigurationContext.ConnectionStrings.ContainsKey("default"))
+            if (!Destrier.DatabaseConfigurationContext.ConnectionStrings.ContainsKey(ConnectionName))
             {
-                Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
+                if (String.IsNullOrEmpty(ProviderName))
+                {
+                    Destrier.DatabaseConfigurationContext.ConnectionStrings.Add(ConnectionName, ConnectionString);
+                }
+                else
+                {
+                    Destrier.DatabaseConfigurationContext.AddConnectionString(ConnectionName, ConnectionString, ProviderName);
+                }
             }
         }
     }
@@ -30,18 +50,20 @@ namespace Destrier.Test
             EnsureInitDataStore();
         }
 
+        public TestObjectContext(String connectionName, String connectionString, String providerName)
+            : base(connectionName, connectionString, providerName)
+        {
+            EnsureInitDataStore();
+        }
+
         public Boolean TestIfSchemaExists()
         {
             var exists = false;
             Execute.StatementReader("SELECT OBJECT_ID('tempdb..TestObjects')", (dr) =>
             {
-
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        exists = !dr.IsDBNull(0);
-                    }
+                    exists = !dr.IsDBNull(0);
                 }
             });
             return exists;
@@ -68,7 +90,7 @@ CREATE TABLE TestObjects
     [single] float,
     [double] float,
     [nullableDouble] float,
-    [guid] uniqueidentifier,
+    [guid] uniqueidentifier not null,
     [nullableGuid] uniqueidentifier
 );
 
@@ -169,18 +191,20 @@ END
             EnsureInitDataStore();
         }
 
+        public LibraryContext(String connectionName, String connectionString, String providerName)
+            : base(connectionName, connectionString, providerName)
+        {
+            EnsureInitDataStore();
+        }
+
         public Boolean TestIfSchemaExists()
         {
             var exists = false;
             Execute.StatementReader("SELECT OBJECT_ID('tempdb..Books')", (dr) =>
             {
-
-                if (dr.HasRows)
+                while (dr.Read())
                 {
-                    while (dr.Read())
-                    {
-                        exists = !dr.IsDBNull(0);
-                    }
+                    exists = !dr.IsDBNull(0);
                 }
             });
             return exists;

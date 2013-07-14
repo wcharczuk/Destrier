@@ -27,7 +27,9 @@ namespace Destrier.GenerateModels
             if(args.Length > 2)
                 outputDirectory = args[2];
 
-            foreach (var table in Schema.GetTables(connectionString))
+            DatabaseConfigurationContext.ConnectionStrings.Add("default", connectionString);
+
+            foreach (var table in Schema.GetTables("default"))
             {
                 Console.WriteLine("Generating: " + table.TableName);
 
@@ -52,7 +54,7 @@ namespace Destrier.GenerateModels
                         sw.Write("\n\t[Table(\""+  table.TableName + "\")]\n");
                         sw.Write("\tpublic class " + table.TableName + "\n\t{\n");
 
-                        foreach (var column in Schema.GetColumnsForTable(table.TableName, connectionString: connectionString))
+                        foreach (var column in Schema.GetColumnsForTable(table.TableName, "default"))
                         {
                             if (column.IsPrimaryKey)
                                 sw.Write(String.Format("\t\t[Column(IsPrimaryKey=true, IsAutoIdentity={0})]\n", column.IsAutoIdentity.ToString().ToLower()));

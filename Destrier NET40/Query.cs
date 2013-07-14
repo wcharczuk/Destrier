@@ -17,7 +17,9 @@ namespace Destrier
         {
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
-            _builder = new CommandBuilder<T>(_command, _parameters);
+            _builder = CommandBuilderFactory.GetCommandBuilder<T>();
+            _builder.Command = _command;
+            _builder.Parameters = _parameters; 
             _t = typeof(T);
         }
 
@@ -141,11 +143,12 @@ namespace Destrier
         private IEnumerable<T> _slowPipeline()
         {
             var list = new List<T>();
-            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            var connectionName = Model.ConnectionName(_t);
+            using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
-                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
 
                 using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
                 {
@@ -221,11 +224,12 @@ namespace Destrier
 
         private IEnumerable<T> _fastPipeline()
         {
+            var connectionName = Model.ConnectionName(_t);
             using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
-                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
                 using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
                 {
                     while (dr.Read())
