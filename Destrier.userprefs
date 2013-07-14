@@ -1,23 +1,26 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Destrier NET40/StringExtensions.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="ORMComparison/Program.cs">
     <Files>
-      <File FileName="Destrier NET40/Database.cs" Line="178" Column="17" />
-      <File FileName="Destrier NET40/Query.cs" Line="170" Column="33" />
-      <File FileName="Destrier NET40/StringExtensions.cs" Line="28" Column="25" />
-      <File FileName="Destrier NET40/ReflectionCache.cs" Line="25" Column="65" />
-      <File FileName="Destrier.Test/CommandBuilderTests.cs" Line="96" Column="17" />
-      <File FileName="Destrier.Test/DatabaseTests.cs" Line="113" Column="35" />
-      <File FileName="Destrier.Test/SqlExpressionVisitorTests.cs" Line="16" Column="17" />
+      <File FileName="Destrier NET40/Database.cs" Line="1" Column="1" />
+      <File FileName="Destrier NET40/Query.cs" Line="1" Column="1" />
+      <File FileName="Destrier NET40/StringExtensions.cs" Line="1" Column="1" />
+      <File FileName="Destrier NET40/ReflectionCache.cs" Line="1" Column="1" />
+      <File FileName="Destrier.Test/CommandBuilderTests.cs" Line="1" Column="1" />
+      <File FileName="Destrier.Test/DatabaseTests.cs" Line="1" Column="1" />
+      <File FileName="Destrier.Test/SqlExpressionVisitorTests.cs" Line="9" Column="24" />
+      <File FileName="Destrier.Test.Postgres/DatabaseContext.cs" Line="19" Column="10" />
+      <File FileName="Destrier.Test.Postgres/QueryTests.cs" Line="17" Column="4" />
+      <File FileName="Destrier NET40/CommandBuilder.cs" Line="27" Column="74" />
+      <File FileName="Destrier NET40/DatabaseConfigurationContext.cs" Line="168" Column="48" />
+      <File FileName="ORMComparison/App.config" Line="1" Column="1" />
+      <File FileName="ORMComparison/Program.cs" Line="254" Column="4" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State expanded="True">
-          <Node name="Destrier NET40" expanded="True" />
-          <Node name="Destrier NET45" expanded="True">
-            <Node name="StringExtensions.cs" selected="True" />
-          </Node>
-          <Node name="Destrier.Test" expanded="True" />
+          <Node name="Destrier NET45" expanded="True" selected="True" />
+          <Node name="Destrier.Test.Postgres" expanded="True" />
           <Node name="ORMComparison" expanded="True" />
         </State>
       </Pad>

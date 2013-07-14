@@ -39,7 +39,7 @@ namespace Destrier
         public static String SchemaName(Type t)
         {
             var schemaName = ReflectionCache.GetTableAttribute(t).SchemaName;
-            return !String.IsNullOrEmpty(schemaName) ? schemaName : DatabaseConfigurationContext.DefaultSchemaName;
+            return schemaName ?? DatabaseConfigurationContext.DefaultSchemaName ?? "dbo"; //the mssql backup.
         }
 
         public static Boolean UseNoLock(Type t)
@@ -72,12 +72,18 @@ namespace Destrier
             if (ta == null)
                 throw new InvalidOperationException("Base Model classes must have a 'Table' attribute specifying the relation in the database to interact with!");
 
-            if (!String.IsNullOrEmpty(ta.ConnectionStringName))
-                return DatabaseConfigurationContext.ConnectionStrings[ta.ConnectionStringName];
+            if (!String.IsNullOrEmpty(ta.ConnectionName))
+                return DatabaseConfigurationContext.ConnectionStrings[ta.ConnectionName];
             else if (!String.IsNullOrEmpty(DatabaseConfigurationContext.DefaultConnectionString))
                 return DatabaseConfigurationContext.DefaultConnectionString;
             else
                 throw new InvalidOperationException("No connection string for object.");
+        }
+
+        public static String ConnectionName(Type t)
+        {
+            TableAttribute ta = ReflectionCache.GetTableAttribute(t);
+            return ta.ConnectionName ?? DatabaseConfigurationContext.DefaultConnectionName;
         }
 
         public static ColumnMember[] ColumnsNonPrimaryKey(Type t)
@@ -188,7 +194,7 @@ namespace Destrier
 
         public static String StandardizeCasing(String input)
         {
-            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToUpper(input);
+            return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower(input);
         }
 
 		public static void Populate(object instance, IndexedSqlDataReader dr)

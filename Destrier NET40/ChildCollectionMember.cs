@@ -61,29 +61,6 @@ namespace Destrier
             }
         }
 
-        public String AliasedParentColumnName
-        {
-            get
-            {
-                var parentAlias = String.Empty;
-                if (this.Parent != null)
-                    parentAlias = this.Parent.TableAlias;
-                else if (this.Root != null)
-                    parentAlias = this.Root.TableAlias;
-                
-                return String.Format("[{0}].[{1}]", parentAlias, ParentPrimaryKeyColumnName);
-            }
-        }
-
-        public String AliasedColumnName
-        {
-            get
-            {
-                if (String.IsNullOrEmpty(ReferencedColumnName))
-                    throw new Exception("Bit of a whoopsie; no back referencing column name to work with.");
-
-                return String.Format("[{0}].[{1}]", this.TableAlias, ReferencedColumnName);
-            }
-        }
+        
     }
 }

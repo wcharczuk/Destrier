@@ -2,12 +2,12 @@
 
 [![Build Status](https://travis-ci.org/ClothesHorse/Destrier.png?branch=master)](https://travis-ci.org/ClothesHorse/Destrier)
 
-Destrier is a flexible yet minimal ORM for .net.
+Destrier is a flexible yet minimal ORM for .net targeting both MSSQL and Postgres.
 
 [Documentation](https://github.com/ClothesHorse/Destrier/wiki)
 
 It is designed to leverage both strong typing and model / schema relationships and push the developer towards
-using stored procedures for complicated queries (read: anything with 'group by' or 'join').
+using stored procedures / functions for complicated queries.
 
 ###Features###
 * POCO support; use your existing objects.
@@ -18,9 +18,9 @@ using stored procedures for complicated queries (read: anything with 'group by' 
 * Database Paging Support: use Offset on queries to enable database paging.
 * Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
 * Referenced Objects: let you have associated objects (joined to specified properties).
- * Say an object has a 'UserId' property; Destrier will automatically fill a 'User' object based on the specified reference.
 * Child Collections: let you have related sub collections (one-to-many relationships).
 * IEnumerable reader let you stream results from large datasets / queries.
+* Polyglot: Target both SqlServer and Postgres.
 
 ###Speed###
 The following test was performed on 100 iterations for each orm, selecting an object from a table limiting to 5000 results.
@@ -39,7 +39,7 @@ It should be noted that EntityFramework had to have some members disabled becaus
 Also should be noted that ORMLite failed to cast Doubles=>Singles. 
 Also PetaPoco doesn't handle nullable enums.
 
-Test was run in .net 4.5, Release without debugger attached.
+Test was run in .net 4.5, Release without debugger attached (ctrl-f5) against MSSQL.
 
 ###Core Components###
 * DatabaseConfigurationContext: Where you set your connection strings.

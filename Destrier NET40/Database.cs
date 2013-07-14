@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Reflection;
 using System.Linq.Expressions;
 using Destrier.Extensions;
+using System.Data.Common;
 
 namespace Destrier
 {
@@ -22,8 +23,9 @@ namespace Destrier
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Create, myObject);
 
             StringBuilder command = new StringBuilder();
-            var connectionString = Model.ConnectionString(myObjectType);
-            using (var cmd = Execute.Command(connectionString))
+            var connectionName = Model.ConnectionName(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
+            using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
 
@@ -38,7 +40,7 @@ namespace Destrier
                     }
                 }
 
-                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
+                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("{0}", sqlDialectider.WrapName(columnName, isGeneratedAlias:false)))));
                 command.Append(") VALUES (");
 
                 command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
@@ -48,13 +50,14 @@ namespace Destrier
                 {
                     if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
                     {
-                        AddColumnParameter(cm, myObject, cmd);
+                        AddColumnParameter(cm, myObject, cmd, connectionName);
                     }
                 }
 
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
-                    command.Append("SELECT @@IDENTITY;");
+                    
+                    command.Append(sqlDialectider.GenerateSelectLastId);
                     cmd.CommandText = command.ToString();
 
                     object o = cmd.ExecuteScalar();
@@ -89,8 +92,9 @@ namespace Destrier
 				((IPreUpdate)myObject).PreUpdate();
 
             StringBuilder command = new StringBuilder();
-            var connectionString = Model.ConnectionString(myObjectType);
-            using (var cmd = Execute.Command(connectionString))
+            var connectionName = Model.ConnectionName(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
+            using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
 
@@ -104,8 +108,8 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsNonPrimaryKey(myObjectType))
                     if (!cm.ColumnAttribute.IsForReadOnly)
                         variables.Add(cm.Name);
-                    
-                command.Append(string.Join(", ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+
+                command.Append(string.Join(", ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 command.Append(" WHERE ");
 
@@ -114,14 +118,14 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 //parameters
                 foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
                 {
                     if (!cm.IsForReadOnly)
                     {
-                        AddColumnParameter(cm, myObject, cmd);
+                        AddColumnParameter(cm, myObject, cmd, connectionName);
                     }
                 }
 
@@ -144,8 +148,9 @@ namespace Destrier
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Delete, myObject);
             
             StringBuilder command = new StringBuilder();
-            var connectionString = Model.ConnectionString(myObjectType);
-            using (var cmd = Execute.Command(connectionString))
+            var connectionName = Model.ConnectionName(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
+            using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
                 command.Append("DELETE FROM " + Model.TableNameFullyQualified(myObjectType) + " WHERE ");
@@ -155,18 +160,17 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                 {
-                    cmd.Parameters.AddWithValue("@" + cm.Name, cm.Property.GetValue(myObject, null));
+                    Execute.Utility.AddParameterToCommand(cm.Name, cm.Property.GetValue(myObject, null), cmd, connectionName);
                 }
 
                 cmd.CommandText = command.ToString();
                 cmd.ExecuteNonQuery();
             }
             
-
 			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostRemove)))
 				((IPostRemove)myObject).PostRemove();
         }
@@ -175,8 +179,9 @@ namespace Destrier
         {
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
-            var connectionString = Model.ConnectionString(myObjectType);
-            using (var cmd = Execute.Command(connectionString))
+            var connectionName = Model.ConnectionName(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
+            using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
                 command.Append("DELETE FROM ");
@@ -188,8 +193,9 @@ namespace Destrier
                     var parameters = new Dictionary<String, object>();
                     var visitor = new SqlExpressionVisitor<T>(command, parameters);
                     var body = expression.Body;
+                    visitor.Dialect = sqlDialectider;
                     visitor.Visit(body);
-                    Execute.Utility.AddParametersToCommand(parameters, cmd);
+                    Execute.Utility.AddParametersToCommand(parameters, cmd, connectionName);
                 }
 
                 cmd.CommandText = command.ToString();
@@ -221,7 +227,7 @@ namespace Destrier
         }
 
         #region Utility
-        private static void AddColumnParameter(ColumnMember cm, object myObject, SqlCommand cmd)
+        private static void AddColumnParameter(ColumnMember cm, object myObject, DbCommand cmd, String connectionName)
         {
             object value = cm.Property.GetValue(myObject, null).DBNullCoalese();
 
@@ -234,10 +240,10 @@ namespace Destrier
                 else
                     throw new InvalidColumnDataException(cm.ColumnAttribute, value);
 
-            if ((int)cm.ColumnAttribute.SqlDbType == (-1))
-                cmd.Parameters.AddWithValue("@" + cm.Name, value);
+            if (cm.ColumnAttribute.SqlDbType == null)
+                Execute.Utility.AddParameterToCommand(cm.Name, value, cmd, connectionName);
             else
-                cmd.Parameters.Add(new SqlParameter() { SqlDbType = cm.ColumnAttribute.SqlDbType, ParameterName = "@" + cm.Name, Value = value });
+                Execute.Utility.AddParameterToCommand(cm.Name, value, cmd, connectionName, cm.ColumnAttribute.SqlDbType);
         }
         #endregion
     }

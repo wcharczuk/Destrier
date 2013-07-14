@@ -4,16 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4C44C9E4-F508-4C74-9FB5-85F7B16C114C}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{D6C77B83-DD3F-4232-B87A-F888C80D2D30}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Destrier.GenerateModels</RootNamespace>
-    <AssemblyName>Destrier.GenerateModels</AssemblyName>
+    <RootNamespace>Destrier.Test.Postgres</RootNamespace>
+    <AssemblyName>Destrier.Test.Postgres</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <ProductVersion>12.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,7 +24,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -32,6 +32,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Security">
+      <HintPath>..\lib\npgsql\Mono.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql">
+      <HintPath>..\lib\npgsql\Npgsql.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -39,17 +45,24 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>..\lib\xunit\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\lib\xunit\xunit.extensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="DatabaseContext.cs" />
+    <Compile Include="DatabaseTests.cs" />
+    <Compile Include="IndexedSqlDataReaderTests.cs" />
+    <Compile Include="Objects.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
+    <Compile Include="QueryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Destrier NET45\Destrier NET45.csproj">
-      <Project>{8162c35e-0c7d-40a9-b25d-fe560eebd7c5}</Project>
+      <Project>{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}</Project>
       <Name>Destrier NET45</Name>
     </ProjectReference>
   </ItemGroup>

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Destrier.GenerateModels")]
+[assembly: AssemblyTitle("Destrier.Test.Postgres")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Destrier.GenerateModels")]
+[assembly: AssemblyProduct("Destrier.Test.Postgres")]
 [assembly: AssemblyCopyright("Copyright ©  2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("56ffc5e1-4550-448e-91d6-459d79ca7740")]
+[assembly: Guid("3844cb8e-9823-4938-ab0f-f05c5108f0d8")]
 
 // Version information for an assembly consists of the following four values:
 //

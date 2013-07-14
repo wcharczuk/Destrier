@@ -16,7 +16,6 @@ namespace Destrier
         /// </summary>
         public TableAttribute() 
         { 
-            this.SchemaName = "dbo"; 
             this.UseNoLock = true; 
         }
 
@@ -48,7 +47,7 @@ namespace Destrier
         /// <summary>
         /// The connection string for the table. 
         /// </summary>
-        public String ConnectionStringName { get; set; }
+        public String ConnectionName { get; set; }
 
         /// <summary>
         /// Whether to apply the SQL query modifier "(NOLOCK)" when accessing the table.

@@ -15,14 +15,18 @@ namespace Destrier
     {
         public Query()
         {
+			StandardizeCasing = false;
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
-            _builder = new CommandBuilder<T>(_command, _parameters);
+            _builder = CommandBuilderFactory.GetCommandBuilder<T>();
+            _builder.Command = _command;
+            _builder.Parameters = _parameters; 
             _t = typeof(T);
         }
 
         public Query(String query)
         {
+			StandardizeCasing = true;
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
             _t = typeof(T);
@@ -39,6 +43,8 @@ namespace Destrier
         private List<Member> _members = new List<Member>();
         private StringBuilder _command = null;
         private CommandBuilder<T> _builder = null;
+
+		public Boolean StandardizeCasing { get; set; }
 
         private Type _t = null;
 
@@ -132,7 +138,7 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            if (_builder != null && _builder.ChildCollections.Any())
+            if (_builder != null && _builder.HasChildCollections)
                 return _slowPipeline();
             else
                 return _fastPipeline();
@@ -141,11 +147,12 @@ namespace Destrier
         private IEnumerable<T> _slowPipeline()
         {
             var list = new List<T>();
-            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            var connectionName = Model.ConnectionName(_t);
+            using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
-                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
 
                 using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
                 {
@@ -221,12 +228,16 @@ namespace Destrier
 
         private IEnumerable<T> _fastPipeline()
         {
-            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            var connectionName = Model.ConnectionName(_t);
+            var dialect = _builder != null ? _builder.Dialect : SqlDialectVariantFactory.GetSqlDialect(connectionName);
+            var shouldStandardizeCasing = dialect.AltersOutputCasing && this.StandardizeCasing;
+            
+            using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
-                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd);
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: shouldStandardizeCasing))
                 {
                     while (dr.Read())
                     {
@@ -248,7 +259,7 @@ namespace Destrier
         }
 
         private String _queryBody = null;
-        private String QueryBody
+        public String QueryBody
         {
             get
             {
@@ -259,6 +270,7 @@ namespace Destrier
             }
             set
             {
+				StandardizeCasing = true;
                 _queryBody = value;
             }
         }
