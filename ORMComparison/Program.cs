@@ -11,45 +11,6 @@ using Destrier;
 
 namespace ORMComparison
 {
-	/*
-    public class MockObjectContext : DbContext
-    {
-        public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
-
-        public DbSet<TestObject> MockObjects { get; set; }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Configurations.Add(new TestObjectMap());
-        }
-    }
-
-    public class TestObjectMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<TestObject>
-    {
-        public TestObjectMap()
-        {
-            this.HasKey(t => t.Id);
-            this.Property(t => t.Id);
-            this.Property(t => t.Name);
-            this.Property(t => t.NullName);
-            this.Property(t => t.Active);
-            this.Property(t => t.Created);
-            this.Property(t => t.Modified);
-            this.Property(t => t.ReferencedObjectId);
-            this.Property(t => t.NullableId);
-            //this.Property(t => t.Type);
-            //this.Property(t => t.NullableType);
-            this.Property(t => t.SingleChar);
-            //this.Property(t => t.Single);
-            this.Property(t => t.Double);
-            this.Property(t => t.NullableDouble);
-            this.Property(t => t.Guid);
-            this.Property(t => t.NullableGuid);
-            this.ToTable("TestObjects");
-        }
-    }*/
-
     public enum TestObjectTypeId 
     {
         One = 1,
@@ -121,6 +82,7 @@ namespace ORMComparison
             var testObjectContext = new Destrier.Test.Postgres.TestObjectContext();
 
             string QUERY = new Query<TestObject>().Limit(LIMIT).QueryBody;
+            string CONNECTION_STRING = Destrier.DatabaseConfigurationContext.DefaultConnectionString;
 
             Func<List<TestObject>> rawAction = () =>
             {
@@ -168,26 +130,15 @@ namespace ORMComparison
                 return list;
             };
 
-			/*
-            Func<List<TestObject>> ormLiteAction = () =>
+            /*Func<List<TestObject>> ormLiteAction = () =>
             {
-                var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
+                var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(CONNECTION_STRING, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
                     return ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
                 }
-            };*/
+            }; */
 
-			/*
-            Func<List<TestObject>> entityFrameworkAction = () =>
-            {
-                using (var db = new MockObjectContext())
-                {
-                    var query = (from g in db.MockObjects select g).Take(LIMIT);
-                    var efResults = query.ToList();
-                    return efResults;
-                }
-            };*/
 
             Func<List<TestObject>> destrierAction = () =>
             {
@@ -205,15 +156,17 @@ namespace ORMComparison
                     var db = new PetaPoco.Database(ConnectionString, "System.Data.SqlClient");
                     return db.Query<TestObject>(QUERY).ToList();
                 };
+            */
 
             Func<List<TestObject>> dapperAction = () =>
             {
-                using (var conn = new SqlConnection(ConnectionString))
+                using (var conn = Destrier.DatabaseConfigurationContext.DefaultProviderFactory.CreateConnection())
                 {
+                    conn.ConnectionString = CONNECTION_STRING;
                     conn.Open();
                     return conn.Query<TestObject>(QUERY).ToList();
                 }
-            };*/
+            };
 
             //-------------------------------------------------------------------------------------------
             //-------------------------------------------------------------------------------------------
@@ -237,8 +190,7 @@ namespace ORMComparison
                 { "Destrier (Raw Query)", destrierRawQueryAction },
                 //{ "PetaPoco", petaPocoAction },
                 //{ "ServiceStack ORMLite", ormLiteAction },
-                //{ "Dapper", dapperAction },
-                //{ "EntityFramework", entityFrameworkAction }
+                { "Dapper", dapperAction },
             };
 
             var results = new List<Int64>();
