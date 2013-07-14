@@ -86,10 +86,10 @@ namespace Destrier.Test.Postgres
             Assert.NotNull(books.First().Chapters);
             Assert.NotEmpty(books.First().Chapters);
             Assert.NotEmpty(books.First().Chapters.First().Title);
-            Assert.NotNull(books.First().Chapters.First().Pages);
-            Assert.NotEmpty(books.First().Chapters.First().Pages);
-            Assert.NotNull(books.First().Chapters.First().Pages.First().Text);
-            Assert.NotEmpty(books.First().Chapters.First().Pages.First().Text);
+            Assert.NotNull(books.First(b => b.Id == 1).Chapters.First().Pages);
+            Assert.NotEmpty(books.First(b => b.Id == 1).Chapters.First().Pages);
+            Assert.NotNull(books.First(b => b.Id == 1).Chapters.First().Pages.First().Text);
+            Assert.NotEmpty(books.First(b => b.Id == 1).Chapters.First().Pages.First().Text);
         }
 
         [Fact]
@@ -103,10 +103,10 @@ namespace Destrier.Test.Postgres
             Assert.NotNull(books.First().Chapters);
             Assert.NotEmpty(books.First().Chapters);
             Assert.NotEmpty(books.First().Chapters.First().Title);
-            Assert.NotNull(books.First().Chapters.First().Pages);
-            Assert.NotEmpty(books.First().Chapters.First().Pages);
-            Assert.NotNull(books.First().Chapters.First().Pages.First().Text);
-            Assert.NotEmpty(books.First().Chapters.First().Pages.First().Text);
+            Assert.NotNull(books.First(b => b.Id == 1).Chapters.First().Pages);
+            Assert.NotEmpty(books.First(b => b.Id == 1).Chapters.First().Pages);
+            Assert.NotNull(books.First(b => b.Id == 1).Chapters.First().Pages.First().Text);
+            Assert.NotEmpty(books.First(b => b.Id == 1).Chapters.First().Pages.First().Text);
         }
 
         [Fact]

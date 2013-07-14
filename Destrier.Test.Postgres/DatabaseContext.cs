@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Destrier.Test.Postgres
 {
-    public class DatabaseContext
+    public class DatabaseContext : IDisposable
     {
         public DatabaseContext()
         {
@@ -50,33 +50,42 @@ namespace Destrier.Test.Postgres
 
             if (!String.IsNullOrEmpty(this.DatabaseName))
                 DatabaseConfigurationContext.DefaultDatabaseName = DatabaseName;
+
+            if (!TestIfSchemaExists())
+            {
+                EnsureInitDataStore();
+            }
+        }
+
+        public virtual Boolean TestIfSchemaExists() { return false; }
+        public virtual void EnsureInitDataStore() { }
+        public virtual void EnsureDestroyDataStore() { }
+
+        public void Dispose()
+        {
+            EnsureDestroyDataStore();
         }
     }
 
-    /// <summary>
-    /// This context uses MSSQL specific features and is not recommended for PSQL testing.
-    /// </summary>
     public class TestObjectContext : DatabaseContext, IDisposable
     {
-        public TestObjectContext() : base() 
-        {
-            EnsureDestroyDataStore();
-            EnsureInitDataStore();
-        }
+        public TestObjectContext() : base() { }
 
         public TestObjectContext(String connectionName, String connectionString, String providerName)
-            : base(connectionName, connectionString, providerName)
-        {
-            EnsureInitDataStore();
-        }
+            : base(connectionName, connectionString, providerName) { }
 
-        public Boolean TestIfSchemaExists()
+        public override Boolean TestIfSchemaExists()
         {
             var exists = false;
+            Execute.StatementReader("select * from pg_tables where schemaname='public' and tablename ilike 'testobjects';", (dr) =>
+            {
+                while (dr.Read())
+                    exists = true;
+            });
             return exists;
         }
 
-        public void EnsureInitDataStore()
+        public override void EnsureInitDataStore()
         {
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
@@ -146,62 +155,51 @@ LANGUAGE 'plpgsql';
 SELECT GenerateData();
 ";
 
-            var initProcScript = @"
-CREATE PROCEDURE GetTestObjects_prc 
-(
-    @limit int = null
-)
-AS 
-BEGIN;
-    IF (@limit is null) BEGIN;
-        SELECT Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock);
-    END;
-    ELSE BEGIN;
-        SELECT TOP (@limit) Id, Name, NullName, Active, Created, Modified, NullableId, ReferencedObjectId, Type, NullableType, SingleChar, [Single], [Double], [NullableDouble], [Guid], [NullableGuid] from TestObjects (nolock);
-    END;
-END";
-
             if (!TestIfSchemaExists())
             {
                 Destrier.Execute.NonQuery(initDbScript);
-                //Destrier.Execute.NonQuery(initProcScript);
             }
         }
 
-        public void EnsureDestroyDataStore()
+        public override void EnsureDestroyDataStore()
         {
             var statement = @"DROP TABLE IF EXISTS tempdb.public.TestObjects CASCADE;";
             Execute.NonQuery(statement);
         }
-
-        public void Dispose()
-        {
-            EnsureDestroyDataStore();
-        }
     }
 
-    public class LibraryContext : DatabaseContext, IDisposable
+    public class LibraryContext : DatabaseContext
     {
         public LibraryContext()
             : base()
         {
-            EnsureDestroyDataStore();
-            EnsureInitDataStore();
+            if (!TestIfSchemaExists())
+            {
+                EnsureInitDataStore();
+            }
         }
 
         public LibraryContext(String connectionName, String connectionString, String providerName)
             : base(connectionName, connectionString, providerName)
         {
-            EnsureInitDataStore();
+            if (!TestIfSchemaExists())
+            {
+                EnsureInitDataStore();
+            }
         }
 
-        public Boolean TestIfSchemaExists()
+        public override Boolean TestIfSchemaExists()
         {
             var exists = false;
+            Execute.StatementReader("select * from pg_tables where schemaname='public' and tablename ilike 'books';", (dr) =>
+            {
+                while (dr.Read())
+                    exists = true;
+            });
             return exists;
         }
 
-        public void EnsureInitDataStore()
+        public override void EnsureInitDataStore()
         {
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
             var initDbScript = @"
@@ -306,7 +304,7 @@ INSERT INTO Pages (number, bookId, chapterId, text) VALUES (3, 1, 1, 'They picke
             }
         }
 
-        public void EnsureDestroyDataStore()
+        public override void EnsureDestroyDataStore()
         {
             var statement = @"
 DROP TABLE IF EXISTS tempdb.public.Pages;
@@ -315,11 +313,6 @@ DROP TABLE IF EXISTS tempdb.public.Books;
 DROP TABLE IF EXISTS tempdb.public.People;
 ";
             Execute.NonQuery(statement);
-        }
-
-        public void Dispose()
-        {
-            EnsureDestroyDataStore();
         }
     }
 }

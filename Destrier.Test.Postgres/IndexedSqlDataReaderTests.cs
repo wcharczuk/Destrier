@@ -14,77 +14,6 @@ namespace Destrier.Test.Postgres
         public void SetFixture(TestObjectContext data) { }
 
         [Fact]
-        public void InitializeTest_WithType_Test()
-        {
-            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
-            {
-                cmd.CommandText = SingleStatment;
-                cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
-                {
-                }
-            }
-        }
-
-        [Fact]
-        public void UsedAsHashKey_Test()
-        {
-            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
-            {
-                cmd.CommandText = SingleStatment;
-                cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
-                {
-                }
-            }
-        }
-        
-        [Fact]
-        public void Metadata_Test()
-        {
-            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
-            {
-                cmd.CommandText = SingleStatment;
-                cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
-                {
-                    dr.ReadFullControl((reader) =>
-                    {
-                        Assert.True(reader.HasColumn("id"));
-                        Assert.True(reader.GetColumnIndex("id") == reader.GetOrdinal("id"));
-                        Assert.False(reader.IsClosed);
-                    });
-
-                    DataException de = null;
-                    try
-                    {
-                        IndexedSqlDataReader.ThrowDataException(new Exception("Test Exception"), 0, null, dr);
-                    }
-                    catch (DataException e)
-                    {
-                        de = e;
-                    }
-
-                    Assert.NotNull(de);
-                }
-            }
-        }
-
-        [Fact]
-        public void InitializeTest_NoType_Test()
-        {
-            using (var cmd = Execute.Command(DatabaseConfigurationContext.DefaultConnectionString))
-            {
-                cmd.CommandText = SingleStatment;
-                cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader()))
-                {
-
-                }
-            }
-        }
-
-        [Fact]
         public void ReadDynamic_Test()
         {
             dynamic myObj = null;
@@ -251,32 +180,6 @@ namespace Destrier.Test.Postgres
             Assert.NotEmpty(testObjects);
         }
 
-
-        [Fact]
-        public void Execute_StoredProcedureReader_Test()
-        {
-            var hasRows = false;
-            Execute.StoredProcedureReader("GetTestObjects_prc", (dr) =>
-            {
-                hasRows = dr.Read();
-            });
-
-            Assert.True(hasRows);
-        }
-
-        [Fact]
-        public void Execute_StoredProcedureReader_WithParameter_Test()
-        {
-            var objects = new List<TestObject>();
-            Execute.StoredProcedureReader("GetTestObjects_prc", (dr) =>
-            {
-                objects = dr.ReadList<TestObject>();
-            }, parameters: new { limit = 100 });
-
-            Assert.NotEmpty(objects);
-            Assert.True(objects.Count == 100);
-        }
-
         [Fact]
         public void Execute_NonQuery_Test()
         {
@@ -326,14 +229,6 @@ namespace Destrier.Test.Postgres
 
             Assert.NotNull(newName);
             Assert.NotEmpty(newName);
-        }
-
-        [Fact]
-        public void NoLock_Query_Test()
-        {
-            var ids = Database.All<Ids>();
-            Assert.NotNull(ids);
-            Assert.False(ids.Last().Id == default(int));
         }
     }
 }
