@@ -78,7 +78,8 @@ namespace Destrier.Test.Postgres
         [Fact]
         public void ChildCollections_IncludeByName()
         {
-            var books = new Query<Book>().Include("Chapters.Pages").Execute();
+            var query = new Query<Book>().Include("Chapters.Pages");
+            var books = query.Execute();
 
             Assert.NotNull(books);
             Assert.NotEmpty(books);
@@ -94,7 +95,8 @@ namespace Destrier.Test.Postgres
         [Fact]
         public void ChildCollections_IncludeAll()
         {
-            var books = new Query<Book>().IncludeAll().Execute();
+            var query = new Query<Book>().IncludeAll();
+            var books = query.Execute();
 
             Assert.NotNull(books);
             Assert.NotEmpty(books);
