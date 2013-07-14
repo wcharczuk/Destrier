@@ -24,7 +24,7 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var metaProvider = CommandBuilderFactory.GetSqlDialect(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -40,7 +40,7 @@ namespace Destrier
                     }
                 }
 
-                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("{0}", metaProvider.WrapName(columnName, isTableAlias:false)))));
+                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("{0}", sqlDialectider.WrapName(columnName, isGeneratedAlias:false)))));
                 command.Append(") VALUES (");
 
                 command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
@@ -57,7 +57,7 @@ namespace Destrier
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
                     
-                    command.Append(metaProvider.GenerateSelectLastId());
+                    command.Append(sqlDialectider.GenerateSelectLastId);
                     cmd.CommandText = command.ToString();
 
                     object o = cmd.ExecuteScalar();
@@ -93,7 +93,7 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var metaProvider = CommandBuilderFactory.GetSqlDialect(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -109,7 +109,7 @@ namespace Destrier
                     if (!cm.ColumnAttribute.IsForReadOnly)
                         variables.Add(cm.Name);
 
-                command.Append(string.Join(", ", variables.Select(variableName => String.Format("{0} = @{1}", metaProvider.WrapName(variableName, isTableAlias: false), variableName))));
+                command.Append(string.Join(", ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 command.Append(" WHERE ");
 
@@ -118,7 +118,7 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", metaProvider.WrapName(variableName, isTableAlias: false), variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 //parameters
                 foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
@@ -149,7 +149,7 @@ namespace Destrier
             
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var metaProvider = CommandBuilderFactory.GetSqlDialect(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -160,7 +160,7 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", metaProvider.WrapName(variableName, isTableAlias: false), variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                 {
@@ -180,7 +180,7 @@ namespace Destrier
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var metaProvider = CommandBuilderFactory.GetSqlDialect(myObjectType);
+            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -193,7 +193,7 @@ namespace Destrier
                     var parameters = new Dictionary<String, object>();
                     var visitor = new SqlExpressionVisitor<T>(command, parameters);
                     var body = expression.Body;
-                    visitor.Dialect = metaProvider;
+                    visitor.Dialect = sqlDialectider;
                     visitor.Visit(body);
                     Execute.Utility.AddParametersToCommand(parameters, cmd, connectionName);
                 }

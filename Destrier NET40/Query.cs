@@ -138,7 +138,7 @@ namespace Destrier
         /// <returns>An enumerable</returns>
         public IEnumerable<T> StreamResults()
         {
-            if (_builder != null && _builder.ChildCollections.Any())
+            if (_builder != null && _builder.HasChildCollections)
                 return _slowPipeline();
             else
                 return _fastPipeline();
@@ -229,12 +229,15 @@ namespace Destrier
         private IEnumerable<T> _fastPipeline()
         {
             var connectionName = Model.ConnectionName(_t);
-            using (var cmd = Destrier.Execute.Command(Model.ConnectionString(_t)))
+            var dialect = _builder != null ? _builder.Dialect : SqlDialectVariantFactory.GetSqlDialect(connectionName);
+            var shouldStandardizeCasing = dialect.AltersOutputCasing && this.StandardizeCasing;
+            
+            using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
                 Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: this.StandardizeCasing))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: shouldStandardizeCasing))
                 {
                     while (dr.Read())
                     {
@@ -256,7 +259,7 @@ namespace Destrier
         }
 
         private String _queryBody = null;
-        private String QueryBody
+        public String QueryBody
         {
             get
             {

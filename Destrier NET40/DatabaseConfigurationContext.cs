@@ -80,10 +80,27 @@ namespace Destrier
         /// </summary>
         public static String DefaultSchemaName { get; set; }
 
+        private static String _defaultConnectionName = null;
         /// <summary>
         /// This is the default connection 'name' to use when there is no connection name specified.
         /// </summary>
-        public static String DefaultConnectionName { get; set; }
+        public static String DefaultConnectionName
+        {
+            get
+            {
+                if (_defaultConnectionName != null)
+                    return _defaultConnectionName;
+
+                if (ConnectionStrings.Count == 1)
+                    return ConnectionStrings.First().Key;
+
+                return null;
+            }
+            set
+            {
+                _defaultConnectionName = value;
+            }
+        }
 
         /// <summary>
         /// The corresponding connection string associated with the DefaultConnectionName
