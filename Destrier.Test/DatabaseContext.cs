@@ -43,9 +43,6 @@ namespace Destrier.Test
         }
     }
 
-    /// <summary>
-    /// This context uses MSSQL specific features and is not recommended for PSQL testing.
-    /// </summary>
     public class TestObjectContext : DatabaseContext, IDisposable
     {
         public TestObjectContext() : base() 

@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier NET45", "Destrier 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostgresTestApp", "PostgresTestApp\PostgresTestApp.csproj", "{DEE2673A-7D45-4697-A8CD-A7CAC680BE23}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Test.Postgres", "Destrier.Test.Postgres\Destrier.Test.Postgres.csproj", "{D6C77B83-DD3F-4232-B87A-F888C80D2D30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,10 @@ Global
 		{DEE2673A-7D45-4697-A8CD-A7CAC680BE23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEE2673A-7D45-4697-A8CD-A7CAC680BE23}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEE2673A-7D45-4697-A8CD-A7CAC680BE23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6C77B83-DD3F-4232-B87A-F888C80D2D30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6C77B83-DD3F-4232-B87A-F888C80D2D30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6C77B83-DD3F-4232-B87A-F888C80D2D30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6C77B83-DD3F-4232-B87A-F888C80D2D30}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

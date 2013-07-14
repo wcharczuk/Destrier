@@ -15,6 +15,8 @@ namespace Destrier
         string WrapName(string name, Boolean isTableAlias);
         string TempTablePrefix(string tableName);
         string NOLOCK();
+        string Like();
+        string StringConcat();
     }
 
     public class CommandBuilderFactory
@@ -238,7 +240,7 @@ namespace Destrier
         #endregion
 
         #region Update Publics
-        public void AddSet<F>(Expression<Func<T, F>> expression, Object value)
+        public virtual void AddSet<F>(Expression<Func<T, F>> expression, Object value)
         {
             if (expression == null)
                 throw new ArgumentNullException("expression");
@@ -517,6 +519,8 @@ namespace Destrier
         public abstract String WrapName(String name, Boolean isTableAlias);
         public abstract String TempTablePrefix(String tableName);
         public abstract String NOLOCK();
+        public abstract String Like();
+        public abstract String StringConcat();
     }
 
     public class SqlServerCommandBuilder<T> : CommandBuilder<T>
@@ -546,6 +550,16 @@ namespace Destrier
         public override string NOLOCK()
         {
             return "(NOLOCK)";
+        }
+
+        public override String Like()
+        {
+            return "Like";
+        }
+
+        public override String StringConcat()
+        {
+            return "+";
         }
 
         public override String GenerateSelect()
@@ -683,7 +697,8 @@ namespace Destrier
         
         public override string GenerateSwitchDatabase(string databaseName)
         {
-            return String.Format("USE {0};", databaseName);
+            return string.Empty;
+            //return String.Format("USE {0};", databaseName);
         }
 
         public override string GenerateSelectLastId()
@@ -707,6 +722,36 @@ namespace Destrier
         public override string NOLOCK()
         {
             return String.Empty;
+        }
+
+        public override String Like()
+        {
+            return "ILIKE";
+        }
+
+        public override String StringConcat()
+        {
+            return "||";
+        }
+
+        public override String GenerateUpdate()
+        {
+            Command = new StringBuilder();
+            Command.Append("UPDATE\n");
+            Command.AppendFormat("\t{0} AS {1}", WrapName(this.FullyQualifiedTableName, isTableAlias: false), WrapName(this.TableAlias, isTableAlias:true));
+            Command.Append("\nSET\n");
+
+            Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
+            if (_whereClause != null)
+            {
+                Command.Append("\nWHERE\n");
+
+                SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
+                visitor.Dialect = this;
+                visitor.Visit(_whereClause);
+            }
+
+            return Command.ToString();
         }
 
         public override string GenerateSelect()
@@ -743,7 +788,7 @@ namespace Destrier
                     if(primaryKey != null)
                     {
                         var parameterName = System.Guid.NewGuid().ToString("N");
-                        Command.AppendLine(String.Format("\n\tAND {0}.{1} = @{2}", WrapName(primaryKey.TableAlias, isTableAlias: true), WrapName(primaryKey.FullyQualifiedName, isTableAlias: true), parameterName));
+                        Command.AppendLine(String.Format("\n\tAND {0}.{1} = @{2}", WrapName(primaryKey.TableAlias, isTableAlias: true), primaryKey.FullyQualifiedName, parameterName));
                         Parameters.Add(parameterName, ((Object)_whereParameters).DBNullCoalese());
                     }
                     else
@@ -760,7 +805,7 @@ namespace Destrier
                             var member = Members[kvp.Key];
                             var paramName = System.Guid.NewGuid();
                             Parameters.Add(paramName.ToString("N"), kvp.Value);
-                            Command.AppendFormat("\n\tAND {0}.{1} = @{2}", WrapName(member.TableAlias, isTableAlias: true), WrapName(member.Name, isTableAlias: false), paramName.ToString("N"));
+                            Command.AppendFormat("\n\tAND {0}.{1} = @{2}", WrapName(member.TableAlias, isTableAlias: true), member.Name, paramName.ToString("N"));
                         }
                         else
                         {
@@ -784,7 +829,7 @@ namespace Destrier
             }
             if(Offset != null)
             {
-                Command.AppendFormat("\nOFFSET {0}", Limit.Value);
+                Command.AppendFormat("\nOFFSET {0}", Offset.Value);
             }
             Command.Append(";");
 

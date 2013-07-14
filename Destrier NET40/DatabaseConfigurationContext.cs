@@ -167,3 +167,6 @@ namespace Destrier
         }
     }
 }
+
+//We need to add the following provider somewhere.
+//<add name="Npgsql Data Provider" invariant="Npgsql" support="FF" description=".Net Framework Data Provider for Postgresql Server" type="Npgsql.NpgsqlFactory, Npgsql" />

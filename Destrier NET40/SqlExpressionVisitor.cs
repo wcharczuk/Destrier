@@ -237,6 +237,10 @@ namespace Destrier
             {
                 var memberExp = m.Object as MemberExpression;
                 var rootType = ReflectionCache.RootTypeForExpression(memberExp);
+
+                var like = Dialect != null ? Dialect.Like() : "LIKE";
+                var concat = Dialect != null ? Dialect.StringConcat() : " + ";
+
                 if (rootType != null && rootType.Equals(this.Type))
                 {
                     if (m.Method.DeclaringType == typeof(string))
@@ -246,23 +250,23 @@ namespace Destrier
                             case "StartsWith":
                                 Buffer.Append("(");
                                 this.Visit(m.Object);
-                                Buffer.Append(" LIKE ");
+                                Buffer.Append(String.Format(" {0} ", like));
                                 this.Visit(m.Arguments[0]);
-                                Buffer.Append(" + '%')");
+                                Buffer.Append(String.Format(" {0} '%')", concat));
                                 return;
                             case "EndsWith":
                                 Buffer.Append("(");
                                 this.Visit(m.Object);
-                                Buffer.Append(" LIKE '%' + ");
+                                Buffer.Append(String.Format(" {0} '%' {1} ", like, concat));
                                 this.Visit(m.Arguments[0]);
                                 Buffer.Append(")");
                                 return;
                             case "Contains":
                                 Buffer.Append("(");
                                 this.Visit(m.Object);
-                                Buffer.Append(" LIKE '%' + ");
+                                Buffer.Append(String.Format(" {0} '%' {1} ", like, concat));
                                 this.Visit(m.Arguments[0]);
-                                Buffer.Append(" + '%')");
+                                Buffer.Append(String.Format(" {0} '%')", concat));
                                 return;
                             case "ToUpper":
                                 Buffer.Append("UPPER(");
@@ -538,7 +542,7 @@ namespace Destrier
             }
             else
             {
-                Buffer.AppendFormat("[{0}]", WrapName(column.Name));
+                Buffer.AppendFormat("{0}", WrapName(column.Name));
             }
         }
 
@@ -554,7 +558,7 @@ namespace Destrier
             if (this.Dialect != null)
                 return this.Dialect.WrapName(name, isTableAlias);
 
-            return name;
+            return String.Format("[{0}]", name);
         }
 
         private object Evaluate(Expression e)

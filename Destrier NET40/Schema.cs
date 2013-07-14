@@ -32,6 +32,7 @@ select name from sys.tables where type_desc like 'USER_TABLE'
         {
             List<ColumnAttribute> set = null; //new HashSet<String>();
             String query = null;
+
             if (!String.IsNullOrEmpty(databaseName))
             {
                 query = String.Format("\nuse {0}", databaseName);
