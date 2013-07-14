@@ -88,7 +88,7 @@ namespace Destrier.Test.Postgres
         public override void EnsureInitDataStore()
         {
             Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
-            var initDbScript = @"
+			var initDbScript = @"
 CREATE TABLE TestObjects
 ( 
     id serial primary key, 

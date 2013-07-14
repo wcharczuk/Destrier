@@ -11,6 +11,7 @@ using Destrier;
 
 namespace ORMComparison
 {
+	/*
     public class MockObjectContext : DbContext
     {
         public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
@@ -47,7 +48,7 @@ namespace ORMComparison
             this.Property(t => t.NullableGuid);
             this.ToTable("TestObjects");
         }
-    }
+    }*/
 
     public enum TestObjectTypeId 
     {
@@ -111,8 +112,7 @@ namespace ORMComparison
     }
 
     public class Program
-    {
-		public const String ConnectionString = "Data Source=localhost;Initial Catalog=tempdb;Integrated Security=True";
+	{
         public const int TRIALS = 100;
         public const int LIMIT = 5000;
 
@@ -138,13 +138,9 @@ namespace ORMComparison
 
         static void Main(string[] args)
         {
-            Destrier.DatabaseConfigurationContext.ConnectionStrings.Add("default", ConnectionString);
-            Destrier.DatabaseConfigurationContext.DefaultConnectionName = "default";
-            Destrier.DatabaseConfigurationContext.DefaultDatabaseName = "tempdb";
+            var testObjectContext = new Destrier.Test.Postgres.TestObjectContext();
 
-            var testObjectContext = new Destrier.Test.TestObjectContext();
-
-            string QUERY = String.Format(@"SELECT TOP {0} 
+            string QUERY = String.Format(@"SELECT
 Id
 , Name
 , NullName
@@ -156,23 +152,25 @@ Id
 , Type
 , NullableType
 , SingleChar
-, [Single]
-, [Double]
-, [NullableDouble]
-, [Guid]
-, [NullableGuid] 
-from TestObjects (nolock)", LIMIT);
+, Single
+, Double
+, NullableDouble
+, Guid
+, NullableGuid
+from TestObjects LIMIT {0};", LIMIT);
 
             Func<List<TestObject>> rawAction = () =>
             {
+				var provider = Destrier.DatabaseConfigurationContext.DefaultProviderFactory;
+
                 var list = new List<TestObject>();
-                using (var conn = new System.Data.SqlClient.SqlConnection(ConnectionString))
+				using (var conn = provider.CreateConnection())
                 {
+					conn.ConnectionString = DatabaseConfigurationContext.DefaultConnectionString;
                     conn.Open();
-                    using (var cmd = new SqlCommand())
+                    using (var cmd = provider.CreateCommand())
                     {
                         cmd.Connection = conn;
-
                         cmd.CommandText = QUERY;
                         cmd.CommandType = System.Data.CommandType.Text;
 
@@ -193,6 +191,7 @@ from TestObjects (nolock)", LIMIT);
                 return list;
             };
 
+			/*
             Func<List<TestObject>> ormLiteAction = () =>
             {
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
@@ -200,8 +199,9 @@ from TestObjects (nolock)", LIMIT);
                 {
                     return ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
                 }
-            };
+            };*/
 
+			/*
             Func<List<TestObject>> entityFrameworkAction = () =>
             {
                 using (var db = new MockObjectContext())
@@ -210,7 +210,7 @@ from TestObjects (nolock)", LIMIT);
                     var efResults = query.ToList();
                     return efResults;
                 }
-            };
+            };*/
 
             Func<List<TestObject>> destrierAction = () =>
             {
@@ -222,6 +222,7 @@ from TestObjects (nolock)", LIMIT);
                 return new Destrier.Query<TestObject>(QUERY).StreamResults().ToList();
             };
 
+			/*
             Func<List<TestObject>> petaPocoAction = () =>
                 {
                     var db = new PetaPoco.Database(ConnectionString, "System.Data.SqlClient");
@@ -235,7 +236,7 @@ from TestObjects (nolock)", LIMIT);
                     conn.Open();
                     return conn.Query<TestObject>(QUERY).ToList();
                 }
-            };
+            };*/
 
             //-------------------------------------------------------------------------------------------
             //-------------------------------------------------------------------------------------------
@@ -257,10 +258,10 @@ from TestObjects (nolock)", LIMIT);
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
                 { "Destrier (Raw Query)", destrierRawQueryAction },
-                { "PetaPoco", petaPocoAction },
-                { "ServiceStack ORMLite", ormLiteAction },
-                { "Dapper", dapperAction },
-                { "EntityFramework", entityFrameworkAction }
+                //{ "PetaPoco", petaPocoAction },
+                //{ "ServiceStack ORMLite", ormLiteAction },
+                //{ "Dapper", dapperAction },
+                //{ "EntityFramework", entityFrameworkAction }
             };
 
             var results = new List<Int64>();

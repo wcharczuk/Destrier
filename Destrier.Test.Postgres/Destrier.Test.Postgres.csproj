@@ -11,6 +11,8 @@
     <AssemblyName>Destrier.Test.Postgres</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <ProductVersion>12.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -60,12 +62,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Destrier NET45\Destrier NET45.csproj">
-      <Project>{8162c35e-0c7d-40a9-b25d-fe560eebd7c5}</Project>
+      <Project>{8162C35E-0C7D-40A9-B25D-FE560EEBD7C5}</Project>
       <Name>Destrier NET45</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

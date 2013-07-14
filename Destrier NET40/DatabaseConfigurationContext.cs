@@ -65,7 +65,7 @@ namespace Destrier
             ConnectionStrings.AddOrUpdate(connectionName, connectionString, (name, old) => connectionString);
             if (providerName != null)
             {
-                var factory = DbProviderFactories.GetFactory(providerName);
+				var factory = DatabaseConfigurationContext.GetProviderFactory(providerName);
                 DbProviders.AddOrUpdate(connectionName, factory, (name, oldFactory) => factory);
             }
         }
@@ -135,18 +135,10 @@ namespace Destrier
                 for(int index = 0; index < ConfigurationManager.ConnectionStrings.Count; index++)
                 {
                     var connString = ConfigurationManager.ConnectionStrings[index];
-                    ConnectionStrings.AddOrUpdate(connString.Name, connString.ConnectionString, (oldString, newString) => newString);
-                    DbProviderFactory provider = null;
 
-                    if (String.IsNullOrEmpty(connString.ProviderName)) //assume mssql
-                    {
-                        provider = DbProviderFactories.GetFactory("System.Data.SqlClient");
-                        
-                    }
-                    else
-                    {
-                        provider = DbProviderFactories.GetFactory(connString.ProviderName);
-                    }
+                    ConnectionStrings.AddOrUpdate(connString.Name, connString.ConnectionString, (oldString, newString) => newString);
+
+					DbProviderFactory provider = GetProviderFactory(connString.ProviderName);
 
                     DbProviders.AddOrUpdate(connString.Name, provider, (name, oldProvider) => provider);
                 }
@@ -165,6 +157,19 @@ namespace Destrier
 
             return provider ?? DefaultProviderFactory;
         }
+
+		public static DbProviderFactory GetProviderFactory(String invariantName)
+		{
+			if(invariantName.Equals("pg", StringComparison.InvariantCultureIgnoreCase) 
+			   || invariantName.Equals("pgsql", StringComparison.InvariantCultureIgnoreCase)
+			   || invariantName.Equals("npgsql", StringComparison.InvariantCultureIgnoreCase) 
+			   || invariantName.Equals("psql", StringComparison.InvariantCultureIgnoreCase))
+				return Npgsql.NpgsqlFactory.Instance;
+			else if(!String.IsNullOrEmpty(invariantName))
+				return DbProviderFactories.GetFactory(invariantName);
+			else
+				return DbProviderFactories.GetFactory("System.Data.SqlClient");
+		}
     }
 }
 
