@@ -80,7 +80,7 @@ namespace Destrier
             return Command(connectionString, provider);
         }
 
-        public static System.Data.Common.DbCommand Command(String connectionString = null, DbProviderFactory providerFactory = null)
+        public static System.Data.Common.DbCommand Command(String connectionString, DbProviderFactory providerFactory = null)
         {
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             providerFactory = providerFactory ?? DatabaseConfigurationContext.DefaultProviderFactory;
