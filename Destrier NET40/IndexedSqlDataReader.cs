@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Dynamic;
 using System.Linq;
@@ -33,11 +34,55 @@ namespace Destrier
             InitResultSet();
         }
 
+        private void InitResultSet()
+        {
+            //these are standard regardless of if we're using this reader to get a destrier object.
+            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
+            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+
+            if (this.CurrentOutputType != null)
+            {
+                this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
+                this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
+
+                ColumnMemberLookup = this.StandardizeCasing ? ReflectionCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+
+                var cm_index = new List<ColumnMember>();
+                //column member index map gen
+                foreach (var name in ColumnIndexMap)
+                {
+                    ColumnMember member = null;
+                    if (ColumnMemberLookup.TryGetValue(name, out member))
+                    {
+                        cm_index.Add(member);
+                    }
+                }
+                ColumnMemberIndexMap = cm_index.ToArray();
+
+                if (!HasReferencedObjectMembers)
+                {
+                    _setInstanceValuesFn = ReflectionCache.GetSetInstanceValuesDelegate(this);
+                }
+            }
+        }
+
+        private ReflectionCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
 		private IDataReader _dr = null;
 		private Int32 _resultSetIndex = 0;
 
+        /// <summary>
+        /// Whether or not to standardize (ToLower) the casing of column names and member names.
+        /// </summary>
         public Boolean StandardizeCasing { get; set; }
+
+        /// <summary>
+        /// The type to map to the current result set. Is optional.
+        /// </summary>
 		public Type CurrentOutputType { get; set; }
+
+        /// <summary>
+        /// The current index of the result set.
+        /// </summary>
         public Int32 ResultSetIndex { get { return _resultSetIndex; } private set { _resultSetIndex = value; } }
 
         /// <summary>
@@ -69,40 +114,6 @@ namespace Destrier
         /// This is the mapping of array indices to column names.
         /// </summary>
         public string[] ColumnIndexMap { get; set; }
-
-        private ReflectionCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
-
-        private void InitResultSet()
-        {
-            //these are standard regardless of if we're using this reader to get a destrier object.
-            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
-
-            if (this.CurrentOutputType != null)
-            {
-                this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
-                this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
-
-                ColumnMemberLookup = this.StandardizeCasing ? ReflectionCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
-
-                var cm_index = new List<ColumnMember>();
-                //column member index map gen
-                foreach (var name in ColumnIndexMap)
-                {
-                    ColumnMember member = null;
-                    if(ColumnMemberLookup.TryGetValue(name, out member))
-                    {
-                        cm_index.Add(member);
-                    }
-                }
-                ColumnMemberIndexMap = cm_index.ToArray();
-
-                if (!HasReferencedObjectMembers)
-                {
-                    _setInstanceValuesFn = ReflectionCache.GetSetInstanceValuesDelegate(this);
-                }
-            }
-        }
 
         /// <summary>
         /// Returns true if the result set contains the columnName
@@ -332,11 +343,6 @@ namespace Destrier
                 return _dr[i];
             }
         }
-
-        public static implicit operator IndexedSqlDataReader(SqlDataReader dr)
-        {
-            return new IndexedSqlDataReader(dr);
-        }
         #endregion
 
         #region Get
@@ -401,6 +407,10 @@ namespace Destrier
 
         #endregion
 
+        /// <summary>
+        /// Uses the generated dynamic method to populate the instance of the <c>CurrentOutputType</c>
+        /// </summary>
+        /// <param name="instance"></param>
         public void SetInstanceValues(object instance)
         {
             _setInstanceValuesFn(this, instance);
@@ -678,6 +688,16 @@ namespace Destrier
         public override int GetHashCode()
         {
             throw new InvalidOperationException("Don't try and cache these in a dictionary!");            
+        }
+
+        public static implicit operator IndexedSqlDataReader(SqlDataReader dr)
+        {
+            return new IndexedSqlDataReader(dr);
+        }
+
+        public static implicit operator IndexedSqlDataReader(DbDataReader dr)
+        {
+            return new IndexedSqlDataReader(dr);
         }
 
         void IDisposable.Dispose()

@@ -238,8 +238,8 @@ namespace Destrier
                 var memberExp = m.Object as MemberExpression;
                 var rootType = ReflectionCache.RootTypeForExpression(memberExp);
 
-                var like = Dialect != null ? Dialect.Like() : "LIKE";
-                var concat = Dialect != null ? Dialect.StringConcat() : " + ";
+                var like = Dialect != null ? Dialect.Like : "LIKE";
+                var concat = Dialect != null ? Dialect.StringConcatOperator : " + ";
 
                 if (rootType != null && rootType.Equals(this.Type))
                 {

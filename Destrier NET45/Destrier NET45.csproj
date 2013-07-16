@@ -179,6 +179,9 @@
     <Compile Include="..\Destrier NET40\IDataReaderExtensions.cs">
       <Link>IDataReaderExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\Destrier NET40\SqlDialectVariant.cs">
+      <Link>SqlDialectVariant.cs</Link>
+    </Compile>
     <Compile Include="..\Destrier NET40\SqlExpressionVisitor.cs">
       <Link>SqlExpressionVisitor.cs</Link>
     </Compile>

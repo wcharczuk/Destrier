@@ -83,6 +83,7 @@
     <Compile Include="Database.cs" />
     <Compile Include="ColumnMissingException.cs" />
     <Compile Include="SchemaMetadataException.cs" />
+    <Compile Include="SqlDialectVariant.cs" />
     <Compile Include="SqlExpressionVisitor.cs" />
     <Compile Include="TableAttribute.cs" />
     <Compile Include="DatabaseConfigurationContext.cs" />

@@ -11,45 +11,6 @@ using Destrier;
 
 namespace ORMComparison
 {
-	/*
-    public class MockObjectContext : DbContext
-    {
-        public MockObjectContext() : base("Data Source=.;Initial Catalog=tempdb;Integrated Security=True") { }
-
-        public DbSet<TestObject> MockObjects { get; set; }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Configurations.Add(new TestObjectMap());
-        }
-    }
-
-    public class TestObjectMap : System.Data.Entity.ModelConfiguration.EntityTypeConfiguration<TestObject>
-    {
-        public TestObjectMap()
-        {
-            this.HasKey(t => t.Id);
-            this.Property(t => t.Id);
-            this.Property(t => t.Name);
-            this.Property(t => t.NullName);
-            this.Property(t => t.Active);
-            this.Property(t => t.Created);
-            this.Property(t => t.Modified);
-            this.Property(t => t.ReferencedObjectId);
-            this.Property(t => t.NullableId);
-            //this.Property(t => t.Type);
-            //this.Property(t => t.NullableType);
-            this.Property(t => t.SingleChar);
-            //this.Property(t => t.Single);
-            this.Property(t => t.Double);
-            this.Property(t => t.NullableDouble);
-            this.Property(t => t.Guid);
-            this.Property(t => t.NullableGuid);
-            this.ToTable("TestObjects");
-        }
-    }*/
-
     public enum TestObjectTypeId 
     {
         One = 1,
@@ -113,51 +74,15 @@ namespace ORMComparison
 
     public class Program
 	{
-		public const int TRIALS = 10;
+		public const int TRIALS = 100;
 		public const int LIMIT = 5000;
-
-        static void SetValuesForObject(IDataReader dr, object instance)
-        {
-            ((TestObject)instance).Id = dr.GetInt32(0);
-            ((TestObject)instance).Name = dr.GetString(1);
-            ((TestObject)instance).Name = !dr.IsDBNull(2) ? dr.GetString(2) : null;
-            ((TestObject)instance).Active = dr.GetBoolean(3);
-            ((TestObject)instance).Created = dr.GetDateTime(4);
-            ((TestObject)instance).Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
-            ((TestObject)instance).NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
-            ((TestObject)instance).ReferencedObjectId = !dr.IsDBNull(7) ? dr.GetInt32(7) : default(Int32);
-            ((TestObject)instance).Type = (TestObjectTypeId)dr.GetInt32(8);
-            ((TestObject)instance).NullableType = !dr.IsDBNull(9) ? (Int32?)dr.GetInt32(9) : null;
-            ((TestObject)instance).SingleChar = dr.GetString(10);
-            ((TestObject)instance).Single = (Single)dr.GetDouble(11);
-            ((TestObject)instance).Double = !dr.IsDBNull(12) ? dr.GetDouble(12) : default(Double);
-            ((TestObject)instance).NullableDouble = !dr.IsDBNull(13) ? (Double?)dr.GetDouble(13) : null;
-            ((TestObject)instance).Guid = !dr.IsDBNull(14) ? dr.GetGuid(14) : default(Guid);
-            ((TestObject)instance).NullableGuid = !dr.IsDBNull(15) ? (Guid?)dr.GetGuid(15) : null;
-        }
 
         static void Main(string[] args)
         {
             var testObjectContext = new Destrier.Test.Postgres.TestObjectContext();
 
-            string QUERY = String.Format(@"SELECT
-Id
-, Name
-, NullName
-, Active
-, Created
-, Modified
-, NullableId
-, ReferencedObjectId
-, Type
-, NullableType
-, SingleChar
-, Single
-, Double
-, NullableDouble
-, Guid
-, NullableGuid
-from TestObjects LIMIT {0};", LIMIT);
+            string QUERY = new Query<TestObject>().Limit(LIMIT).QueryBody;
+            string CONNECTION_STRING = Destrier.DatabaseConfigurationContext.DefaultConnectionString;
 
             Func<List<TestObject>> rawAction = () =>
             {
@@ -181,9 +106,9 @@ from TestObjects LIMIT {0};", LIMIT);
                                 var testObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
                                
 								testObject.Id = dr.GetInt32(0);
-								testObject.Name = dr.GetString(1);
-								testObject.Name = !dr.IsDBNull(2) ? dr.GetString(2) : null;
-								testObject.Active = dr.GetBoolean(3);
+                                testObject.Active = dr.GetBoolean(1);
+                                testObject.Name = dr.GetString(2);
+								testObject.NullName = !dr.IsDBNull(3) ? dr.GetString(3) : null;
 								testObject.Created = dr.GetDateTime(4);
 								testObject.Modified = !dr.IsDBNull(5) ? (DateTime?)dr.GetDateTime(5) : null;
 								testObject.NullableId = !dr.IsDBNull(6) ? (int?)dr.GetInt32(6) : null;
@@ -205,26 +130,15 @@ from TestObjects LIMIT {0};", LIMIT);
                 return list;
             };
 
-			/*
-            Func<List<TestObject>> ormLiteAction = () =>
+            /*Func<List<TestObject>> ormLiteAction = () =>
             {
-                var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(ConnectionString, ServiceStack.OrmLite.SqlServerDialect.Provider);
+                var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(CONNECTION_STRING, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
                     return ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
                 }
-            };*/
+            }; */
 
-			/*
-            Func<List<TestObject>> entityFrameworkAction = () =>
-            {
-                using (var db = new MockObjectContext())
-                {
-                    var query = (from g in db.MockObjects select g).Take(LIMIT);
-                    var efResults = query.ToList();
-                    return efResults;
-                }
-            };*/
 
             Func<List<TestObject>> destrierAction = () =>
             {
@@ -242,15 +156,17 @@ from TestObjects LIMIT {0};", LIMIT);
                     var db = new PetaPoco.Database(ConnectionString, "System.Data.SqlClient");
                     return db.Query<TestObject>(QUERY).ToList();
                 };
+            */
 
             Func<List<TestObject>> dapperAction = () =>
             {
-                using (var conn = new SqlConnection(ConnectionString))
+                using (var conn = Destrier.DatabaseConfigurationContext.DefaultProviderFactory.CreateConnection())
                 {
+                    conn.ConnectionString = CONNECTION_STRING;
                     conn.Open();
                     return conn.Query<TestObject>(QUERY).ToList();
                 }
-            };*/
+            };
 
             //-------------------------------------------------------------------------------------------
             //-------------------------------------------------------------------------------------------
@@ -274,8 +190,7 @@ from TestObjects LIMIT {0};", LIMIT);
                 { "Destrier (Raw Query)", destrierRawQueryAction },
                 //{ "PetaPoco", petaPocoAction },
                 //{ "ServiceStack ORMLite", ormLiteAction },
-                //{ "Dapper", dapperAction },
-                //{ "EntityFramework", entityFrameworkAction }
+                { "Dapper", dapperAction },
             };
 
             var results = new List<Int64>();

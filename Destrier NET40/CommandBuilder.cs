@@ -8,17 +8,6 @@ using Destrier.Extensions;
 
 namespace Destrier
 {
-    public interface ISqlDialectVariant
-    {
-        string GenerateSelectLastId();
-        string GenerateSwitchDatabase(string databaseName);
-        string WrapName(string name, Boolean isTableAlias);
-        string TempTablePrefix(string tableName);
-        string NOLOCK();
-        string Like();
-        string StringConcat();
-    }
-
     public class CommandBuilderFactory
     {
         public static CommandBuilder<T> GetCommandBuilder<T>()
@@ -31,24 +20,15 @@ namespace Destrier
             else
                 return new SqlServerCommandBuilder<T>();
         }
-
-        public static ISqlDialectVariant GetSqlDialect(Type type)
-        {
-            var connectionName = Model.ConnectionName(type);
-            var provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
-
-            if (provider is Npgsql.NpgsqlFactory)
-                return ReflectionCache.GetNewObject(typeof(PostgresCommandBuilder<>).MakeGenericType(type)) as ISqlDialectVariant;
-            else
-                return ReflectionCache.GetNewObject(typeof(SqlServerCommandBuilder<>).MakeGenericType(type)) as ISqlDialectVariant;
-        }
     }
 
-    public abstract class CommandBuilder<T> : ISqlDialectVariant
+    public abstract class CommandBuilder<T>
     {
         public CommandBuilder()
         {
             _t = typeof(T);
+            AsRootMember = ReflectionCache.GetRootMemberForType(_t);
+            _d = SqlDialectVariantFactory.GetSqlDialect(_t);
             Initialize();
         }
 
@@ -65,11 +45,13 @@ namespace Destrier
             SetupTableAliases(this.Members.Values, _tableAliases);
         }
 
-        protected Type _t { get; set; }
+        protected Type _t = null;
+        protected ISqlDialectVariant _d = null;
         protected Dictionary<String, String> _tableAliases = new Dictionary<String, String>();
-        
-        public RootMember AsRootMember { get { return ReflectionCache.GetRootMemberForType(_t); } }
+
+        public RootMember AsRootMember { get; set; }
         public Dictionary<String, Member> Members { get; set; }
+        public ISqlDialectVariant Dialect { get { return _d; } }
 
         public String FullyQualifiedTableName { get; private set; }
         public String OutputTableName { get { return this.AsRootMember.OutputTableName; } }
@@ -85,11 +67,12 @@ namespace Destrier
         #region Select
         public Int32? Limit { get; set; }
         public Int32? Offset { get; set; }
-        protected List<OrderByElement> _orderByClause = null;
 
+        protected List<OrderByElement> _orderByClause = null;
         protected List<ChildCollectionMember> _includedChildCollections = new List<ChildCollectionMember>();
         protected List<Member> _outputMembers = new List<Member>();
 
+        public Boolean HasChildCollections { get { return _includedChildCollections.Any(); } }
         public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
         
         public class OrderByElement
@@ -293,12 +276,12 @@ namespace Destrier
             else if (cm.Root != null)
                 parentAlias = cm.Root.TableAlias;
 
-            return String.Format("{0}.{1}", WrapName(parentAlias, isTableAlias: true), WrapName(cm.ParentPrimaryKeyColumnName, isTableAlias: isInChildSection));
+            return String.Format("{0}.{1}", _d.WrapName(parentAlias, isGeneratedAlias: true), _d.WrapName(cm.ParentPrimaryKeyColumnName, isGeneratedAlias: isInChildSection));
         }
 
         public String AliasedColumnName(ChildCollectionMember cm)
         {
-            return String.Format("{0}.{1}", WrapName(cm.TableAlias, isTableAlias: true), WrapName(cm.ReferencedColumnName, isTableAlias: false));
+            return String.Format("{0}.{1}", _d.WrapName(cm.TableAlias, isGeneratedAlias: true), _d.WrapName(cm.ReferencedColumnName, isGeneratedAlias: false));
         }
 
         public String AliasedParentColumnName(ReferencedObjectMember m)
@@ -312,7 +295,7 @@ namespace Destrier
             {
                 parentAlias = m.Root.TableAlias;
             }
-            return String.Format("{0}.{1}", WrapName(parentAlias, isTableAlias: true), WrapName(m.ReferencedColumnMember.Name, isTableAlias: false));
+            return String.Format("{0}.{1}", _d.WrapName(parentAlias, isGeneratedAlias: true), _d.WrapName(m.ReferencedColumnMember.Name, isGeneratedAlias: false));
         }
 
         public String AliasedColumnName(ReferencedObjectMember m)
@@ -323,7 +306,7 @@ namespace Destrier
             {
                 throw new Exception("No Primary Key to join on.");
             }
-            return String.Format("{0}.{1}", WrapName(m.TableAlias, isTableAlias: true), WrapName(pk.Name, isTableAlias: false));
+            return String.Format("{0}.{1}", _d.WrapName(m.TableAlias, isGeneratedAlias: true), _d.WrapName(pk.Name, isGeneratedAlias: false));
         }
 
         protected List<String> GetOutputColumns(IEnumerable<Member> members)
@@ -333,9 +316,9 @@ namespace Destrier
             foreach (var m in members)
             {
                 outputColumns.Add(String.Format("{0}.{1} as {2}"
-                    , WrapName(m.TableAlias, isTableAlias: true)
-                    , WrapName(m.Name, isTableAlias: false)
-                    , WrapName(m.FullyQualifiedName, isTableAlias: true)
+                    , _d.WrapName(m.TableAlias, isGeneratedAlias: true)
+                    , _d.WrapName(m.Name, isGeneratedAlias: false)
+                    , _d.WrapName(m.FullyQualifiedName, isGeneratedAlias: true)
                     ));
             }
             return outputColumns;
@@ -348,8 +331,8 @@ namespace Destrier
             foreach (var m in members.Select(m => m as ColumnMember).Where(cm => cm != null && cm.IsPrimaryKey && cm.Parent == null))
             {
                 outputColumns.Add(String.Format("{0}.{1} asc"
-                    , WrapName(m.TableAlias, isTableAlias: true)
-                    , WrapName(m.Name, isTableAlias: false)
+                    , _d.WrapName(m.TableAlias, isGeneratedAlias: true)
+                    , _d.WrapName(m.Name, isGeneratedAlias: false)
                     ));
             }
             return outputColumns;
@@ -358,8 +341,8 @@ namespace Destrier
         protected String GetOrderByClause()
         {
             var values = _orderByClause.Select(o => String.Format("{0}.{1} {2}"
-                , WrapName(((ColumnMember)o.Member).TableAlias, isTableAlias: true)
-                , WrapName(((ColumnMember)o.Member).Name, isTableAlias: false)
+                , _d.WrapName(((ColumnMember)o.Member).TableAlias, isGeneratedAlias: true)
+                , _d.WrapName(((ColumnMember)o.Member).Name, isGeneratedAlias: false)
                 , o.Ascending ? "ASC" : "DESC")
                 );
             return string.Join(",", values);
@@ -368,8 +351,8 @@ namespace Destrier
         protected String GetOuterOrderByClause()
         {
             var values = _orderByClause.Select(o => String.Format("[data].{1} {2}"
-                , WrapName(((ColumnMember)o.Member).TableAlias, isTableAlias: true)
-                , WrapName(((ColumnMember)o.Member).FullyQualifiedName, isTableAlias: true)
+                , _d.WrapName(((ColumnMember)o.Member).TableAlias, isGeneratedAlias: true)
+                , _d.WrapName(((ColumnMember)o.Member).FullyQualifiedName, isGeneratedAlias: true)
                 , o.Ascending ? "ASC" : "DESC"));
 
             return string.Join(",", values);
@@ -427,10 +410,10 @@ namespace Destrier
                     command.AppendFormat("\n\t{0} JOIN {1} {2} {5} on {3} = {4}",
                         rom.JoinType, //0
                         rom.FullyQualifiedTableName, //1
-                        WrapName(rom.TableAlias, isTableAlias: true), //2
+                        _d.WrapName(rom.TableAlias, isGeneratedAlias: true), //2
                         AliasedParentColumnName(rom),
                         AliasedColumnName(rom),
-                        rom.UseNoLock ? NOLOCK() : String.Empty
+                        rom.UseNoLock ? _d.NOLOCK : String.Empty
                     );
                 }
             }
@@ -453,7 +436,7 @@ namespace Destrier
 
                 if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
-                    Command.AppendFormat("\nINTO {0}", TempTablePrefix(cm.OutputTableName));
+                    Command.AppendFormat("\nINTO {0}", _d.TempTablePrefix(cm.OutputTableName));
                     tablesToDrop.Add(cm.OutputTableName);
                 }
 
@@ -461,22 +444,22 @@ namespace Destrier
 
                 var root = this.AsRootMember;
                 var parent = cm.Parent ?? root;
-                Command.AppendFormat("\n\t{0} {1}", TempTablePrefix(parent.OutputTableName ?? root.OutputTableName), WrapName(parent.TableAlias, isTableAlias: true));
+                Command.AppendFormat("\n\t{0} {1}", _d.TempTablePrefix(parent.OutputTableName ?? root.OutputTableName), _d.WrapName(parent.TableAlias, isGeneratedAlias: true));
 
                 Command.AppendFormat("\n\tINNER JOIN {1} {2} {5} ON {3} = {4}"
                     , cm.JoinType //0
                     , cm.FullyQualifiedTableName //1
-                    , WrapName(cm.TableAlias, isTableAlias: true) //2
+                    , _d.WrapName(cm.TableAlias, isGeneratedAlias: true) //2
                     , AliasedParentColumnName(cm, isInChildSection:true)
                     , AliasedColumnName(cm)
-                    , cm.UseNoLock ? NOLOCK() : String.Empty);
+                    , cm.UseNoLock ? _d.NOLOCK : String.Empty);
                 AddJoins(cm.CollectionType, subMembers, Command);
 
                 Command.Append(";");
 
                 if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
                 {
-                    Command.AppendFormat("\n\nSELECT * FROM {0};", TempTablePrefix(cm.OutputTableName));
+                    Command.AppendFormat("\n\nSELECT * FROM {0};", _d.TempTablePrefix(cm.OutputTableName));
                 }
             }
 
@@ -484,7 +467,7 @@ namespace Destrier
 
             foreach (var table in tablesToDrop)
             {
-                Command.AppendFormat("\nDROP TABLE {0};", TempTablePrefix(table));
+                Command.AppendFormat("\nDROP TABLE {0};", _d.TempTablePrefix(table));
             }
         }
 
@@ -496,72 +479,29 @@ namespace Destrier
         {
             Command = new StringBuilder();
             Command.Append("UPDATE\n");
-            Command.AppendFormat("\t{0}", WrapName(this.TableAlias, isTableAlias: true));
+            Command.AppendFormat("\t{0}", _d.WrapName(this.TableAlias, isGeneratedAlias: true));
             Command.Append("\nSET\n");
 
             Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
             Command.Append("\nFROM");
-            Command.AppendFormat("\n\t{0} {1}", this.FullyQualifiedTableName, WrapName(this.TableAlias, isTableAlias: true));
+            Command.AppendFormat("\n\t{0} {1}", this.FullyQualifiedTableName, _d.WrapName(this.TableAlias, isGeneratedAlias: true));
             if (_whereClause != null)
             {
                 Command.Append("\nWHERE\n");
 
                 SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
-                visitor.Dialect = this;
+                visitor.Dialect = _d;
                 visitor.Visit(_whereClause);
             }
 
             return Command.ToString();
         }
-
-        public abstract String GenerateSwitchDatabase(String databaseName);
-        public abstract String GenerateSelectLastId();
-        public abstract String WrapName(String name, Boolean isTableAlias);
-        public abstract String TempTablePrefix(String tableName);
-        public abstract String NOLOCK();
-        public abstract String Like();
-        public abstract String StringConcat();
     }
 
     public class SqlServerCommandBuilder<T> : CommandBuilder<T>
     {
         public SqlServerCommandBuilder() : base() {}
         
-        public override string GenerateSwitchDatabase(string databaseName)
-        {
-            return String.Format("USE {0};", databaseName);
-        }
-
-        public override string GenerateSelectLastId()
-        {
-            return "SELECT @@IDENTITY";
-        }
-
-        public override string WrapName(string name, Boolean isTableAlias)
-        {
-            return String.Format("[{0}]", name);
-        }
-
-        public override string TempTablePrefix(string tableName)
-        {
-            return String.Format("#{0}", tableName);
-        }
-
-        public override string NOLOCK()
-        {
-            return "(NOLOCK)";
-        }
-
-        public override String Like()
-        {
-            return "Like";
-        }
-
-        public override String StringConcat()
-        {
-            return "+";
-        }
-
         public override String GenerateSelect()
         {
             Command = new StringBuilder();
@@ -621,7 +561,7 @@ namespace Destrier
                 Command.Append("\nWHERE\n");
 
                 SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
-                visitor.Dialect = this;
+                visitor.Dialect = _d;
                 visitor.Visit(_whereClause);
             }
             else if (_whereParameters != null)
@@ -695,50 +635,11 @@ namespace Destrier
     {
         public PostgresCommandBuilder() : base() {}
         
-        public override string GenerateSwitchDatabase(string databaseName)
-        {
-            return string.Empty;
-            //return String.Format("USE {0};", databaseName);
-        }
-
-        public override string GenerateSelectLastId()
-        {
-            return "SELECT lastval();";
-        }
-
-        public override string WrapName(string name, Boolean isTableAlias)
-        {
-            if (isTableAlias)
-                return String.Format("\"{0}\"", name);
-            else
-                return name;
-        }
-
-        public override string TempTablePrefix(string tableName)
-        {
-            return String.Format("_{0}", tableName);
-        }
-
-        public override string NOLOCK()
-        {
-            return String.Empty;
-        }
-
-        public override String Like()
-        {
-            return "ILIKE";
-        }
-
-        public override String StringConcat()
-        {
-            return "||";
-        }
-
         public override String GenerateUpdate()
         {
             Command = new StringBuilder();
             Command.Append("UPDATE\n");
-            Command.AppendFormat("\t{0} AS {1}", WrapName(this.FullyQualifiedTableName, isTableAlias: false), WrapName(this.TableAlias, isTableAlias:true));
+            Command.AppendFormat("\t{0} AS {1}", _d.WrapName(this.FullyQualifiedTableName, isGeneratedAlias: false), _d.WrapName(this.TableAlias, isGeneratedAlias: true));
             Command.Append("\nSET\n");
 
             Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
@@ -747,7 +648,7 @@ namespace Destrier
                 Command.Append("\nWHERE\n");
 
                 SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
-                visitor.Dialect = this;
+                visitor.Dialect = _d;
                 visitor.Visit(_whereClause);
             }
 
@@ -763,12 +664,12 @@ namespace Destrier
 
             if (_includedChildCollections.Any())
             {
-                Command.AppendFormat("\nINTO {0}", TempTablePrefix(this.OutputTableName));
+                Command.AppendFormat("\nINTO {0}", _d.TempTablePrefix(this.OutputTableName));
             }
 
             Command.AppendFormat("\nFROM");
 
-            Command.AppendFormat("\n\t{0} {1} {2}", this.FullyQualifiedTableName, WrapName(this.TableAlias, isTableAlias: true), this.UseNoLock ? NOLOCK() : String.Empty);
+            Command.AppendFormat("\n\t{0} {1} {2}", this.FullyQualifiedTableName, _d.WrapName(this.TableAlias, isGeneratedAlias: true), this.UseNoLock ? _d.NOLOCK : String.Empty);
             AddJoins(_t, Members.Values.ToList(), Command);
 
             if (_whereClause != null)
@@ -776,7 +677,7 @@ namespace Destrier
                 Command.Append("\nWHERE\n");
 
                 SqlExpressionVisitor<T> visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
-                visitor.Dialect = this;
+                visitor.Dialect = _d;
                 visitor.Visit(_whereClause);
             }
             else if (_whereParameters != null)
@@ -788,7 +689,7 @@ namespace Destrier
                     if(primaryKey != null)
                     {
                         var parameterName = System.Guid.NewGuid().ToString("N");
-                        Command.AppendLine(String.Format("\n\tAND {0}.{1} = @{2}", WrapName(primaryKey.TableAlias, isTableAlias: true), primaryKey.FullyQualifiedName, parameterName));
+                        Command.AppendLine(String.Format("\n\tAND {0}.{1} = @{2}", _d.WrapName(primaryKey.TableAlias, isGeneratedAlias: true), primaryKey.FullyQualifiedName, parameterName));
                         Parameters.Add(parameterName, ((Object)_whereParameters).DBNullCoalese());
                     }
                     else
@@ -805,13 +706,13 @@ namespace Destrier
                             var member = Members[kvp.Key];
                             var paramName = System.Guid.NewGuid();
                             Parameters.Add(paramName.ToString("N"), kvp.Value);
-                            Command.AppendFormat("\n\tAND {0}.{1} = @{2}", WrapName(member.TableAlias, isTableAlias: true), member.Name, paramName.ToString("N"));
+                            Command.AppendFormat("\n\tAND {0}.{1} = @{2}", _d.WrapName(member.TableAlias, isGeneratedAlias: true), member.Name, paramName.ToString("N"));
                         }
                         else
                         {
                             var paramName = System.Guid.NewGuid();
                             Parameters.Add(paramName.ToString("N"), kvp.Value);
-                            Command.AppendFormat("\n\tAND {0} = @{1}", WrapName(kvp.Key, isTableAlias: false), paramName.ToString("N"));
+                            Command.AppendFormat("\n\tAND {0} = @{1}", _d.WrapName(kvp.Key, isGeneratedAlias: false), paramName.ToString("N"));
                         }
                     }
                 }
@@ -835,9 +736,9 @@ namespace Destrier
 
             if (_includedChildCollections.Any())
             {
-                Command.AppendFormat("\n\nSELECT * FROM {0};", TempTablePrefix(this.OutputTableName));
+                Command.AppendFormat("\n\nSELECT * FROM {0};", _d.TempTablePrefix(this.OutputTableName));
                 ProcessChildCollections();
-                Command.AppendFormat("\nDROP TABLE {0};", TempTablePrefix(this.OutputTableName));
+                Command.AppendFormat("\nDROP TABLE {0};", _d.TempTablePrefix(this.OutputTableName));
             }
 
             return Command.ToString();
