@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata schemaVersion="2">
     <id>Destrier</id>
-    <version>1.0.2</version>
+    <version>2.0.0</version>
     <authors>Will Charczuk</authors>
     <owners>Will Charcuzk</owners>
     <iconUrl>http://www.clotheshor.se/content/images/clotheshorse_logo_blk.png</iconUrl>
