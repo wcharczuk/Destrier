@@ -190,23 +190,25 @@ namespace Destrier
                                 var objPrimaryKeys = Model.ColumnsPrimaryKey(cm.CollectionType);
 
                                 object objPrimaryKeyValue = Model.InstancePrimaryKeyValue(cm.CollectionType, obj);
-
-                                Dictionary<Object, Object> parentLookup = null;
-                                objectLookups.TryGetValue(cm.CollectionType, out parentLookup);
-                                if (parentLookup != null)
+                                
+                                //set up lookup for the object
+                                Dictionary<Object, Object> objLookup = null;
+                                objectLookups.TryGetValue(cm.CollectionType, out objLookup);
+                                if (objLookup != null && objPrimaryKeyValue != null)
                                 {
-                                    if (!parentLookup.ContainsKey(objPrimaryKeyValue))
+                                    if (!objLookup.ContainsKey(objPrimaryKeyValue))
                                     {
-                                        parentLookup.Add(objPrimaryKeyValue, obj);
+                                        objLookup.Add(objPrimaryKeyValue, obj);
                                     }
                                     else
                                     {
-                                        obj = parentLookup[objPrimaryKeyValue] as IPopulate;
+                                        obj = objLookup[objPrimaryKeyValue] as IPopulate;
                                     }
                                 }
 
                                 object parentObj = null;
                                 objectLookups[cm.DeclaringType].TryGetValue(pkValueAsString, out parentObj);
+
                                 if (parentObj != null)
                                 {
                                     var parentCollectionProperty = cm.Property;
