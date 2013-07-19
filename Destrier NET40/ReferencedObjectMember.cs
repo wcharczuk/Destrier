@@ -17,11 +17,22 @@ namespace Destrier
             this.ReferencedColumnMember = Model.ColumnMemberForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName);
             this.ReferencedColumnIsNullable = ReflectionCache.IsNullableType(ReferencedColumnProperty.PropertyType) || ReferencedColumnAttribute.CanBeNull;
 
-            this.TableName = Model.TableName(this.Type); 
-            this.DatabaseName = Model.DatabaseName(this.Type); 
-            this.SchemaName = Model.SchemaName(this.Type);
-            this.UseNoLock = Model.UseNoLock(this.Type);
+            if (this.IsLazy)
+            {
+                this.TableName = Model.TableName(this.UnderlyingGenericType);
+                this.DatabaseName = Model.DatabaseName(this.UnderlyingGenericType);
+                this.SchemaName = Model.SchemaName(this.UnderlyingGenericType);
+                this.UseNoLock = Model.UseNoLock(this.UnderlyingGenericType);
+            }
+            else
+            {
+                this.TableName = Model.TableName(this.Type);
+                this.DatabaseName = Model.DatabaseName(this.Type);
+                this.SchemaName = Model.SchemaName(this.Type);
+                this.UseNoLock = Model.UseNoLock(this.Type);
+            }
         }
+
         public ReferencedObjectAttribute ReferencedObjectAttribute { get; set; }
 
         public ColumnMember ReferencedColumnMember { get; set; }

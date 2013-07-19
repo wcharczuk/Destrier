@@ -52,6 +52,21 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void ReferencedObjects_Lazy()
+        {
+            var pages = new Query<LazyPage>().Execute();
+
+            Assert.NotNull(pages);
+            Assert.NotEmpty(pages);
+
+            var firstPage = pages.First();
+            Assert.NotNull(firstPage.Book);
+
+            var value = firstPage.Book.Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
         public void ChildCollections()
         {
             var books = new Query<Book>().Execute();

@@ -21,9 +21,14 @@ namespace Destrier
         {
             this.Name = pi.Name;
             this.Type = pi.PropertyType;
+            
             this.IsNullableType = ReflectionCache.IsNullableType(this.Type);
             if (IsNullableType)
-                this.NullableUnderlyingType = ReflectionCache.GetUnderlyingTypeForNullable(this.Type);
+                this.UnderlyingGenericType = ReflectionCache.GetUnderlyingTypeForNullable(this.Type);
+
+            this.IsLazy = ReflectionCache.IsLazy(this.Type);
+            if (this.IsLazy)
+                this.UnderlyingGenericType = ReflectionCache.GetUnderlyingTypeForLazy(this.Type);
 
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
@@ -40,9 +45,11 @@ namespace Destrier
         public virtual String Name { get; set; }
         public virtual Type Type { get; set; }
         public virtual Boolean IsNullableType { get; set; }
-        public virtual Type NullableUnderlyingType { get; set; }
+        public virtual Type UnderlyingGenericType { get; set; }
         public virtual Type DeclaringType { get; set; }
         public virtual PropertyInfo Property { get; set; }
+
+        public virtual Boolean IsLazy { get; set; }
 
         public virtual String TableAlias { get; set; }
         public virtual String OutputTableName { get; set; }

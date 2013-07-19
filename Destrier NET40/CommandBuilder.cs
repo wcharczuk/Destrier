@@ -360,7 +360,7 @@ namespace Destrier
 
         protected static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
         {
-            foreach (ReferencedObjectMember refm in members.Where(m => m is ReferencedObjectMember))
+            foreach (ReferencedObjectMember refm in members.Where(m => m is ReferencedObjectMember && !m.IsLazy))
             {
                 if (!tableAliases.ContainsKey(refm.FullyQualifiedName))
                 {
@@ -368,7 +368,7 @@ namespace Destrier
                 }
                 refm.TableAlias = tableAliases[refm.FullyQualifiedName];
             }
-            foreach (ChildCollectionMember cm in members.Where(m => m is ChildCollectionMember))
+            foreach (ChildCollectionMember cm in members.Where(m => m is ChildCollectionMember && !m.IsLazy))
             {
                 if (!tableAliases.ContainsKey(cm.FullyQualifiedName))
                 {
@@ -405,7 +405,7 @@ namespace Destrier
         {
             if (ReflectionCache.HasReferencedObjectMembers(t))
             {
-                foreach (var rom in members.Where(m => m is ReferencedObjectMember && !m.ParentAny(rm => rm is ChildCollectionMember)).Select(m => m as ReferencedObjectMember))
+                foreach (var rom in members.Where(m => m is ReferencedObjectMember && !m.IsLazy &&!m.ParentAny(rm => rm is ChildCollectionMember)).Select(m => m as ReferencedObjectMember))
                 {
                     command.AppendFormat("\n\t{0} JOIN {1} {2} {5} on {3} = {4}",
                         rom.JoinType, //0
@@ -429,7 +429,9 @@ namespace Destrier
                 var tableAliases = new Dictionary<String, String>();
                 SetupTableAliases(subMembers, tableAliases);
 
-                var outputColumns = GetOutputColumns(subMembers.Where(m => m is ColumnMember && !m.ParentAny(p => p is ChildCollectionMember)));
+                var outputColumns = GetOutputColumns(subMembers.Where(m => m is ColumnMember 
+                    && !m.ParentAny(p => p is ChildCollectionMember || p.IsLazy))
+                );
 
                 var subColumnList = String.Join("\n\t, ", outputColumns);
                 Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);

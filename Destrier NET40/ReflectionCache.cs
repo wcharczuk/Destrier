@@ -286,6 +286,11 @@ namespace Destrier
             return first != null;
         }
 
+        public static Attribute GetAttribute(Type type, Type attributeType)
+        {
+            return type.GetCustomAttributes(attributeType, false).FirstOrDefault() as Attribute;
+        }
+
         public static Type[] GetInterfaces(Type type)
         {
             return _interfaceCache.GetOrAdd(type, type.GetInterfaces());
@@ -299,6 +304,11 @@ namespace Destrier
         public static Boolean HasInterface(Type type, Type interfaceType)
         {
             return ReflectionCache.GetInterfaces(type).Any(i => i.Equals(interfaceType));
+        }
+
+        public static Boolean IsLazy(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Lazy<>);
         }
 
         public static Boolean IsNullableType(Type type)
@@ -324,6 +334,11 @@ namespace Destrier
             {
                 return ct.GetGenericArguments()[0];
             });
+        }
+
+        public static Type GetUnderlyingTypeForLazy(Type lazyType)
+        {
+            return lazyType.GetGenericArguments()[0];
         }
 
         public static Boolean IsSet(object value)
@@ -543,6 +558,20 @@ namespace Destrier
             }
         }
 
+        public static Lazy<T> GenerateLazyMember<T>(ReferencedObjectMember rom, object instance) where T : new()
+        {
+            var lazyType = typeof(Lazy<>);
+            var fullLazyType = lazyType.MakeGenericType(rom.UnderlyingGenericType);
+
+            Func<T> func = () =>
+            {
+                var value = rom.ReferencedColumnProperty.GetValue(instance);
+                return Database.Get<T>(value);
+            };
+
+            return Activator.CreateInstance(fullLazyType, func) as Lazy<T>;
+        }
+
         public static SetInstanceValuesDelegate GetSetInstanceValuesDelegate(IndexedSqlDataReader reader)
         {
             return _setInstanceValuesDelegateCache.GetOrAdd(reader.GetCacheId(), (id) =>
@@ -632,7 +661,7 @@ namespace Destrier
                 if (c.IsNullableType)
                 {
                     var nullable_local = il.DeclareLocal(c.Property.PropertyType);
-                    var underlyingType = c.NullableUnderlyingType;
+                    var underlyingType = c.UnderlyingGenericType;
 
                     var origin = dr.GetFieldType(index);
                     var originType = Type.GetTypeCode(origin);

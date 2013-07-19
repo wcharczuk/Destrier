@@ -244,7 +244,7 @@ namespace Destrier
         /// <typeparam name="T"></typeparam>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        public static T Get<T>(dynamic parameters = null) where T : new()
+        public static T Get<T>(dynamic parameters) where T : new()
         {
             if (ReflectionCache.HasInterface(typeof(T), typeof(IGet<T>)))
                 return ((IGet<T>)ReflectionCache.GetNewObject<T>()).Get(parameters);

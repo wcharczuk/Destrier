@@ -308,5 +308,30 @@ namespace Destrier.Test
         public Chapter Chapter { get; set; }
     }
 
+    [Table("Pages")]
+    public class LazyPage
+    {
+        [Column(IsPrimaryKey = true, IsAutoIdentity = true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int Number { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int BookId { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int ChapterId { get; set; }
+
+        [Column(CanBeNull = false, MaxStringLength = 1024, ShouldTrimLongStrings = false)]
+        public String Text { get; set; }
+
+        [ReferencedObject("BookId")]
+        public Lazy<Book> Book { get; set; }
+
+        [ReferencedObject("ChapterId")]
+        public Chapter Chapter { get; set; }
+    }
+
     #endregion
 }

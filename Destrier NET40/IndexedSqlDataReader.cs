@@ -367,7 +367,7 @@ namespace Destrier
             var columnIndex = GetColumnIndex(columnName ?? member.Name);
             if (columnIndex != null)
             {
-                return Get(member.Type, columnIndex.Value, member.IsNullableType, member.NullableUnderlyingType);
+                return Get(member.Type, columnIndex.Value, member.IsNullableType, member.UnderlyingGenericType);
             }
             return ReflectionCache.GetDefault(member.Type);
         }

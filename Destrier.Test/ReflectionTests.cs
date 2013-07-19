@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Destrier;
 
 namespace Destrier.Test
 {
@@ -95,6 +96,20 @@ namespace Destrier.Test
             myObj.AnInt = 2;
 
             setFunctions["Single"](myObj, ReflectionCache.ChangeType(2.0d, propertiesByName["Single"].PropertyType));
+        }
+
+        public class ThinProxyTestCase
+        {
+            public Int32 MockObjectId { get; set; }
+
+            [ReferencedObject("MockObjectId")]
+            public Lazy<MockObject> MockObject { get; set; }
+        }
+
+        [Fact]
+        public void LazyReferenced_Test()
+        {
+
         }
     }
 }

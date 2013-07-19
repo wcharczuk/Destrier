@@ -230,20 +230,32 @@ namespace Destrier
                 foreach (ReferencedObjectMember rom in ReflectionCache.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
                 {
                     var type = rom.Type;
-                    var newObject = ReflectionCache.GetNewObject(type);
-                    PopulateFullResults(newObject, dr, type, rootMember, rom);
-                    rom.Property.SetValue(instance, newObject);
-
-                    if (objectLookups != null)
+                    
+                    if (rom.IsLazy)
                     {
-                        if (!objectLookups.ContainsKey(rom.Type))
+                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyMember");
+                        var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
+                        var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
+                        rom.SetValue(instance, lazy);
+                    }
+                    else
+                    {
+                        var newObject = ReflectionCache.GetNewObject(type);
+
+                        PopulateFullResults(newObject, dr, type, rootMember, rom);
+                        rom.Property.SetValue(instance, newObject);
+
+                        if (objectLookups != null)
                         {
-                            objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
-                        }
-                        var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
-                        if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
-                        {
-                            objectLookups[rom.Type].Add(pkv, newObject);
+                            if (!objectLookups.ContainsKey(rom.Type))
+                            {
+                                objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
+                            }
+                            var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
+                            if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
+                            {
+                                objectLookups[rom.Type].Add(pkv, newObject);
+                            }
                         }
                     }
                 }

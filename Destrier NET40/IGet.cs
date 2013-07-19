@@ -7,6 +7,6 @@ namespace Destrier
 {
     public interface IGet<T> where T : new()
     {
-        T Get(dynamic parameters = null);
+        T Get(dynamic parameters);
     }
 }
