@@ -12,6 +12,7 @@ using stored procedures / functions for complicated queries.
 
 ###Installation###
 Nuget: ```install-package Destrier```
+
 Binary: See 'Releases' for zip bundle.
 
 ###Features###
