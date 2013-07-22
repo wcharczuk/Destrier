@@ -19,6 +19,7 @@ using stored procedures / functions for complicated queries.
 * Better update handling: use the Update class to specify individual sets and a where constraint. Only touch what data you absoultely need to.
 * Referenced Objects: let you have associated objects (joined to specified properties).
 * Child Collections: let you have related sub collections (one-to-many relationships).
+* Both of these can be bound to properties with Lazy<> types, meaning that they will not affect the initial query (such as add joins to the query etc.) but will be evaluated when they are accessed by .Value.
 * IEnumerable reader let you stream results from large datasets / queries.
 * Polyglot: Target both SqlServer and Postgres.
 
