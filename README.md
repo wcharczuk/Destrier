@@ -9,6 +9,11 @@ Destrier is a flexible yet minimal ORM for .net targeting both MSSQL and Postgre
 It is designed to leverage both strong typing and model / schema relationships and push the developer towards
 using stored procedures / functions for complicated queries.
 
+
+###Installation###
+Nuget: ```install-package Destrier```
+Binary: See 'Releases' for zip bundle.
+
 ###Features###
 * POCO support; use your existing objects.
 * Code first based on annotations.
