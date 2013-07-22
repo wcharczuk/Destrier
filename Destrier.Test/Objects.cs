@@ -333,5 +333,30 @@ namespace Destrier.Test
         public Chapter Chapter { get; set; }
     }
 
+    [Table("Books")]
+    public class LazyBook
+    {
+        [Column(IsPrimaryKey = true, IsAutoIdentity = true)]
+        public int Id { get; set; }
+
+        [Column(CanBeNull = false)]
+        public string Title { get; set; }
+
+        [Column(CanBeNull = false)]
+        public short Year { get; set; }
+
+        [Column(CanBeNull = false)]
+        public int AuthorId { get; set; }
+
+        [ReferencedObject("AuthorId")]
+        public Person Author { get; set; }
+
+        [Column]
+        public String Notes { get; set; }
+
+        [ChildCollection("BookId", true)]
+        public Lazy<List<Chapter>> Chapters { get; set; }
+    }
+
     #endregion
 }

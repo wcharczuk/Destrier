@@ -9,22 +9,41 @@ namespace Destrier
     public class ChildCollectionAttribute : System.Attribute
     {
         public ChildCollectionAttribute() { }
-        public ChildCollectionAttribute(String columnName)
+        public ChildCollectionAttribute(String childColumnName)
         {
-            this.ColumnName = columnName;
+            this.ChildColumnName = childColumnName;
             this.AlwaysInclude = false;
         }
 
-        public ChildCollectionAttribute(String columnName, Boolean alwaysInclude)
+        public ChildCollectionAttribute(String childColumnName, String parentColumnName)
         {
-            this.ColumnName = columnName;
+            this.ChildColumnName = childColumnName;
+            this.ParentColumnName = parentColumnName;
+        }
+
+        public ChildCollectionAttribute(String childColumnName, Boolean alwaysInclude)
+        {
+            this.ChildColumnName = childColumnName;
+            this.AlwaysInclude = alwaysInclude;
+        }
+
+        public ChildCollectionAttribute(String childColumnName, String parentColumnName, Boolean alwaysInclude)
+        {
+            this.ChildColumnName = childColumnName;
+            this.ParentColumnName = parentColumnName;
             this.AlwaysInclude = alwaysInclude;
         }
 
         /// <summary>
-        /// This is the column name, in the child object, to join on to associate it with it's parent.
+        /// This is the column name to join on in the child table.
         /// </summary>
-        public String ColumnName { get; set; }
+        public String ChildColumnName { get; set; }
+
+        /// <summary>
+        /// This is the column name to join on in the parent table.
+        /// </summary>
+        /// <remarks>Optional. If unset, is assumed to be the parents primary key.</remarks>
+        public String ParentColumnName { get; set; }
 
         /// <summary>
         /// Always include the child collection in output. Default is 'false'.

@@ -79,6 +79,19 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void ChildCollections_Lazy()
+        {
+            var books = new Query<LazyBook>().Execute();
+
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.NotNull(books.First().Chapters);
+            Assert.NotNull(books.First().Chapters.Value);
+            Assert.NotEmpty(books.First().Chapters.Value);
+            Assert.NotEmpty(books.First().Chapters.Value.First().Title);
+        }
+
+        [Fact]
         public void ChildCollections_Include()
         {
             var books = new Query<Book>().Include(b => b.Chapters).Execute();

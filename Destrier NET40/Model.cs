@@ -233,7 +233,7 @@ namespace Destrier
                     
                     if (rom.IsLazy)
                     {
-                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyMember");
+                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyReferencedObjectMember");
                         var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
                         var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
                         rom.SetValue(instance, lazy);
@@ -259,8 +259,19 @@ namespace Destrier
                         }
                     }
                 }
+
+                if (dr.HasChildCollectionMembers)
+                {
+                    foreach (ChildCollectionMember cm in ReflectionCache.Members(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
+                    {
+                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyChildCollectionMember");
+                        var genericMi = mi.MakeGenericMethod(cm.UnderlyingGenericType);
+                        var lazy = genericMi.Invoke(null, new Object[] { cm, instance });
+                        cm.SetValue(instance, lazy);
+                    }
+                }
             }
-            else
+            else //this is the fast pipeline.
             {
                 dr.SetInstanceValues(instance);
             }

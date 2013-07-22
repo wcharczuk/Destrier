@@ -170,58 +170,52 @@ namespace Destrier
 
                     if (_builder.ChildCollections.Any())
                     {
-                        foreach (var cm in _builder.ChildCollections)
+                        foreach (var cm in _builder.ChildCollections.Where(cm => !cm.IsLazy))
                         {
-                            dr.NextResult(cm.CollectionType);
-
                             var root = cm.Root;
                             var parent = cm.Parent ?? cm.Root;
-                            var parentPrimaryKeyReference = cm.ReferencedProperty;
+                            var referencedParentPrimaryKey = cm.ReferencedProperty;
+
+                            dr.NextResult(cm.CollectionType);
 
                             if (!objectLookups.ContainsKey(cm.CollectionType))
-                            {
                                 objectLookups.Add(cm.CollectionType, new Dictionary<Object, Object>());
-                            }
 
                             dr.ReadIntoParentCollection(cm.CollectionType, (reader, obj) =>
                             {
-                                var pkValue = parentPrimaryKeyReference.GetValue(obj);
+                                var pkValue = referencedParentPrimaryKey.GetValue(obj);
                                 var pkValueAsString = pkValue != null ? pkValue.ToString() : null;
 
                                 var objPrimaryKeys = Model.ColumnsPrimaryKey(cm.CollectionType);
 
                                 object objPrimaryKeyValue = Model.InstancePrimaryKeyValue(cm.CollectionType, obj);
-                                
-                                //set up lookup for the object
-                                Dictionary<Object, Object> objLookup = null;
-                                objectLookups.TryGetValue(cm.CollectionType, out objLookup);
-                                if (objLookup != null && objPrimaryKeyValue != null)
-                                {
-                                    if (!objLookup.ContainsKey(objPrimaryKeyValue))
-                                    {
-                                        objLookup.Add(objPrimaryKeyValue, obj);
-                                    }
-                                    else
-                                    {
-                                        obj = objLookup[objPrimaryKeyValue] as IPopulate;
-                                    }
-                                }
-
+                                    
                                 object parentObj = null;
                                 objectLookups[cm.DeclaringType].TryGetValue(pkValueAsString, out parentObj);
 
                                 if (parentObj != null)
                                 {
                                     var parentCollectionProperty = cm.Property;
+
+                                    //new up the collection if it hasn't been delcared yet.
                                     if (parentCollectionProperty.GetValue(parentObj) == null)
-                                    {
                                         parentCollectionProperty.SetValue(parentObj, ReflectionCache.GetNewObject(cm.Type));
-                                    }
+
+                                    //set up lookup for the object
+                                    Dictionary<Object, Object> objLookup = null;
+                                    objectLookups.TryGetValue(cm.CollectionType, out objLookup);
+
+                                    if (objLookup != null && objPrimaryKeyValue != null)
+                                        if (!objLookup.ContainsKey(objPrimaryKeyValue))
+                                            objLookup.Add(objPrimaryKeyValue, obj);
+                                        else
+                                            obj = objLookup[objPrimaryKeyValue] as IPopulate;
 
                                     var collection = parentCollectionProperty.GetValue(parentObj);
                                     ((System.Collections.IList)collection).Add(obj);
                                 }
                             }, populateFullResults: true, advanceToNextResultAfter: false);
+                            
                         }
                     }
                 }

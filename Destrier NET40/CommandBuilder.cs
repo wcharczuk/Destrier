@@ -165,7 +165,7 @@ namespace Destrier
             var body = (MemberExpression)expression.Body;
             var member = ReflectionCache.MemberForExpression(body, Members) as ChildCollectionMember;
 
-            if (member != null)
+            if (member != null && !member.IsLazy)
                 if (!_includedChildCollections.Any(ic => ic.Equals(member)))
                     _includedChildCollections.Add(member);
         }
@@ -175,7 +175,7 @@ namespace Destrier
             if (Members.ContainsKey(fullyQualifiedMemberName))
             {
                 var member = Members[fullyQualifiedMemberName] as ChildCollectionMember;
-                if (member != null)
+                if (member != null && !member.IsLazy)
                     if (!_includedChildCollections.Any(ic => ic.Equals(member)))
                         _includedChildCollections.Add(member);
             }
@@ -209,7 +209,7 @@ namespace Destrier
 
         public void AddIncludeAll()
         {
-            foreach (var member in Members.Values.Where(m => m is ChildCollectionMember))
+            foreach (var member in Members.Values.Where(m => m is ChildCollectionMember && !m.IsLazy))
             {
                 if (!_includedChildCollections.Any(ic => ic.Equals(member)))
                     _includedChildCollections.Add(member as ChildCollectionMember);
@@ -256,9 +256,11 @@ namespace Destrier
                     _outputMembers.Add(m);
 
                 var col_m = m as ChildCollectionMember;
-                if (col_m != null
-                && col_m.AlwaysInclude
-                && !col_m.ParentAny(p => p is ChildCollectionMember && !((ChildCollectionMember)p).AlwaysInclude)
+                if (
+                    col_m != null
+                    && col_m.AlwaysInclude
+                    && !col_m.ParentAny(p => p is ChildCollectionMember && !((ChildCollectionMember)p).AlwaysInclude)
+                    && !col_m.IsLazy
                 )
                 {
                     _includedChildCollections.Add(col_m);
@@ -276,7 +278,7 @@ namespace Destrier
             else if (cm.Root != null)
                 parentAlias = cm.Root.TableAlias;
 
-            return String.Format("{0}.{1}", _d.WrapName(parentAlias, isGeneratedAlias: true), _d.WrapName(cm.ParentPrimaryKeyColumnName, isGeneratedAlias: isInChildSection));
+            return String.Format("{0}.{1}", _d.WrapName(parentAlias, isGeneratedAlias: true), _d.WrapName(cm.ParentReferencedColumnName, isGeneratedAlias: isInChildSection));
         }
 
         public String AliasedColumnName(ChildCollectionMember cm)
@@ -383,7 +385,7 @@ namespace Destrier
             }
             foreach (ColumnMember cm in members.Where(m => m is ColumnMember))
             {
-                if (cm.Parent != null)
+                if (cm.Parent != null && !cm.Parent.IsLazy) 
                 {
                     if (cm.Parent is ChildCollectionMember)
                     {

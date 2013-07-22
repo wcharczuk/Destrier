@@ -79,7 +79,7 @@ namespace ORMComparison
 
         static void Main(string[] args)
         {
-            var testObjectContext = new Destrier.Test.Postgres.TestObjectContext();
+            var testObjectContext = new Destrier.Test.TestObjectContext();
 
             string QUERY = new Query<TestObject>().Limit(LIMIT).QueryBody;
             string CONNECTION_STRING = Destrier.DatabaseConfigurationContext.DefaultConnectionString;

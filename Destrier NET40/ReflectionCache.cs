@@ -558,18 +558,38 @@ namespace Destrier
             }
         }
 
-        public static Lazy<T> GenerateLazyMember<T>(ReferencedObjectMember rom, object instance) where T : new()
+        public static Lazy<T> GenerateLazyReferencedObjectMember<T>(ReferencedObjectMember rom, object instance) where T : new()
         {
-            var lazyType = typeof(Lazy<>);
-            var fullLazyType = lazyType.MakeGenericType(rom.UnderlyingGenericType);
-
             Func<T> func = () =>
             {
                 var value = rom.ReferencedColumnProperty.GetValue(instance);
                 return Database.Get<T>(value);
             };
 
-            return Activator.CreateInstance(fullLazyType, func) as Lazy<T>;
+            return new Lazy<T>(func);
+        }
+
+        public static Lazy<T> GenerateLazyChildCollectionMember<T>(ChildCollectionMember cm, object instance) where T : class, new()
+        {
+            var parentReferencedValue = cm.ParentReferencedProperty.GetValue(instance);
+            var referencedColumnName = cm.ReferencedColumnName;
+
+            Func<T> func = () =>
+            {
+                dynamic queryParams = new System.Dynamic.ExpandoObject();
+                ((IDictionary<String, object>)queryParams).Add(referencedColumnName, parentReferencedValue);
+
+                var mi = typeof(ReflectionCache).GetMethod("_runLazyChildCollectionQuery", BindingFlags.NonPublic | BindingFlags.Static);
+                var genericMi = mi.MakeGenericMethod(cm.CollectionType);
+                return genericMi.Invoke(null, new Object[] { queryParams }) as T;
+            };
+
+            return new Lazy<T>(func);
+        }
+
+        private static List<T> _runLazyChildCollectionQuery<T>(dynamic queryParams) where T : class, new()
+        {
+            return new Query<T>().Where(queryParams).Execute();
         }
 
         public static SetInstanceValuesDelegate GetSetInstanceValuesDelegate(IndexedSqlDataReader reader)

@@ -97,19 +97,5 @@ namespace Destrier.Test
 
             setFunctions["Single"](myObj, ReflectionCache.ChangeType(2.0d, propertiesByName["Single"].PropertyType));
         }
-
-        public class ThinProxyTestCase
-        {
-            public Int32 MockObjectId { get; set; }
-
-            [ReferencedObject("MockObjectId")]
-            public Lazy<MockObject> MockObject { get; set; }
-        }
-
-        [Fact]
-        public void LazyReferenced_Test()
-        {
-
-        }
     }
 }
