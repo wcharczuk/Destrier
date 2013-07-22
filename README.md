@@ -28,9 +28,9 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
-|Destrier (Raw Query)  | Avg:   18.44ms |
 |Raw Reader            | Avg:	18.74ms | 
-|PetaPoco              | Avg:   22.48ms | 
+|PetaPoco              | Avg:   22.48ms |
+|Destrier (Raw Query)  | Avg:   23.12ms |
 |Destrier              | Avg:   23.42ms |
 |Dapper                | Avg:	29.24ms | 
 |ServiceStack ORMLite  | Avg:   67.65ms |
