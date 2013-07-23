@@ -103,7 +103,7 @@ var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)
 ```
 You can update objects by individual properties.
 ```C#
-new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Exeute();
+new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Execute();
 //resulting sql is UPDATE [alias] SET Active = 0 FROM MockObjects [alias] where MockObjectId = 2
 ```
 
