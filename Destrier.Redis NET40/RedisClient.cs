@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using Destrier.Redis.Core;
 
-namespace Destrier.Redis.Core
+namespace Destrier.Redis
 {
     public class RedisClient : IDisposable
     {
@@ -63,12 +63,14 @@ namespace Destrier.Redis.Core
             return _connection.ReadData().IsSuccess;
         }
 
+        //wctodo: finish this ...
         public IDictionary<String, String> MultiGet(params object[] args)
         {
             if (args == null || !args.Any())
                 throw new ArgumentException("Cannot be null or empty.", "args");
 
             _connection.Send("MGET", args);
+            return null;
         }
 
         public String Get(String key)
@@ -249,6 +251,146 @@ namespace Destrier.Redis.Core
             _connection.Send("LASTSAVE");
             return _connection.ReadData().DateTimeValue;
         }
+
+        //todo: APPEND
+        //todo: AUTH
+        //todo: BITCOUNT
+        //todo: BITTOP
+        //todo: BLPOP
+        //todo: BRPOP
+        //todo: BRPOPLPUSH
+
+        //todo: CLIENT KILL
+        //todo: CLIENT LIST
+        //todo: CLIENT GETNAME
+        //todo: CLIENT SETNAME
+        //todo: CONFIG GET
+        //todo: CONFIG REWRITE
+        //todo: CONFIG SET
+        //todo: CONFIG RESETSTAT
+        //todo: DEBUG OBJECT
+
+        //todo: DUMP
+        //todo: ECHO
+
+        //todo: EVAL
+        //todo: EVALSHA
+
+        //todo: EXEC
+        
+        //todo: GETSET
+        //todo: GETBIT
+        //todo: GETRANGE
+
+
+        //hash functions
+        //todo: HDEL
+        //todo: HEXISTS
+        //todo: HGET
+        //todo: HGETALL
+        //todo: HGETALL
+        //todo: HINCRBY
+        //todo: HINCRBYFLOAT
+        //todo: HKEYS
+        //todo: HLEN
+        //todo: HMGET
+        //todo: HMSET
+        //todo: HSET
+        //todo: HSETNX
+        //todo: HVALS
+
+        //todo: INFO
+
+        //todo: INCRBYFLOAT
+        //todo: DECRBYFLOAT
+
+        //list functions
+        //todo: LINDEX
+        //todo: LINSERT
+        //todo: LLEN
+        //todo: LPOP
+        //todo: LPUSH
+        //todo: LPUSHX
+        //todo: LRANGE
+        //todo: LREM
+        //todo: LSET
+        //todo: LTRIM
+        //todo: RPOP
+        //todo: RPOPLPUSH
+        //todo: RPUSH
+
+        
+        //todo: MSETNX
+
+        //todo: MOVE
+        //todo: MULTI
+
+        //todo: OBJECT
+        
+        //todo: PERSIST
+        //todo: PEXPIRE
+        //todo: PING
+        //todo: PSETEX
+
+        //todo: PSUBSCRIBE
+        //todo: PUBSUB
+
+        //todo: PTTL
+        //todo: PUBLISH
+        //todo: PUNSUBSCRIBE
+        //todo: SUBSCRIBE
+        //todo: UNSUBSCRIBE
+
+        //todo: RENAMENX
+        //todo: RESTORE
+
+        //set functions
+        //todo: SADD
+        //todo: SCARD
+        //todo: SDIFF
+        //todo: SDIFFSTORE
+        //todo: SINTER
+        //todo: SINTERSTORE
+        //todo: SISMEMBER
+        //todo: SMEMBERS
+        //todo: SMOVE
+        //todo: SPOP
+        //todo: SRANDMEMBER
+        //todo: SREM
+        //todo: SUNION
+        //todo: SUNIONSTORE
+
+        //todo: STRLEN
+
+        //todo: SLAVEOF
+        //todo: SYNC
+        //todo: SLOWLOG
+        //todo: TIME
+
+        //todo: WATCH
+        //todo: UNWATCH
+
+        //todo: SELECT
+        //todo: SORT
+
+        //todo: SETBIT
+        //todo: SETRANGE
+
+        //todo: ZADD
+        //todo: ZCARD
+        //todo: ZCOUNT
+        //todo: ZINCRBY
+        //todo: ZINTERSTORE
+        //todo: ZRANGE
+        //todo: ZRANGEBYSCORE
+        //todo: ZRANK
+        //todo: ZREM
+        //todo: ZREMRANGEBYRAN
+        //todo: ZREMRANGEBYSCORE
+        //todo: ZREVRANGE
+        //todo: ZREVRANGEBYSCORE
+        //todo: ZSCORE
+        //todo: ZUNIONSTORE
 
         public void Dispose()
         {

@@ -147,6 +147,8 @@ namespace Destrier.Redis.Core
                 if (String.IsNullOrEmpty(response))
                     throw new RedisException("Zero length response after retry.");
             }
+
+            return null;
         }
 
         public void Send(String command, params object[] args)

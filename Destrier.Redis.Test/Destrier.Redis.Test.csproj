@@ -48,6 +48,7 @@
     <Compile Include="RedisClient_Tests.cs" />
     <Compile Include="RedisConnectionPool_Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RedisSerializer_Tests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Destrier.Redis NET40\Destrier.Redis NET40.csproj">

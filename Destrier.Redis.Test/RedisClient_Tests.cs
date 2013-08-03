@@ -14,7 +14,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Connect_Test()
         {
-            using (var rc = new Core.RedisClient(HOST))
+            using (var rc = new RedisClient(HOST))
             {
                 Assert.True(rc.Connection.Socket.Connected);
             }
@@ -23,7 +23,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Set_Get_Test()
         {
-            using (var rc = new Core.RedisClient(HOST))
+            using (var rc = new RedisClient(HOST))
             {
                 var key = System.Guid.NewGuid().ToString("N");
                 try
@@ -46,7 +46,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void MultiSet_Test()
         {
-            using (var rc = new Core.RedisClient(HOST))
+            using (var rc = new RedisClient(HOST))
             {
                 var values = new Dictionary<string, string>() {
                     { System.Guid.NewGuid().ToString("N"), "TEST_VALUE" },
