@@ -51,9 +51,9 @@
     <Compile Include="RedisSerializer_Tests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Destrier.Redis NET40\Destrier.Redis NET40.csproj">
+    <ProjectReference Include="..\Destrier.Redis NET40\Destrier.Redis.csproj">
       <Project>{8935e11c-a573-495e-8c26-d6470b0484af}</Project>
-      <Name>Destrier.Redis NET40</Name>
+      <Name>Destrier.Redis</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

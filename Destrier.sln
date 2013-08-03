@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier NET45", "Destrier 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Test.Postgres", "Destrier.Test.Postgres\Destrier.Test.Postgres.csproj", "{D6C77B83-DD3F-4232-B87A-F888C80D2D30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Redis NET40", "Destrier.Redis NET40\Destrier.Redis NET40.csproj", "{8935E11C-A573-495E-8C26-D6470B0484AF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Redis", "Destrier.Redis NET40\Destrier.Redis.csproj", "{8935E11C-A573-495E-8C26-D6470B0484AF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Destrier.Redis.Test", "Destrier.Redis.Test\Destrier.Redis.Test.csproj", "{2C460282-900F-4931-B76D-79D92F6EAC4C}"
 EndProject
