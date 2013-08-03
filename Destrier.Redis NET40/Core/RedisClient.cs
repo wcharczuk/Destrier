@@ -27,36 +27,16 @@ namespace Destrier.Redis.Core
         public Int32 Port { get; set; }
         public String Password { get; set; }
 
-        public void MultiSet(IDictionary<String, String> values)
+        public Boolean MultiSet(IDictionary<String, String> values)
         {
-            MultiSetRaw(values.ToDictionary(v => v.Key, v => Encoding.UTF8.GetBytes(v.Value)));
-        }
-
-        public void MultiSetRaw(IDictionary<String, Byte[]> values)
-        {
-            var data = new MemoryStream();
+            var data = new List<String>();
             foreach (var kvp in values)
             {
-                var key = kvp.Key;
-                var keyString = String.Format("{0}\r\n", key);
-                var keyBuffer = Encoding.UTF8.GetBytes(keyString);
-
-                var keyLengthString = String.Format("${0}\r\n", key.Length);
-                var keyLengthBuffer = Encoding.UTF8.GetBytes(keyLengthString);
-
-                var value = kvp.Value;
-                var valueLengthString = String.Format("${0}\r\n", value.Length);
-                var valueLengthStringBuffer = Encoding.UTF8.GetBytes(valueLengthString);
-
-                data.Write(keyLengthBuffer, 0, keyLengthBuffer.Length);
-                data.Write(keyBuffer, 0, keyBuffer.Length);
-
-                data.Write(valueLengthStringBuffer, 0, valueLengthStringBuffer.Length);
-                data.Write(value, 0, value.Length);
-                data.Write(RedisConnection.EOL, 0, RedisConnection.EOL.Length);
+                data.Add(kvp.Key);
+                data.Add(kvp.Value);
             }
-            _connection.SendCommand("*{0}\r\nMSET", values.Count * 2 + 1);
-            _connection.SendData(data);
+            _connection.Send("MSET", data.ToArray());
+            return _connection.ReadData().IsSuccess;
         }
 
         public Boolean Set(String key, String value)
@@ -67,7 +47,7 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(value))
                 throw new ArgumentException("Cannot be null or empty.", "value");
 
-            _connection.SendCommand("SET {0} {1}", key, value);
+            _connection.Send("SET", key, value);
             return _connection.ReadData().IsSuccess;
         }
 
@@ -79,8 +59,16 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(value))
                 throw new ArgumentException("Cannot be null or empty.", "value");
 
-            _connection.SendCommand("SETNX {0} {1}", key, value);
+            _connection.Send("SETNX", key, value);
             return _connection.ReadData().IsSuccess;
+        }
+
+        public IDictionary<String, String> MultiGet(params object[] args)
+        {
+            if (args == null || !args.Any())
+                throw new ArgumentException("Cannot be null or empty.", "args");
+
+            _connection.Send("MGET", args);
         }
 
         public String Get(String key)
@@ -93,7 +81,7 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
 
-            _connection.SendCommand("GET {0}", key);
+            _connection.Send("GET", key);
             return _connection.ReadData();
         }
 
@@ -102,7 +90,7 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
 
-            _connection.SendCommand("TYPE {0}", key);
+            _connection.Send("TYPE", key);
             var keyType = _connection.ReadData().StringValue;
             switch (keyType)
             {
@@ -124,7 +112,7 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
 
-            _connection.SendCommand("EXISTS {0}", key);
+            _connection.Send("EXISTS", key);
             return _connection.ReadData().LongValue.Equals(1);
         }
 
@@ -133,28 +121,28 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
 
-            _connection.SendCommand("DEL {0}", key);
+            _connection.Send("DEL", key);
             return _connection.ReadData().LongValue.Equals(1);
         }
 
         public Boolean Remove(IEnumerable<String> keys)
         {
             if (keys == null || !keys.Any())
-                throw new ArgumentException("Cannot be null or empty.", "key");
+                throw new ArgumentException("Cannot be null or empty.", "keys");
 
-            _connection.SendCommand("DEL {0}", String.Join(",", keys));
+            _connection.Send("DEL", String.Join(",", keys));
             return _connection.ReadData().LongValue >= 1;
         }
 
         public String RandomKey()
         {
-            _connection.SendCommand("RANDOMKEY");
+            _connection.Send("RANDOMKEY");
             return _connection.ReadData().StringValue;
         }
 
         public IEnumerable<String> GetKeys(String pattern = "*")
         {
-            _connection.SendCommand("KEYS {0}", pattern);
+            _connection.Send("KEYS", pattern);
             var result = _connection.ReadData().StringValue;
 
             if (String.IsNullOrEmpty(result))
@@ -171,7 +159,7 @@ namespace Destrier.Redis.Core
             if (string.IsNullOrEmpty(to))
                 throw new ArgumentException("Cannot be null or empty.", "to");
 
-            _connection.SendCommand("RENAME {0} {1}", from, to);
+            _connection.Send("RENAME", from, to);
             var result = _connection.ReadData().StringValue;
             return result.StartsWith("+");
         }
@@ -179,9 +167,9 @@ namespace Destrier.Redis.Core
         public long Increment(String key, int? count = null)
         {
             if (count == null)
-                _connection.SendCommand("INCR {0}", key);
+                _connection.Send("INCR", key);
             else
-                _connection.SendCommand("INCRBY {0} {1}", key, count.Value);
+                _connection.Send("INCRBY", key, count.Value);
 
             return _connection.ReadData().LongValue;
         }
@@ -189,9 +177,9 @@ namespace Destrier.Redis.Core
         public long Decrement(String key, int? count = null)
         {
             if (count == null)
-                _connection.SendCommand("DECR {0}", key);
+                _connection.Send("DECR", key);
             else
-                _connection.SendCommand("DECRBY {0} {1}", key, count.Value);
+                _connection.Send("DECRBY", key, count.Value);
 
             return _connection.ReadData().LongValue;
         }
@@ -201,7 +189,7 @@ namespace Destrier.Redis.Core
             if (key == null)
                 throw new ArgumentNullException("key");
 
-            _connection.SendCommand("EXPIRE {0} {1}", key, seconds);
+            _connection.Send("EXPIRE", key, seconds);
             return _connection.ReadData().LongValue.Equals(1);
         }
 
@@ -211,7 +199,7 @@ namespace Destrier.Redis.Core
                 throw new ArgumentNullException("key");
 
             var unixTimestamp = RedisDataFormat.ToUnixTimestamp(time);
-            _connection.SendCommand("EXPIRE {0} {1}", key, unixTimestamp);
+            _connection.Send("EXPIRE", key, unixTimestamp);
             return _connection.ReadData().LongValue.Equals(1);
         }
 
@@ -220,45 +208,45 @@ namespace Destrier.Redis.Core
             if (key == null)
                 throw new ArgumentNullException("key");
 
-            _connection.SendCommand("TTL {0}", key);
+            _connection.Send("TTL", key);
             var result = _connection.ReadData().LongValue;
             return TimeSpan.FromSeconds((double)result);
         }
 
         public long GetDBSize()
         {
-            _connection.SendCommand("DBSIZE");
+            _connection.Send("DBSIZE");
             return _connection.ReadData().LongValue;
         }
 
         public void Save()
         {
-            _connection.SendCommand("SAVE");
+            _connection.Send("SAVE");
         }
 
         public void BackgroundSave()
         {
-            _connection.SendCommand("BGSAVE");
+            _connection.Send("BGSAVE");
         }
 
         public void Shutdown()
         {
-            _connection.SendCommand("SHUTDOWN");
+            _connection.Send("SHUTDOWN");
         }
 
         public void FlushAll()
         {
-            _connection.SendCommand("FLUSHALL");
+            _connection.Send("FLUSHALL");
         }
 
         public void FlushDb()
         {
-            _connection.SendCommand("FLUSHDB");
+            _connection.Send("FLUSHDB");
         }
 
         public DateTime GetLastSave()
         {
-            _connection.SendCommand("LASTSAVE");
+            _connection.Send("LASTSAVE");
             return _connection.ReadData().DateTimeValue;
         }
 

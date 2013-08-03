@@ -7,6 +7,14 @@ namespace Destrier.Redis.Core
 {
     public static class RedisDataFormat
     {
+        public static Encoding Encoding
+        {
+            get 
+            {
+                return System.Text.Encoding.UTF8;
+            }
+        }
+
         public static Int64 ToUnixTimestamp(DateTime value)
         {
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0);

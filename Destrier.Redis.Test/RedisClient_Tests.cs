@@ -9,7 +9,7 @@ namespace Destrier.Redis.Test
 {
     public class RedisClient_Tests
     {
-        const string HOST = "192.168.1.24";
+        const string HOST = "127.0.0.1";
 
         [Fact]
         public void Connect_Test()

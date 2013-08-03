@@ -57,7 +57,7 @@ namespace Destrier.Redis.Core
             _stream = new BufferedStream(new NetworkStream(_socket), 16*1024); //16kb buffer
             if (!String.IsNullOrWhiteSpace(Password))
             {
-                SendCommand("AUTH {0}", this.Password);
+                Send("AUTH", this.Password);
                 ReadForError();
             }
         }
@@ -68,12 +68,12 @@ namespace Destrier.Redis.Core
             if (c == -1)
                 throw new RedisException("RedisConnection :: No more data.");
 
-            var s = ReadLine();
+            var s = _readSingleStatement();
             if (c == '-')
                 throw new RedisException(s.StartsWith("ERR") ? s.Substring(4) : s);
         }
 
-        private string ReadLine()
+        private string _readSingleStatement()
         {
             var sb = new StringBuilder();
             byte c;
@@ -93,11 +93,13 @@ namespace Destrier.Redis.Core
 
         public RedisDataValue ReadData()
         {
-            string response = ReadLine();
+            string response = _readSingleStatement();
             if (String.IsNullOrEmpty(response))
-                response = ReadLine();
-                    if(String.IsNullOrEmpty(response))
-                        throw new RedisException("Zero length response after retry.");
+            {
+                response = _readSingleStatement();
+                if (String.IsNullOrEmpty(response))
+                    throw new RedisException("Zero length response after retry.");
+            }
 
             if (response.StartsWith("-"))
                 return new RedisDataValue() { StringValue = response };
@@ -136,32 +138,54 @@ namespace Destrier.Redis.Core
             }
         }
 
-        public void SendCommand(String commandFormat, params object[] arguments)
+        public IDictionary<String, RedisDataValue> ReadMultiBulkReply()
         {
-            SendRawCommand(String.Format(commandFormat + "\r\n", arguments));
+            string response = _readSingleStatement();
+            if (String.IsNullOrEmpty(response))
+            {
+                response = _readSingleStatement();
+                if (String.IsNullOrEmpty(response))
+                    throw new RedisException("Zero length response after retry.");
+            }
         }
 
-        public void SendRawCommand(String command)
+        public void Send(String command, params object[] args)
         {
-            if (_socket == null)
-                Connect();
-
-            if (_socket == null)
-                throw new RedisException("RedisConnection :: Cannot connect to server.");
-
-            Log("Command => {0}", command);
-
-            var buffer = Encoding.UTF8.GetBytes(command);
+            if (_socket == null || !_socket.Connected)
+                throw new RedisException("RedisConnection :: Not connected to server.");
 
             try
             {
-                _socket.Send(buffer);
-            }
-            catch (SocketException)
-            {
-                _socket.Close();
-                _socket = null;
+                var argTotal = args != null ? args.Length + 1 : 1;
+                var argTotalMessage = String.Format("*{0}\r\n", argTotal);
 
+                var cmdLength = command.Length;
+                var cmdLengthMessage = String.Format("${0}\r\n", cmdLength);
+
+                var cmdMessage = String.Format("{0}\r\n", command);
+
+                _socket.Send(RedisDataFormat.Encoding.GetBytes(argTotalMessage));
+                _socket.Send(RedisDataFormat.Encoding.GetBytes(cmdLengthMessage));
+                _socket.Send(RedisDataFormat.Encoding.GetBytes(cmdMessage));
+
+                if (args != null)
+                {
+                    foreach (var arg in args)
+                    {
+                        var str_arg = arg.ToString();
+                        var str_arg_len = str_arg.Length;
+
+                        var len_msg = String.Format("${0}\r\n", str_arg_len);
+                        var str_arg_msg = String.Format("{0}\r\n", str_arg);
+
+                        _socket.Send(RedisDataFormat.Encoding.GetBytes(len_msg));
+                        _socket.Send(RedisDataFormat.Encoding.GetBytes(str_arg_msg));
+                    }
+                }
+            }
+            catch (SocketException se)
+            {
+                Console.WriteLine(se.ToString());
                 OnDisconnected(null);
             }
         }
@@ -214,7 +238,7 @@ namespace Destrier.Redis.Core
         {
             if (_socket != null)
             {
-                SendRawCommand("QUIT\r\n");
+                Send("QUIT");
                 _socket.Close();
                 _socket = null;
             }   
