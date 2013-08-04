@@ -13,13 +13,13 @@ namespace Destrier.Redis.Core
             this.Name = propertyInfo.Name;
             this.DeclaringType = propertyInfo.DeclaringType;
             this.MemberType = propertyInfo.PropertyType;
-            this.IsNullableType = ReflectionCache.IsNullableType(this.MemberType);
+            this.IsNullableType = ReflectionUtil.IsNullableType(this.MemberType);
 
             if (this.IsNullableType)
-                this.UnderlyingType = ReflectionCache.GetUnderlyingTypeForNullable(this.MemberType);
+                this.UnderlyingType = ReflectionUtil.GetUnderlyingTypeForNullable(this.MemberType);
 
-            _getValue = ReflectionCache.CompilePropertyAccess(propertyInfo);
-            _setValue = ReflectionCache.CompilePropertyAssignment(propertyInfo);
+            _getValue = ReflectionUtil.CompilePropertyAccess(propertyInfo);
+            _setValue = ReflectionUtil.CompilePropertyAssignment(propertyInfo);
         }
     }
 }

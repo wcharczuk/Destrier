@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Destrier.Redis.Core
 {
-    public static class RedisDataFormat
+    public static class RedisDataFormatUtil
     {
         public static Encoding Encoding
         {

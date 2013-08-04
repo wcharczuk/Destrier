@@ -91,7 +91,7 @@ namespace Destrier.Redis.Core
             return sb.ToString();
         }
 
-        public RedisDataValue ReadData()
+        public RedisValue ReadReply()
         {
             string response = _readSingleStatement();
             if (String.IsNullOrEmpty(response))
@@ -102,43 +102,33 @@ namespace Destrier.Redis.Core
             }
 
             if (response.StartsWith("-"))
-                return new RedisDataValue() { StringValue = response };
+                return new RedisValue() { StringValue = response };
 
             var firstChar = response[0];
             switch (firstChar)
             {
-                case '$':
-                    {
-                        if (response.Equals("$-1"))
-                            return new RedisDataValue() { IsNull = true };
-
-                        int length = int.Parse(response.Substring(1));
-
-                        var buffer = new byte[length];
-                        _stream.Read(buffer, 0, length);
-
-                        return new RedisDataValue() { BinaryValue = buffer, StringValue = RedisDataFormat.FormatAsString(buffer) };
-                    }
-                case '*':
-                    {
-                        var length = int.Parse(response.Substring(1));
-                        return length > 0 ? ReadData() : new RedisDataValue();
-                    }
                 case ':':
                     {
                         var result = Int64.Parse(response.Substring(1));
-                        return new RedisDataValue() { LongValue = result };
+                        return new RedisValue() { LongValue = result };
                     }
                 case '+':
                     {
-                        return new RedisDataValue() { StringValue = response.Substring(1) };
+                        return new RedisValue() { StringValue = response.Substring(1) };
                     }
+                case '$':
+                    {
+                        var value = _readSingleStatement();
+                        return new RedisValue() { StringValue = value };
+                    }
+                case '*':
+                    throw new RedisException("MultiBlock response detected while reading a single response value.");
                 default:
                     throw new RedisException("RedisConnection :: Unexpected Reply");
             }
         }
 
-        public IDictionary<String, RedisDataValue> ReadMultiBulkReply()
+        public IEnumerable<RedisValue> ReadMultiBulkReply()
         {
             string response = _readSingleStatement();
             if (String.IsNullOrEmpty(response))
@@ -148,7 +138,50 @@ namespace Destrier.Redis.Core
                     throw new RedisException("Zero length response after retry.");
             }
 
-            return null;
+            if (response.StartsWith("-"))
+            {
+                yield return new RedisValue() { StringValue = response };
+            }
+            else
+            {
+                var firstChar = response[0];
+                if (firstChar != '*')
+                    throw new RedisException("Non-MultiBlock response detected while reading a multiblock response.");
+
+                var count = default(int);
+                count = int.Parse(response.Substring(1));
+
+                for (int x = 0; x < count; x++)
+                {
+                    var value_length_line = _readSingleStatement();
+                    //assume this line starts with a '$';
+                    var value_length = int.Parse(value_length_line.Substring(1));
+
+                    if (value_length == -1)
+                        yield return new RedisValue() { IsNull = true };
+                    else
+                    {
+
+                        var value_line = _readSingleStatement();
+                        switch (value_line[0])
+                        {
+                            case ':':
+                                var result = Int64.Parse(value_line.Substring(1));
+                                yield return new RedisValue() { LongValue = result };
+                                break;
+                            case '+':
+                                yield return new RedisValue() { StringValue = value_line.Substring(1) };
+                                break;
+                            case '*':
+                                break;
+                            default:
+                                yield return new RedisValue() { StringValue = value_line.Trim() };
+                                break;
+                        }
+                    }
+                }
+            }
+            
         }
 
         public void Send(String command, params object[] args)
@@ -166,9 +199,9 @@ namespace Destrier.Redis.Core
 
                 var cmdMessage = String.Format("{0}\r\n", command);
 
-                _socket.Send(RedisDataFormat.Encoding.GetBytes(argTotalMessage));
-                _socket.Send(RedisDataFormat.Encoding.GetBytes(cmdLengthMessage));
-                _socket.Send(RedisDataFormat.Encoding.GetBytes(cmdMessage));
+                _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(argTotalMessage));
+                _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(cmdLengthMessage));
+                _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(cmdMessage));
 
                 if (args != null)
                 {
@@ -180,8 +213,8 @@ namespace Destrier.Redis.Core
                         var len_msg = String.Format("${0}\r\n", str_arg_len);
                         var str_arg_msg = String.Format("{0}\r\n", str_arg);
 
-                        _socket.Send(RedisDataFormat.Encoding.GetBytes(len_msg));
-                        _socket.Send(RedisDataFormat.Encoding.GetBytes(str_arg_msg));
+                        _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(len_msg));
+                        _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(str_arg_msg));
                     }
                 }
             }
@@ -240,7 +273,7 @@ namespace Destrier.Redis.Core
         {
             if (_socket != null)
             {
-                Send("QUIT");
+                Send(RedisCommandLiteral.QUIT);
                 _socket.Close();
                 _socket = null;
             }   

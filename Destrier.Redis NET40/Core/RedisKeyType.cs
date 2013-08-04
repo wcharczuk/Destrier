@@ -10,6 +10,8 @@ namespace Destrier.Redis.Core
         None = 0,
         String = 1,
         Set = 2,
-        List = 3
+        List = 3,
+        ZSet = 4,
+        Hash = 5
     }
 }

@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace Destrier.Redis.Core
 {
-    public class ReflectionCache
+    public class ReflectionUtil
     {
         private static ConcurrentDictionary<Type, List<Member>> _memberMapCache = new ConcurrentDictionary<Type, List<Member>>();
 
@@ -104,13 +104,11 @@ namespace Destrier.Redis.Core
             return nullableConverter.UnderlyingType;
         }
 
-        //wctodo: re-write with lambda compilation.
         public static Func<Object, Object> CompileFieldAccess(FieldInfo field)
         {
             return (obj) => field.GetValue(obj);
         }
 
-        //wctodo: re-write with lambda compilation.
         public static Action<Object, Object> CompileFieldAssignment(FieldInfo field)
         {
             return (obj, val) => field.SetValue(obj, val);

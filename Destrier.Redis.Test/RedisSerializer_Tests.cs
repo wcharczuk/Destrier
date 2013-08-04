@@ -28,11 +28,6 @@ namespace Destrier.Redis.Test
         public void Serialize_Test()
         {
             var mobj = new MockObject() { Id = 2, EmailAddress = "will@foo.com", Specialty = Speciality.Foos, Name = "Will", Tags = new List<String>() { "Stuff", "More Stuff" } };
-
-            var serialized = Core.RedisSerializer.Serialize(mobj);
-
-            Assert.NotNull(serialized);
-            Assert.NotEmpty(serialized);
         }
     }
 }

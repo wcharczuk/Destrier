@@ -21,25 +21,24 @@ namespace Destrier.Redis.Test
         }
 
         [Fact]
-        public void Set_Get_Test()
+        public void Keys_Test()
         {
             using (var rc = new RedisClient(HOST))
             {
+                //SET
+                //GET
+                //DEL
+
                 var key = System.Guid.NewGuid().ToString("N");
-                try
-                {
-                    var value = "TEST_VALUE";
-                    var didSet = rc.Set(key, value);
 
-                    Assert.True(didSet);
+                var value = "TEST_VALUE";
+                var didSet = rc.Set(key, value);
 
-                    var returned_value = rc.Get(key);
-                    Assert.Equal(value, returned_value);
-                }
-                finally
-                {
-                    rc.Remove(key);
-                }
+                Assert.True(didSet);
+
+                var returned_value = rc.Get(key);
+                Assert.Equal(value, returned_value);
+                Assert.True(rc.Remove(key));
             }
         }
 
@@ -64,6 +63,49 @@ namespace Destrier.Redis.Test
                 {
                     rc.Remove(values.Keys);
                 }
+            }
+        }
+
+        [Fact]
+        public void Sets_Test()
+        {
+            using (var rc = new RedisClient(HOST))
+            {
+                //SADD test :: moobars, foobars
+                //SCARD test => 2
+                //SADD test2 :: moobars, barfoos
+                //SUNION test test2 => moobars, foobars, barfoos
+                //SETMEMBERS test => moobars, foobars
+                //SADD letters :: <all letters in alphabet, 0->27>
+                //SRANDMEMBER letters
+
+                rc.SetAdd("set_test", "moobars", "foobars");
+                rc.SetAdd("set_test2", "moobars", "barfoos", "woozles");
+
+                var size = rc.SetCardinality("set_test");
+                var test2_size = rc.SetCardinality("set_test2");
+                Assert.Equal(2, size);
+                Assert.Equal(3, test2_size);
+
+                var union = rc.SetUnion("set_test", "set_test2").ToList();
+                Assert.Equal(4, union.Count());
+                Assert.True(union.Any(v => v.Equals("barfoos")));
+
+                rc.SetRemove("set_test2", "woozles");
+
+                test2_size = rc.SetCardinality("test2");
+                Assert.Equal(2, size);
+
+                var test3_size = rc.SetUnionStore("set_test3", "set_test", "set_test2");
+                Assert.Equal(3, test3_size);
+
+                var random = rc.SetRandomMember("set_test");
+
+                Assert.NotNull(random);
+
+                rc.Remove("set_test");
+                rc.Remove("set_test2");
+                rc.Remove("set_test3");
             }
         }
     }

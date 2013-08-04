@@ -45,18 +45,19 @@
   <ItemGroup>
     <Compile Include="Core\FieldMember.cs" />
     <Compile Include="Core\Member.cs" />
-    <Compile Include="Core\Model.cs" />
     <Compile Include="Core\PropertyMember.cs" />
+    <Compile Include="Core\RedisCommandLiteral.cs" />
     <Compile Include="Core\RedisConnectionUnassignedHandler.cs" />
-    <Compile Include="Core\RedisDataFormat.cs" />
-    <Compile Include="Core\RedisDataValue.cs" />
-    <Compile Include="Core\RedisSerializer.cs" />
-    <Compile Include="Core\ReflectionCache.cs" />
+    <Compile Include="Core\RedisDataFormatUtil.cs" />
+    <Compile Include="Core\RedisValue.cs" />
+    <Compile Include="Core\ReflectionUtil.cs" />
+    <Compile Include="RedisClient_ConnectionCommands.cs" />
+    <Compile Include="RedisClient_KeyCommands.cs" />
+    <Compile Include="RedisClient_ServerCommands.cs" />
+    <Compile Include="RedisClient_SetCommands.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\RedisConnection.cs" />
     <Compile Include="Core\RedisConnectionPool.cs" />
-    <Compile Include="RedisKeyAttribute.cs" />
-    <Compile Include="RedisStore.cs" />
     <Compile Include="RedisException.cs" />
     <Compile Include="RedisClient.cs" />
     <Compile Include="Core\RedisKeyType.cs" />
