@@ -57,7 +57,7 @@ namespace Destrier.Redis.Core
             _stream = new BufferedStream(new NetworkStream(_socket), 16*1024); //16kb buffer
             if (!String.IsNullOrWhiteSpace(Password))
             {
-                Send("AUTH", this.Password);
+                Send(RedisCommandLiteral.AUTH, this.Password);
                 ReadForError();
             }
         }
@@ -126,6 +126,19 @@ namespace Destrier.Redis.Core
                 default:
                     throw new RedisException("RedisConnection :: Unexpected Reply");
             }
+        }
+
+        public Byte[] ReadBinaryReply()
+        {
+            var response = _readSingleStatement();
+            if(response.StartsWith("-"))
+                throw new RedisException("RedisConnection :: Error");
+
+            var size = int.Parse(response.Substring(1));
+
+            var buffer = new byte[size];
+            _stream.Read(buffer, 0, size);
+            return buffer;
         }
 
         public IEnumerable<RedisValue> ReadMultiBulkReply()
@@ -207,14 +220,52 @@ namespace Destrier.Redis.Core
                 {
                     foreach (var arg in args)
                     {
-                        var str_arg = arg.ToString();
-                        var str_arg_len = str_arg.Length;
+                        if (arg is Byte[])
+                        {
+                            var data = new MemoryStream(arg as Byte[]);
 
-                        var len_msg = String.Format("${0}\r\n", str_arg_len);
-                        var str_arg_msg = String.Format("{0}\r\n", str_arg);
+                            var data_len = data.Length;
+                            var data_len_str = String.Format("${0}\r\n", data_len);
+                            _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(data_len_str));
 
-                        _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(len_msg));
-                        _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(str_arg_msg));
+                            byte[] buffer = new byte[XMIT_BUFFER_SIZE];
+                            int bytesRead = 0;
+                            do
+                            {
+                                bytesRead = data.Read(buffer, 0, XMIT_BUFFER_SIZE);
+                                _socket.Send(buffer, bytesRead, SocketFlags.None);
+                            } while (bytesRead > 0);
+
+                            _socket.Send(EOL);
+                        }
+                        else if (arg is Stream)
+                        {
+                            var data = arg as Stream;
+                            var data_len = data.Length;
+                            var data_len_str = String.Format("${0}\r\n", data_len);
+                            _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(data_len_str));
+
+                            byte[] buffer = new byte[XMIT_BUFFER_SIZE];
+                            int bytesRead = 0;
+                            do
+                            {
+                                bytesRead = data.Read(buffer, 0, XMIT_BUFFER_SIZE);
+                                _socket.Send(buffer, bytesRead, SocketFlags.None);
+                            } while (bytesRead > 0);
+
+                            _socket.Send(EOL);
+                        }
+                        else
+                        {
+                            var str_arg = arg.ToString();
+                            var str_arg_len = str_arg.Length;
+
+                            var len_msg = String.Format("${0}\r\n", str_arg_len);
+                            var str_arg_msg = String.Format("{0}\r\n", str_arg);
+
+                            _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(len_msg));
+                            _socket.Send(RedisDataFormatUtil.Encoding.GetBytes(str_arg_msg));
+                        }
                     }
                 }
             }
@@ -223,29 +274,6 @@ namespace Destrier.Redis.Core
                 Console.WriteLine(se.ToString());
                 OnDisconnected(null);
             }
-        }
-
-        public void SendData(Stream data)
-        {
-            byte[] buffer = new byte[XMIT_BUFFER_SIZE];
-
-            int bytesRead = 0;
-            do
-            {
-                bytesRead = data.Read(buffer, 0, XMIT_BUFFER_SIZE);
-                _socket.Send(buffer, bytesRead, SocketFlags.None);
-            } while (bytesRead > 0);
-
-            _socket.Send(EOL);
-        }
-
-        private void Log(String message, params object[] args)
-        {
-#if DEBUG
-            var messageFormatted = String.Format(message, args);
-            var meta = String.Format("Redis Connection {0}", this.Id.ToString("N"));
-            System.Diagnostics.Debug.WriteLine(String.Format("{0} :: {1}", meta, messageFormatted));
-#endif
         }
 
         public event RedisConnectionStateChangedHandler ConnectionOpened;

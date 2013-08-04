@@ -13,6 +13,8 @@ namespace Destrier.Redis.Test
         Foos = 1,
         Bars = 1
     }
+
+    [Serializable]
     public class MockObject
     {
         public Int32 Id { get; set; }
@@ -27,7 +29,16 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Serialize_Test()
         {
+            RedisContext.DefaultHost = "127.0.0.1";
+
             var mobj = new MockObject() { Id = 2, EmailAddress = "will@foo.com", Specialty = Speciality.Foos, Name = "Will", Tags = new List<String>() { "Stuff", "More Stuff" } };
+            var id = System.Guid.NewGuid().ToString("N");
+            var key = String.Format("tracking:{0}", id);
+            RedisBinarySerializer.Serialize(key, mobj);
+
+            var reply_mobj = RedisBinarySerializer.Deserialize<MockObject>(key);
+
+            Assert.Equal(mobj.EmailAddress, reply_mobj.EmailAddress);
         }
     }
 }

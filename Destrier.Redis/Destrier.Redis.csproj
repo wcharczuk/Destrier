@@ -34,7 +34,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -58,10 +60,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\RedisConnection.cs" />
     <Compile Include="Core\RedisConnectionPool.cs" />
+    <Compile Include="RedisContext.cs" />
     <Compile Include="RedisException.cs" />
     <Compile Include="RedisClient.cs" />
     <Compile Include="Core\RedisKeyType.cs" />
+    <Compile Include="RedisBinarySerializer.cs" />
+    <Compile Include="SessionState\RedisSessionStateItem.cs" />
+    <Compile Include="SessionState\RedisSessionStateStore.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

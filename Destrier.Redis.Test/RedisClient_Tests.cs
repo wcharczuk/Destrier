@@ -25,10 +25,6 @@ namespace Destrier.Redis.Test
         {
             using (var rc = new RedisClient(HOST))
             {
-                //SET
-                //GET
-                //DEL
-
                 var key = System.Guid.NewGuid().ToString("N");
 
                 var value = "TEST_VALUE";

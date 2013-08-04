@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,6 +43,24 @@ namespace Destrier.Redis
 
             _connection.Send(cmd.SET, key, value);
             return _connection.ReadReply().IsSuccess;
+        }
+
+        public Boolean SetBinary(String key, Stream value)
+        {
+            _connection.Send(cmd.SET, key, value);
+            return _connection.ReadReply().IsSuccess;
+        }
+
+        public Boolean SetBinary(String key, Byte[] value)
+        {
+            _connection.Send(cmd.SET, key, value);
+            return _connection.ReadReply().IsSuccess;
+        }
+
+        public Byte[] GetBinary(String key)
+        {
+            _connection.Send(cmd.GET, key);
+            return _connection.ReadBinaryReply();
         }
 
         public Boolean SetIfNotExists(String key, String value)
