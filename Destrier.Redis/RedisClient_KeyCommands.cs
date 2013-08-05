@@ -89,20 +89,30 @@ namespace Destrier.Redis
 
         public IEnumerable<String> MultiGet(params string[] args)
         {
+            return MultiGetInternal(args).Select(r => r.ToString());
+        }
+
+        protected IEnumerable<RedisValue> MultiGetInternal(params string[] args)
+        {
             if (args == null || !args.Any())
                 throw new ArgumentException("Cannot be null or empty.", "args");
 
             _connection.Send(cmd.MGET, args);
-            return _connection.ReadMultiBulkReply().Select(r => r.ToString());
+            return _connection.ReadMultiBulkReply();
         }
 
         public String Get(String key)
+        {
+            return GetInternal(key).ToString();
+        }
+
+        protected RedisValue GetInternal(String key)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
 
             _connection.Send(cmd.GET, key);
-            return _connection.ReadReply().ToString();
+            return _connection.ReadReply();
         }
 
         public RedisKeyType KeyTypeOf(String key)
@@ -154,7 +164,7 @@ namespace Destrier.Redis
             if (keys == null || !keys.Any())
                 throw new ArgumentException("Cannot be null or empty.", "keys");
 
-            _connection.Send(cmd.DEL, String.Join(",", keys));
+            _connection.Send(cmd.DEL, keys.ToArray());
             return _connection.ReadReply().LongValue >= 1;
         }
 
@@ -167,12 +177,7 @@ namespace Destrier.Redis
         public IEnumerable<String> GetKeys(String pattern = "*")
         {
             _connection.Send(cmd.KEYS, pattern);
-            var result = _connection.ReadReply().StringValue;
-
-            if (String.IsNullOrEmpty(result))
-                return Enumerable.Empty<String>();
-
-            return result.Split(' ');
+            return _connection.ReadMultiBulkReply().Select(r => r.ToString());
         }
 
         public Boolean RenameKey(String from, String to)

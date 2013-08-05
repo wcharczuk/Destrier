@@ -10,14 +10,54 @@ namespace Destrier.Redis.Core
 {
     public class ReflectionUtil
     {
+        private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
         private static ConcurrentDictionary<Type, List<Member>> _memberMapCache = new ConcurrentDictionary<Type, List<Member>>();
+
+        private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
+
+        public static object GetNewObject(Type toConstruct)
+        {
+            return _ctorCache.GetOrAdd(toConstruct, _CtorHelperFunc)();
+        }
+
+        public static T GetNewObject<T>()
+        {
+            var neededType = typeof(T);
+            var ctor = _ctorCache.GetOrAdd(neededType, _CtorHelperFunc);
+
+            return (T)ctor();
+        }
+
+        public static Func<object> ConstructorCreationHelper(Type target)
+        {
+            return Expression.Lambda<Func<object>>(Expression.New(target)).Compile();
+        }
+
+        public static Func<T> ConstructorCreationHelper<T>()
+        {
+            return Expression.Lambda<Func<T>>(Expression.New(typeof(T))).Compile();
+        }
+
+        public static Func<T> ConstructorCreationHelper<T>(Type target)
+        {
+            return Expression.Lambda<Func<T>>(Expression.New(target)).Compile();
+        }
+
+        public static object GetDefault(Type type)
+        {
+            if (type.IsValueType)
+            {
+                return Activator.CreateInstance(type);
+            }
+            return null;
+        }
 
         public static List<Member> GetMemberMap(Type type)
         {
             return _memberMapCache.GetOrAdd(type, (t) => GenerateMemberMap(t).ToList());
         }
 
-        public static IEnumerable<Member> GenerateMemberMap(Type t, Member parent = null)
+        public static IEnumerable<Member> GenerateMemberMap(Type t, Member parent = null, Boolean recursive = true)
         {
             foreach (var property in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
@@ -26,7 +66,7 @@ namespace Destrier.Redis.Core
                     var propertyMember = new PropertyMember(property) { Parent = parent};
                     yield return propertyMember;
 
-                    if (!property.PropertyType.IsValueType)
+                    if (IsTraversableType(property.PropertyType) && recursive)
                         foreach (var member in GenerateMemberMap(property.PropertyType, parent: propertyMember))
                             yield return member;
                 }
@@ -39,9 +79,41 @@ namespace Destrier.Redis.Core
                     var fieldMember = new FieldMember(field) { Parent = parent };
                     yield return fieldMember;
 
-                    if (!field.FieldType.IsValueType)
+                    if (IsTraversableType(field.FieldType) && recursive)
                         foreach (var member in GenerateMemberMap(field.FieldType, parent: fieldMember))
                             yield return member;
+                }
+            }
+        }
+
+        public static void MapToDictionary(Object instance, IDictionary<Member, Object> mappedMembers, Member parent = null)
+        {
+            var t = instance.GetType();
+            foreach (var property in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (IsSerializableType(property.PropertyType))
+                {
+                    var member = new PropertyMember(property) { Parent = parent };
+                    var value = member.GetValue(instance);
+
+                    mappedMembers.Add(member, value);
+
+                    if (IsTraversableType(member.MemberType) && !member.IsBinarySerialized)
+                        MapToDictionary(value, mappedMembers, member);
+                }
+            }
+
+            foreach (var field in t.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (IsSerializableType(field.FieldType))
+                {
+                    var member = new FieldMember(field) { Parent = parent };
+                    var value = member.GetValue(instance);
+
+                    mappedMembers.Add(member, value);
+
+                    if (IsTraversableType(member.MemberType) && !member.IsBinarySerialized)
+                        MapToDictionary(value, mappedMembers, member);
                 }
             }
         }
@@ -51,17 +123,24 @@ namespace Destrier.Redis.Core
             return 
                 t.IsValueType 
                 || t == typeof(String)
-                || IsArrayType(t) 
-                || IsListType(t) 
-                || IsSetType(t) 
-                || (IsMapType(t) && IsMapTypeKeyTypeSupported(t))
                 || IsNullableType(t)
                 || (t.IsClass && !IsEnumerableType(t));
         }
 
+        public static Boolean IsTraversableType(Type t)
+        {
+            return 
+                (
+                    t.IsClass 
+                    && !IsEnumerableType(t) 
+                    && t != typeof(String)
+                )
+                || (IsNullableType(t) && IsTraversableType(GetUnderlyingTypeForNullable(t)));
+        }
+
         public static Boolean IsEnumerableType(Type t)
         {
-            return t.IsGenericType && t.GetInterfaces().Any(it => it == typeof(IEnumerable<>));
+            return t.IsGenericType && t.GetInterfaces().Any(it => it == typeof(IEnumerable<>) || it == typeof(System.Collections.IEnumerable));
         }
 
         public static Boolean IsArrayType(Type t)
@@ -119,11 +198,7 @@ namespace Destrier.Redis.Core
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
             var lambda = Expression.Lambda<Func<object, object>>
             (
-                Expression.MakeMemberAccess
-                (
-                    Expression.Property(Expression.Convert(instanceParameter, property.DeclaringType), property)
-                    , property
-                )
+                Expression.Convert(Expression.MakeMemberAccess(Expression.Convert(instanceParameter, property.DeclaringType), property), typeof(object))
                 , instanceParameter
             );
 

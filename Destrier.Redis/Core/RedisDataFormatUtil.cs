@@ -46,5 +46,19 @@ namespace Destrier.Redis.Core
         {
             return Encoding.Default.GetString(buffer);
         }
+
+        public static String FormatForStorage(Object obj)
+        {
+            if (obj == null)
+                return null;
+
+            switch (Type.GetTypeCode(obj.GetType()))
+            {
+                case TypeCode.Boolean:
+                    return ((Boolean)obj) ? "1" : "0";
+                default:
+                    return obj.ToString();
+            }
+        }
     }
 }

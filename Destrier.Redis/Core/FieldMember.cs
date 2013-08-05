@@ -9,9 +9,8 @@ namespace Destrier.Redis.Core
     public class FieldMember : Member
     {
         public FieldMember(FieldInfo fieldInfo)
+            : base(fieldInfo)
         {
-            this.Name = fieldInfo.Name;
-            this.DeclaringType = fieldInfo.DeclaringType;
             this.MemberType = fieldInfo.FieldType;
             this.IsNullableType = ReflectionUtil.IsNullableType(this.MemberType);
 

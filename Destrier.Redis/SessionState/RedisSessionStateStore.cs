@@ -16,7 +16,12 @@ namespace Destrier.Redis.SessionState
         public Int32 Port { get; set; }
         public String Password { get; set; }
         
-        public String StoreKeyPrefix { get { return String.Format("RedisSessionStateStore:{0}", this.ApplicationName); } }
+        public String StoreKeyPrefix { get { return "RedisSessionStateStore"; } }
+
+        public override void Initialize(string name, System.Collections.Specialized.NameValueCollection config)
+        {
+            base.Initialize(name, config);
+        }
 
         public override SessionStateStoreData CreateNewStoreData(System.Web.HttpContext context, int timeout)
         {
@@ -36,11 +41,9 @@ namespace Destrier.Redis.SessionState
                 Flags = 1
             };
 
-            var fullKey = String.Format("{0}:{1}", this.StoreKeyPrefix, id);
-
             using (var rc = new RedisClient(Host, Port, Password))
             {
-                RedisBinarySerializer.Serialize(fullKey, newStore, rc);
+                rc.Create(newStore);
             }
         }
 
@@ -52,7 +55,19 @@ namespace Destrier.Redis.SessionState
 
         public override SessionStateStoreData GetItem(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)
         {
-            throw new NotImplementedException();
+            locked = false;
+            lockId = null;
+            lockAge = default(TimeSpan);
+            actions = 0;
+
+            SessionStateStoreData item = null;
+
+            using (var rc = new RedisClient(Host, Port, Password))
+            {
+
+            }
+
+            return item;
         }
 
         public override SessionStateStoreData GetItemExclusive(System.Web.HttpContext context, string id, out bool locked, out TimeSpan lockAge, out object lockId, out SessionStateActions actions)

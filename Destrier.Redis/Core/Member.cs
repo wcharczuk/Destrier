@@ -8,10 +8,25 @@ namespace Destrier.Redis.Core
 {
     public abstract class Member : ICloneable
     {
+        public Member(MemberInfo mi)
+        {
+            this.Name = mi.Name;
+            this.DeclaringType = mi.DeclaringType;
+            this.IsKey = Model.IsKey(mi);
+            this.KeyOrder = Model.GetKeyOrder(mi) ?? 0;
+
+            this.IsBinarySerialized = Model.IsBinarySerialized(mi);
+        }
+
         protected Func<Object, Object> _getValue;
         protected Action<Object, Object> _setValue;
 
         public virtual String Name { get; set; }
+
+        public virtual Boolean IsKey { get; set; }
+        public virtual Int32 KeyOrder { get; set; }
+
+        public virtual Boolean IsBinarySerialized { get; set; }
 
         public virtual Type MemberType { get; set; }
         public virtual Boolean IsNullableType { get; set; }
@@ -40,7 +55,7 @@ namespace Destrier.Redis.Core
                     return _fullyQualifiedName;
 
                 if (Parent != null)
-                    _fullyQualifiedName = String.Format("{0}.{1}", Parent.FullyQualifiedName, Name);
+                    _fullyQualifiedName = String.Format("{0}{1}{2}", Parent.FullyQualifiedName, Model.KeySeparator, Name);
                 else
                     _fullyQualifiedName = Name;
 

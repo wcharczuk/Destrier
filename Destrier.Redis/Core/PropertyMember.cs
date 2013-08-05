@@ -8,10 +8,8 @@ namespace Destrier.Redis.Core
 {
     public class PropertyMember : Member
     {
-        public PropertyMember(PropertyInfo propertyInfo)
+        public PropertyMember(PropertyInfo propertyInfo) : base(propertyInfo)
         {
-            this.Name = propertyInfo.Name;
-            this.DeclaringType = propertyInfo.DeclaringType;
             this.MemberType = propertyInfo.PropertyType;
             this.IsNullableType = ReflectionUtil.IsNullableType(this.MemberType);
 

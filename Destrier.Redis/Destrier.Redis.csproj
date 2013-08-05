@@ -47,10 +47,15 @@
   <ItemGroup>
     <Compile Include="Core\FieldMember.cs" />
     <Compile Include="Core\Member.cs" />
+    <Compile Include="Core\Model.cs" />
     <Compile Include="Core\PropertyMember.cs" />
     <Compile Include="Core\RedisCommandLiteral.cs" />
     <Compile Include="Core\RedisConnectionUnassignedHandler.cs" />
     <Compile Include="Core\RedisDataFormatUtil.cs" />
+    <Compile Include="Redis.cs" />
+    <Compile Include="RedisBinarySerializeAttribute.cs" />
+    <Compile Include="RedisHost.cs" />
+    <Compile Include="RedisKeyAttribute.cs" />
     <Compile Include="Core\RedisValue.cs" />
     <Compile Include="Core\ReflectionUtil.cs" />
     <Compile Include="RedisClient_ConnectionCommands.cs" />
@@ -64,7 +69,7 @@
     <Compile Include="RedisException.cs" />
     <Compile Include="RedisClient.cs" />
     <Compile Include="Core\RedisKeyType.cs" />
-    <Compile Include="RedisBinarySerializer.cs" />
+    <Compile Include="RedisStoreAttribute.cs" />
     <Compile Include="SessionState\RedisSessionStateItem.cs" />
     <Compile Include="SessionState\RedisSessionStateStore.cs" />
   </ItemGroup>
