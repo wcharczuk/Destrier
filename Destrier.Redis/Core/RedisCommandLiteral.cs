@@ -11,6 +11,9 @@ namespace Destrier.Redis.Core
         public static readonly string AUTH = "AUTH";
 
         public static readonly string BGSAVE = "BGSAVE";
+        public static readonly string BLPOP = "BLPOP";
+        public static readonly string BRPOP = "BRPOP";
+        public static readonly string BRPOPLPUSH = "BRPOPLPUSH";
 
         public static readonly string CLIENT = "CLIENT";
         public static readonly string CONFIG = "CONFIG";
@@ -40,6 +43,17 @@ namespace Destrier.Redis.Core
         public static readonly string LIST = "LIST";
         public static readonly string LASTSAVE = "LASTSAVE";
 
+        public static readonly string LINDEX = "LINDEX";
+        public static readonly string LINSERT = "LINSERT";
+        public static readonly string LLEN = "LLEN";
+        public static readonly string LPOP = "LPOP";
+        public static readonly string LPUSH = "LPUSH";
+        public static readonly string LPUSHX = "LPUSHX";
+        public static readonly string LRANGE = "LRANGE";
+        public static readonly string LREM = "LREM";
+        public static readonly string LSET = "LSET";
+        public static readonly string LTRIM = "LTRIM";
+        
         public static readonly string MOVE = "MOVE";
         public static readonly string MGET = "MGET";
         public static readonly string MSET = "MSET";
@@ -55,6 +69,11 @@ namespace Destrier.Redis.Core
         public static readonly string RENAMENX = "RENAMENX";
         public static readonly string REWRITE = "REWRITE";
         public static readonly string RESETSTAT = "RESETSTAT";
+
+        public static readonly string RPOP = "RPOP";
+        public static readonly string RPOPLPUSH = "RPOPLPUSH";
+        public static readonly string RPUSH = "RPUSH";
+        public static readonly string RPUSHNX = "RPUSHNX";
 
         public static readonly string SADD = "SADD";
         public static readonly string SCARD = "SCARD";

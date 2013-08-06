@@ -54,6 +54,7 @@
     <Compile Include="Core\RedisDataFormatUtil.cs" />
     <Compile Include="Redis.cs" />
     <Compile Include="RedisBinarySerializeAttribute.cs" />
+    <Compile Include="RedisClient_ListCommands.cs" />
     <Compile Include="RedisHost.cs" />
     <Compile Include="RedisKeyAttribute.cs" />
     <Compile Include="Core\RedisValue.cs" />
