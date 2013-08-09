@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Destrier.Redis
 {
-    public class RedisHost
+    public class RedisHostInfo
     {
         public String Host { get; set; }
         public Int32 Port { get; set; }

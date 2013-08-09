@@ -15,8 +15,6 @@ namespace Destrier.Redis.SessionState
         public String Host { get; set; }
         public Int32 Port { get; set; }
         public String Password { get; set; }
-        
-        public String StoreKeyPrefix { get { return "RedisSessionStateStore"; } }
 
         public override void Initialize(string name, System.Collections.Specialized.NameValueCollection config)
         {
@@ -43,7 +41,7 @@ namespace Destrier.Redis.SessionState
 
             using (var rc = new RedisClient(Host, Port, Password))
             {
-                rc.Create(newStore);
+                rc.SerializeObject(newStore);
             }
         }
 

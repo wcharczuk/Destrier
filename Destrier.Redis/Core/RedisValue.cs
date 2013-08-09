@@ -226,79 +226,79 @@ namespace Destrier.Redis.Core
                 return TypeCode.Empty;
         }
 
-        public bool ToBoolean(IFormatProvider provider)
+        public bool ToBoolean(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Boolean);
             return value != null ? (Boolean)value : default(Boolean);
         }
 
-        public byte ToByte(IFormatProvider provider)
+        public byte ToByte(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Byte);
             return value != null ? (Byte)value : default(Byte);
         }
 
-        public char ToChar(IFormatProvider provider)
+        public char ToChar(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Char);
             return value != null ? (Char)value : default(Char);
         }
 
-        public DateTime ToDateTime(IFormatProvider provider)
+        public DateTime ToDateTime(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.DateTime);
             return value != null ? (DateTime)value : default(DateTime);
         }
 
-        public decimal ToDecimal(IFormatProvider provider)
+        public decimal ToDecimal(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Decimal);
             return value != null ? (Decimal)value : default(Decimal);
         }
 
-        public double ToDouble(IFormatProvider provider)
+        public double ToDouble(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Double);
             return value != null ? (Double)value : default(Double);
         }
 
-        public short ToInt16(IFormatProvider provider)
+        public short ToInt16(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Int16);
             return value != null ? (Int16)value : default(Int16);
         }
 
-        public int ToInt32(IFormatProvider provider)
+        public int ToInt32(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Int32);
             return value != null ? (Int32)value : default(Int32);
         }
 
-        public long ToInt64(IFormatProvider provider)
+        public long ToInt64(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Int64);
             return value != null ? (Int64)value : default(Int64);
         }
 
-        public sbyte ToSByte(IFormatProvider provider)
+        public sbyte ToSByte(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.SByte);
             return value != null ? (SByte)value : default(SByte);
         }
 
-        public float ToSingle(IFormatProvider provider)
+        public float ToSingle(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.Single);
             return value != null ? (Single)value : default(Single);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.String);
             return value != null ? (String)value : null;
         }
 
-        public object ToType(Type conversionType, IFormatProvider provider)
+        public object ToType(Type conversionType, IFormatProvider provider = null)
         {
             if (this.StringValue != null)
                 return typeof(String);
@@ -310,19 +310,19 @@ namespace Destrier.Redis.Core
                 return typeof(RedisValue);
         }
 
-        public ushort ToUInt16(IFormatProvider provider)
+        public ushort ToUInt16(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.UInt16);
             return value != null ? (UInt16)value : default(UInt16);
         }
 
-        public uint ToUInt32(IFormatProvider provider)
+        public uint ToUInt32(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.UInt32);
             return value != null ? (UInt32)value : default(UInt32);
         }
 
-        public ulong ToUInt64(IFormatProvider provider)
+        public ulong ToUInt64(IFormatProvider provider = null)
         {
             var value = Convert(TypeCode.UInt64);
             return value != null ? (UInt64)value : default(UInt64);

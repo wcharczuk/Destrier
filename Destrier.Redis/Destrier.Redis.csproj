@@ -45,6 +45,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\RedisCache.cs" />
+    <Compile Include="Caching\RedisCacheItem.cs" />
     <Compile Include="Core\FieldMember.cs" />
     <Compile Include="Core\Member.cs" />
     <Compile Include="Core\Model.cs" />
@@ -52,10 +54,11 @@
     <Compile Include="Core\RedisCommandLiteral.cs" />
     <Compile Include="Core\RedisConnectionUnassignedHandler.cs" />
     <Compile Include="Core\RedisDataFormatUtil.cs" />
-    <Compile Include="Redis.cs" />
     <Compile Include="RedisBinarySerializeAttribute.cs" />
+    <Compile Include="RedisClient_HashCommands.cs" />
     <Compile Include="RedisClient_ListCommands.cs" />
-    <Compile Include="RedisHost.cs" />
+    <Compile Include="RedisClient_SortedSetCommands.cs" />
+    <Compile Include="RedisHostInfo.cs" />
     <Compile Include="RedisKeyAttribute.cs" />
     <Compile Include="Core\RedisValue.cs" />
     <Compile Include="Core\ReflectionUtil.cs" />

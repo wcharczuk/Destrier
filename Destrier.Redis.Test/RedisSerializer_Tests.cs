@@ -39,7 +39,7 @@ namespace Destrier.Redis.Test
 
             using (var rc = RedisContext.GetClient())
             {
-                var reply_mobj = rc.BinaryDeserialize<MockObject>(key);
+                var reply_mobj = rc.BinaryDeserializeObject<MockObject>(key);
                 Assert.Equal(mobj.EmailAddress, reply_mobj.EmailAddress);
             }
         }

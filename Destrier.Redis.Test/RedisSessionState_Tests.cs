@@ -24,21 +24,21 @@ namespace Destrier.Redis.Test
 
             using(var rc = RedisContext.GetClient())
             {
-                rc.Serialize(sessionState);
+                rc.SerializeObject(sessionState);
 
-                var deserialized = rc.Deserialize<RedisSessionStateItem>(Model.GetKey(sessionState));
+                var deserialized = rc.DeserializeObject<RedisSessionStateItem>(Model.GetKey(sessionState));
 
                 Assert.Equal(sessionState.SessionId, deserialized.SessionId);
                 Assert.Equal((sessionState.SesssionItems as MockObject).EmailAddress, (deserialized.SesssionItems as MockObject).EmailAddress);
 
-                rc.Update(sessionState, s => s.Locked, true);
-                rc.Update(sessionState, s => s.LockDate, DateTime.UtcNow);
-                deserialized = rc.Deserialize<RedisSessionStateItem>(Model.GetKey(sessionState));
+                rc.UpdateSerializedObjectValue(sessionState, s => s.Locked, true);
+                rc.UpdateSerializedObjectValue(sessionState, s => s.LockDate, DateTime.UtcNow);
+                deserialized = rc.DeserializeObject<RedisSessionStateItem>(Model.GetKey(sessionState));
 
                 Assert.True(deserialized.Locked);
                 Assert.True(deserialized.LockDate != default(DateTime));
 
-                rc.Delete(sessionState);
+                rc.RemoveSerializedObject(sessionState);
             }
         }
     }

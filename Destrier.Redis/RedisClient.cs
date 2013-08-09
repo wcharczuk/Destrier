@@ -25,6 +25,13 @@ namespace Destrier.Redis
             _connection.Connect();
         }
 
+        public RedisClient(RedisHostInfo hostInfo)
+        {
+            this.Host = hostInfo.Host;
+            this.Port = hostInfo.Port;
+            this.Password = hostInfo.Password;
+        }
+
         public RedisClient(RedisConnection connection)
         {
             _connection = connection;
@@ -33,16 +40,18 @@ namespace Destrier.Redis
             this.Password = connection.Password;
         }
 
+        public RedisHostInfo AsRedisHostInfo()
+        {
+            return new RedisHostInfo() { Host = this.Host, Port = this.Port, Password = this.Password, Db = this.Db };
+        }
+
         public String Host { get; set; }
         public Int32 Port { get; set; }
         public String Password { get; set; }
 
-        public void Create(Object instance)
-        {
-            Serialize(instance);
-        }
+        public Int32? Db { get; set; }
 
-        public void Delete(Object instance)
+        public void RemoveSerializedObject(Object instance)
         {
             var key = Model.GetKey(instance);
             var searchKey = String.Format("{0}{1}*", key, Model.KeySeparator);
@@ -50,64 +59,57 @@ namespace Destrier.Redis
             this.Remove(keys);
         }
 
-        public void Update(Object instance)
-        {
-            Serialize(instance);
-        }
-
-        public void Update<T, F>(T instance, Expression<Func<T, F>> expression, F value)
+        public void UpdateSerializedObjectValue<T, F>(T instance, Expression<Func<T, F>> expression, F value)
         {
             if (value == null)
                 throw new ArgumentException("Cannot be null.", "value");
 
             var prefix = Model.GetKey(instance);
             var memberKey = Model.GetKeyForMemberExpression(expression.Body as MemberExpression);
-            var key = String.Format("{0}{1}{2}", prefix, Model.KeySeparator, memberKey);
+            var key = Model.CreateKey(prefix, memberKey);
 
             Set(key, RedisDataFormatUtil.FormatForStorage(value));
         }
 
-        public T Get<T>(String key)
-        {
-            return Deserialize<T>(key);
-        }
-
-        public void Serialize(Object instance, String keyPrefix = null)
+        public void SerializeObject(Object instance, String keyPrefix = null, TimeSpan? slidingExpiration = null)
         {
             var type = instance.GetType();
 
             var instanceKey = Model.GetKey(instance);
-
-            String fullPrefix = instanceKey;
+            var fullPrefix = instanceKey;
 
             if (!String.IsNullOrEmpty(keyPrefix))
-                String.Format("{0}{1}{2}", keyPrefix, Model.KeySeparator, instanceKey);
+                fullPrefix = Model.CreateKey(keyPrefix, instanceKey);
 
             var members = new Dictionary<Member, Object>();
             ReflectionUtil.MapToDictionary(instance, members);
 
             foreach(var member in members)
             {
-                var fullKey = String.Format("{0}{1}{2}", fullPrefix, Model.KeySeparator, member.Key.FullyQualifiedName);
+                var fullKey = Model.CreateKey(fullPrefix, member.Key.FullyQualifiedName);
 
                 var value = member.Value;
 
                 if (member.Key.IsBinarySerialized)
-                    BinarySerialize(fullKey, value);
+                    BinarySerializeObject(fullKey, value, slidingExpiration);
                 else
+                {
                     Set(fullKey, RedisDataFormatUtil.FormatForStorage(value));
+                    if (slidingExpiration != null)
+                        ExpireMilliseconds(fullKey, (long)slidingExpiration.Value.TotalMilliseconds);
+                }
             }
         }
 
-        public T Deserialize<T>(String key)
+        public T DeserializeObject<T>(String key)
         {
-            return (T)Deserialize(typeof(T), key);
+            return (T)DeserializeObject(typeof(T), key);
         }
 
-        public Object Deserialize(Type type, String key)
+        public Object DeserializeObject(Type type, String key)
         {
             var members = ReflectionUtil.GetMemberMap(type);
-            var non_binary_keys = members.Where(m => !m.IsBinarySerialized).Select(kvp => String.Format("{0}{1}{2}", key, Model.KeySeparator, kvp.FullyQualifiedName)).ToList();
+            var non_binary_keys = members.Where(m => !m.IsBinarySerialized).Select(kvp => Model.CreateKey(key, kvp.FullyQualifiedName)).ToList();
 
             var results = MultiGetInternal(non_binary_keys.ToArray()).ToList();
 
@@ -121,16 +123,25 @@ namespace Destrier.Redis
             return instance;
         }
 
-        public void BinarySerialize(String key, Object instance)
+        public long BinarySerializeObject(String key, Object instance, TimeSpan? slidingExpiration = null)
         {
             var bf = new BinaryFormatter();
             var ms = new MemoryStream();
             bf.Serialize(ms, instance);
             ms.Position = 0;
             SetBinary(key, ms);
+            if (slidingExpiration != null)
+                ExpireMilliseconds(key, (long)slidingExpiration.Value.TotalMilliseconds);
+
+            return ms.Length;
         }
 
-        public object BinaryDeserialize(String key)
+        public T BinaryDeserializeObject<T>(String key)
+        {
+            return (T)BinaryDeserializeObject(key);
+        }
+
+        public object BinaryDeserializeObject(String key)
         {
             var bf = new BinaryFormatter();
             var buffer = GetBinary(key);
@@ -139,12 +150,6 @@ namespace Destrier.Redis
 
             return obj;
         }
-
-        public T BinaryDeserialize<T>(String key)
-        {
-            return (T)BinaryDeserialize(key);
-        }
-
 
         protected void Populate(object instance, Dictionary<String, RedisValue> values, String path = null)
         {
@@ -158,7 +163,7 @@ namespace Destrier.Redis
 
                 if (member.IsBinarySerialized)
                 {
-                    member.SetValue(instance, BinaryDeserialize(key));
+                    member.SetValue(instance, BinaryDeserializeObject(key));
                 }
                 else if (values.ContainsKey(key))
                 {

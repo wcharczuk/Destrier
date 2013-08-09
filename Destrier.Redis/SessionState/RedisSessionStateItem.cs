@@ -8,7 +8,7 @@ using Destrier.Redis.Core;
 namespace Destrier.Redis.SessionState
 {
     [Serializable]
-    [RedisStore("RedisSessionState")]
+    [RedisStore("SessionState")]
     public class RedisSessionStateItem
     {
         [RedisKey(0)]

@@ -22,11 +22,13 @@ namespace Destrier.Redis.Core
         public static readonly string DECR = "DECR";
         public static readonly string DECRBY = "DECRBY";
         public static readonly string DEL = "DEL";
+        public static readonly string DISCARD = "DISCARD";
 
         public static readonly string ECHO = "ECHO";
         public static readonly string EXISTS = "EXISTS";
         public static readonly string EXPIRE = "EXPIRE";
         public static readonly string EXPIREAT = "EXPIREAT";
+        public static readonly string EXEC = "EXEC";
 
         public static readonly string FLUSHALL = "FLUSHALL";
         public static readonly string FLUSHDB = "FLUSHDB";
@@ -36,6 +38,20 @@ namespace Destrier.Redis.Core
 
         public static readonly string INCR = "INCR";
         public static readonly string INCRBY = "INCRBY";
+
+        public static readonly string HDEL = "HDEL";
+        public static readonly string HEXISTS = "HEXISTS";
+        public static readonly string HGET = "HGET";
+        public static readonly string HGETALL = "HGETALL";
+        public static readonly string HINCRBY = "HINCRBY";
+        public static readonly string HINCRBYFLOAT = "HINCRBYFLOAT";
+        public static readonly string HKEYS = "HKEYS";
+        public static readonly string HLEN = "HLEN";
+        public static readonly string HMGET = "HMGET";
+        public static readonly string HMSET = "HMSET";
+        public static readonly string HSET = "HSET";
+        public static readonly string HSETNX = "HSETNX";
+        public static readonly string HVALS = "HVALS";
 
         public static readonly string KILL = "KILL";
         public static readonly string KEYS = "KEYS";
@@ -57,10 +73,13 @@ namespace Destrier.Redis.Core
         public static readonly string MOVE = "MOVE";
         public static readonly string MGET = "MGET";
         public static readonly string MSET = "MSET";
+        public static readonly string MULTI = "MULTI";
 
         public static readonly string PERSIST = "PERSIST";
         public static readonly string PING = "PING";
         public static readonly string PTTL = "PTTL";
+        public static readonly string PEXPIRE = "PEXPIRE";
+        public static readonly string PEXPIREAT = "PEXPIREAT";
 
         public static readonly string QUIT = "QUIT";
 
@@ -101,5 +120,21 @@ namespace Destrier.Redis.Core
         public static readonly string TTL = "TTL";
         public static readonly string TYPE = "TYPE";
 
+        public static readonly string ZADD = "ZADD";
+        public static readonly string ZCARD = "ZCARD";
+        public static readonly string ZCOUNT = "ZCOUNT";
+        public static readonly string ZINCRBY = "ZINCRBY";
+        public static readonly string ZINTERSTORE = "ZINTERSTORE";
+        public static readonly string ZRANGE = "ZRANGE";
+        public static readonly string ZRANGEBYSCORE = "ZRANGEBYSCORE";
+        public static readonly string ZRANK = "ZRANK";
+        public static readonly string ZREM = "ZREM";
+        public static readonly string ZREMRANGEBYRANK = "ZREMRANGEBYRANK";
+        public static readonly string ZREMRANGEBYSCORE = "ZREMRANGEBYSCORE";
+        public static readonly string ZREVRANGE = "ZREVRANGE";
+        public static readonly string ZREVRANGEBYSCORE = "ZREVRANGEBYSCORE";
+        public static readonly string ZREVRANK = "ZREVRANK";
+        public static readonly string ZSCORE = "ZSCORE";
+        public static readonly string ZUNIONSTORE = "ZUNIONSTORE";
     }
 }

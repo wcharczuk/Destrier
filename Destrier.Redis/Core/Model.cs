@@ -12,6 +12,11 @@ namespace Destrier.Redis.Core
     {
         public static readonly String KeySeparator = ":";
 
+        public static String CreateKey(params string[] keyComponents)
+        {
+            return String.Join(KeySeparator, keyComponents);
+        }
+
         public static String GetKey(Object instance)
         {
             var type = instance.GetType();
@@ -79,8 +84,16 @@ namespace Destrier.Redis.Core
             return null;
         }
 
+        public static String GetKeyForProperty<T, F>(Expression<Func<T, F>> expression)
+        {
+            return GetKeyForMemberExpression(expression.Body as MemberExpression);
+        }
+        
         public static String GetKeyForMemberExpression(MemberExpression memberExp)
         {
+            if (memberExp == null)
+                throw new ArgumentNullException("memberExp");
+
             List<String> visitedNames = new List<String>();
 
             Member member = null;

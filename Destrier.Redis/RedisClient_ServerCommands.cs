@@ -124,5 +124,23 @@ namespace Destrier.Redis
             _connection.Send(cmd.TIME);
             return _connection.ReadReply().DateTimeValue.Value;
         }
+
+        public void Multi()
+        {
+            _connection.Send(cmd.MULTI);
+            _connection.ReadForError();
+        }
+
+        public void Exec()
+        {
+            _connection.Send(cmd.EXEC);
+            _connection.ReadForError();
+        }
+
+        public void Discard()
+        {
+            _connection.Send(cmd.DISCARD);
+            _connection.ReadForError();
+        }
     }
 }

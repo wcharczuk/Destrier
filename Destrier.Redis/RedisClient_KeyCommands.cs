@@ -13,7 +13,7 @@ namespace Destrier.Redis
     {
         Boolean Set(String key, String value);
         Boolean SetIfNotExists(String key, String value);
-        Boolean MultiSet(IDictionary<String, String> values);
+        void MultiSet(IDictionary<String, String> values);
         IEnumerable<String> MultiGet(params string[] args);
         String Get(String key);
         RedisKeyType KeyTypeOf(String key);
@@ -22,9 +22,9 @@ namespace Destrier.Redis
         String RandomKey();
         IEnumerable<String> GetKeys(String pattern = "*");
         Boolean RenameKey(String from, String to);
-        long Increment(String key, int? count = null);
-        long Decrement(String key, int? count = null);
-        bool Expire(String key, int seconds);
+        long Increment(String key, long? increment = null);
+        long Decrement(String key, long? decrement = null);
+        bool Expire(String key, long seconds);
         bool ExpireAt(String key, DateTime time);
         TimeSpan TimeToLive(String key);
         Boolean Persist(String key);
@@ -75,7 +75,7 @@ namespace Destrier.Redis
             return _connection.ReadReply().IsSuccess;
         }
 
-        public Boolean MultiSet(IDictionary<String, String> values)
+        public void MultiSet(IDictionary<String, String> values)
         {
             var data = new List<String>();
             foreach (var kvp in values)
@@ -84,7 +84,7 @@ namespace Destrier.Redis
                 data.Add(kvp.Value);
             }
             _connection.Send(cmd.MSET, data.ToArray());
-            return _connection.ReadReply().IsSuccess;
+            _connection.ReadForError();
         }
 
         public IEnumerable<String> MultiGet(params string[] args)
@@ -103,10 +103,10 @@ namespace Destrier.Redis
 
         public String Get(String key)
         {
-            return GetInternal(key).ToString();
+            return GetRawValue(key).ToString();
         }
 
-        protected RedisValue GetInternal(String key)
+        public RedisValue GetRawValue(String key)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Cannot be null or empty.", "key");
@@ -204,33 +204,33 @@ namespace Destrier.Redis
             return _connection.ReadReply().IsSuccess;
         }
 
-        public long Increment(String key, int? count = null)
+        public long Increment(String key, long? increment = null)
         {
-            if (count == null)
+            if (increment == null || (increment != null && increment.Value == 1))
                 _connection.Send(cmd.INCR, key);
             else
-                _connection.Send(cmd.INCRBY, key, count.Value);
+                _connection.Send(cmd.INCRBY, key, increment.Value);
 
-            return _connection.ReadReply().LongValue.Value;
+            return _connection.ReadReply().ToInt64();
         }
 
-        public long Decrement(String key, int? count = null)
+        public long Decrement(String key, long? decrement = null)
         {
-            if (count == null)
+            if (decrement == null || (decrement != null && decrement.Value == 1))
                 _connection.Send(cmd.DECR, key);
             else
-                _connection.Send(cmd.DECRBY, key, count.Value);
+                _connection.Send(cmd.DECRBY, key, decrement.Value);
 
-            return _connection.ReadReply().LongValue.Value;
+            return _connection.ReadReply().ToInt64();
         }
 
-        public bool Expire(String key, int seconds)
+        public bool Expire(String key, long seconds)
         {
             if (key == null)
                 throw new ArgumentNullException("key");
 
             _connection.Send(cmd.EXPIRE, key, seconds);
-            return _connection.ReadReply().LongValue.Equals(1);
+            return _connection.ReadReply().IsSuccess;
         }
 
         public bool ExpireAt(String key, DateTime time)
@@ -240,7 +240,13 @@ namespace Destrier.Redis
 
             var unixTimestamp = RedisDataFormatUtil.ToUnixTimestamp(time);
             _connection.Send(cmd.EXPIREAT, key, unixTimestamp);
-            return _connection.ReadReply().LongValue.Equals(1);
+            return _connection.ReadReply().IsSuccess;
+        }
+
+        public bool ExpireMilliseconds(String key, long milliseconds)
+        {
+            _connection.Send(cmd.PEXPIRE, key, milliseconds);
+            return _connection.ReadReply().IsSuccess;
         }
 
         public TimeSpan TimeToLive(String key)
