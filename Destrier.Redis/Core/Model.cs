@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -125,6 +127,16 @@ namespace Destrier.Redis.Core
 
             visitedNames.Reverse();
             return String.Join(Model.KeySeparator, visitedNames);
+        }
+
+        public static long GetObjectSizeBytes(Object instance)
+        {
+            var bf = new BinaryFormatter();
+            using (var ms = new MemoryStream())
+            {
+                bf.Serialize(ms, instance);
+                return ms.Length;
+            }
         }
     }
 }

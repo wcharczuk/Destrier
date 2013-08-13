@@ -8,6 +8,11 @@ namespace Destrier.Redis
 {
     public class RedisHostInfo
     {
+        public RedisHostInfo()
+        {
+            Port = 6379;
+        }
+
         public String Host { get; set; }
         public Int32 Port { get; set; }
         public String Password { get; set; }

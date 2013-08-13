@@ -14,7 +14,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void RedisSessionStateItem_Tests()
         {
-            RedisContext.DefaultHost = "127.0.0.1";
+            RedisContext.AddHost("Default", "127.0.0.1");
 
             var sessionState = new RedisSessionStateItem();
             sessionState.SessionId = System.Guid.NewGuid().ToString("N").ToLower();

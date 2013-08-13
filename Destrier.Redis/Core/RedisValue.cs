@@ -300,14 +300,16 @@ namespace Destrier.Redis.Core
 
         public object ToType(Type conversionType, IFormatProvider provider = null)
         {
-            if (this.StringValue != null)
-                return typeof(String);
-            else if (this.LongValue != null)
-                return typeof(Int64);
-            else if (this.IsNull)
-                return typeof(DBNull);
+            if(conversionType == typeof(TimeSpan))
+                return TimeSpan.FromMilliseconds(this.ToDouble());
+            else if (ReflectionUtil.IsNullableType(conversionType))
+            {
+                var underlyingType = ReflectionUtil.GetUnderlyingTypeForNullable(conversionType);
+                var underlyingValue = this.ToType(underlyingType);
+                return underlyingValue;
+            }
             else
-                return typeof(RedisValue);
+                return this.Convert(Type.GetTypeCode(conversionType));
         }
 
         public ushort ToUInt16(IFormatProvider provider = null)

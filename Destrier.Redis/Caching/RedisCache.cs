@@ -8,15 +8,14 @@ using Destrier.Redis.Core;
 
 namespace Destrier.Redis.Caching
 {
-    //notes: race conditions abound.
+    //wctodo: move 'keys' to a sorted set, with the 'score' set to the unixtimestamp for the expiration time (in seconds)
+        //on any 'key' based operation, pull the full key list, purge expired values. assume 0/-1 to be 'null' expiration.
+    //wctodo: expirations should be in seconds. timespans should resolve to seconds, not milliseconds. for < 1sec, assume 1sec. for > 1sec, assume nearest (round up) second.
     public class RedisCache : IEnumerable<KeyValuePair<String, Object>>, IDisposable
     {
         public static class Constants
         {
             public const string RootKey = "Cache";
-
-            public const string CountKey = "A2799DC5EBED4A6F90C02AECEA16E5AC";
-            public const string SizeKey = "22DE8EF431CF4EEB949D861C3B28200D";
             public const string KeysKey = "53AFF8528106408F8856902181CE5345";
         }
 
@@ -37,6 +36,14 @@ namespace Destrier.Redis.Caching
 
         protected RedisClient _client = null;
 
+        public RedisConnection Connection
+        {
+            get
+            {
+                return _client.Connection;
+            }
+        }
+
         public void Connect(RedisHostInfo host)
         {
             _client = new RedisClient(host);
@@ -46,11 +53,7 @@ namespace Destrier.Redis.Caching
         { 
             get 
             {
-                return _client.GetRawValue(Model.CreateKey(Constants.RootKey, Constants.CountKey)).ToInt64();
-            }
-            private set
-            {
-                _client.Set(Model.CreateKey(Constants.RootKey, Constants.CountKey), value.ToString());
+                return Keys.LongCount();
             }
         }
 
@@ -75,7 +78,11 @@ namespace Destrier.Redis.Caching
         {
             get
             {
-                return _client.GetKeys(Model.CreateKey(Constants.RootKey, Constants.KeysKey));
+                foreach (var key in _client.GetKeys(String.Format("{0}*", Model.CreateKey(Constants.RootKey, Constants.KeysKey))))
+                {
+                    var keyComponents = key.Split(Model.KeySeparator[0]);
+                    yield return keyComponents.Last();
+                }
             }
         }
 
@@ -87,7 +94,8 @@ namespace Destrier.Redis.Caching
             cacheItem.Created = DateTime.UtcNow;
             cacheItem.Value = value;
             cacheItem.SlidingExpirationMilliseconds = slidingExpiration != null ? (long?)slidingExpiration.Value.TotalMilliseconds : null;
-            _client.SerializeObject(value, keyPrefix: Constants.RootKey, slidingExpiration: slidingExpiration);
+            cacheItem.ValueSizeBytes = Model.GetObjectSizeBytes(value);
+            _client.SerializeObject(cacheItem, slidingExpiration: slidingExpiration);
         }
 
         public Object Get(String key)
@@ -104,11 +112,12 @@ namespace Destrier.Redis.Caching
 
         public Boolean Remove(String key)
         {
-            var item = Get(key);
+            var item = _getCacheItemWithKeyInternal(key);
 
             if (item != null)
             {
                 _client.RemoveSerializedObject(item);
+                _removeTrackedKey(key);
                 return true;
             }
             return false;
@@ -128,10 +137,24 @@ namespace Destrier.Redis.Caching
 
         public void SetOrAdd(String key, Object value, TimeSpan? slidingExpiration = null)
         {
-            if(!ContainsKey(key))
+            if (!ContainsKey(key))
                 Add(key, value, slidingExpiration);
             else
+            {
                 Set(key, value);
+                if (slidingExpiration != null)
+                    _touchAsync(key, slidingExpiration);
+            }
+        }
+
+        public void Touch(String key, TimeSpan? newSlidingExpiration = null)
+        {
+            _touchAsync(key, newSlidingExpiration);
+        }
+
+        public void Clear()
+        {
+            _client.Remove(this.Keys.ToArray());
         }
 
         protected RedisCacheItem _getCacheItemWithKeyInternal(String key)
@@ -147,9 +170,9 @@ namespace Destrier.Redis.Caching
 
         protected void _addTrackedKey(String key, TimeSpan? slidingExpiration = null)
         {
-            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey);
+            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey, key);
 
-            _client.Set(compositeKey, key);
+            _client.Set(compositeKey, (slidingExpiration != null ? slidingExpiration.Value.TotalMilliseconds : -1).ToString());
 
             if(slidingExpiration != null)
                 _client.ExpireMilliseconds(compositeKey, (long)slidingExpiration.Value.TotalMilliseconds);
@@ -157,11 +180,11 @@ namespace Destrier.Redis.Caching
 
         protected void _removeTrackedKey(String key)
         {
-            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey);
-            _client.SortedSetRemove(compositeKey, key);
+            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey, key);
+            _client.Remove(compositeKey);
         }
 
-        protected void _touchAsync(String key)
+        protected void _touchAsync(String key, TimeSpan? newSlidingExpiration = null)
         {
             Task.Factory.StartNew(() =>
             {
@@ -169,7 +192,9 @@ namespace Destrier.Redis.Caching
                 {
                     using (var rc = new RedisClient(_client.AsRedisHostInfo()))
                     {
-                        long? slidingExpiration = rc.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationMilliseconds))).LongValue;
+                        long? newSlidingExpirationMilliseconds = newSlidingExpiration != null ? (long?)newSlidingExpiration.Value.TotalMilliseconds : null;
+                        long? slidingExpiration = newSlidingExpirationMilliseconds ?? rc.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationMilliseconds))).LongValue;
+
                         if (slidingExpiration != null && slidingExpiration.Value != 0)
                         {
                             rc.ExpireMilliseconds(Model.CreateKey(Constants.RootKey, Constants.KeysKey, key), (long)slidingExpiration);

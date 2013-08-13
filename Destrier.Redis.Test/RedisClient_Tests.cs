@@ -7,14 +7,12 @@ using Xunit;
 
 namespace Destrier.Redis.Test
 {
-    public class RedisClient_Tests
+    public class RedisClient_Tests : RedisBaseTest
     {
-        const string HOST = "127.0.0.1";
-
         [Fact]
         public void Connect_Test()
         {
-            using (var rc = new RedisClient(HOST))
+            using (var rc = new RedisClient(HostInfo))
             {
                 Assert.True(rc.Connection.Socket.Connected);
             }
@@ -23,7 +21,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Keys_Test()
         {
-            using (var rc = new RedisClient(HOST))
+            using (var rc = new RedisClient(HostInfo))
             {
                 var key = System.Guid.NewGuid().ToString("N");
 
@@ -41,7 +39,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void MultiSet_Test()
         {
-            using (var rc = new RedisClient(HOST))
+            using (var rc = new RedisClient(HostInfo))
             {
                 var values = new Dictionary<string, string>() {
                     { System.Guid.NewGuid().ToString("N"), "TEST_VALUE" },
@@ -57,7 +55,7 @@ namespace Destrier.Redis.Test
                 }
                 finally
                 {
-                    rc.Remove(values.Keys);
+                    rc.Remove(values.Keys.ToArray());
                 }
             }
         }
@@ -65,7 +63,7 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Sets_Test()
         {
-            using (var rc = new RedisClient(HOST))
+            using (var rc = new RedisClient(HostInfo))
             {
                 //SADD test :: moobars, foobars
                 //SCARD test => 2

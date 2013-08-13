@@ -16,13 +16,15 @@ namespace Destrier.Redis
         protected RedisConnection _connection = null;
         public virtual RedisConnection Connection { get { return _connection; } }
 
-        public RedisClient(String host, int port = 6379, String password = null)
+        public RedisClient(String host, int port = 6379, String password = null, Int32? db = null)
         {
             Host = host;
             Port = port;
             Password = password;
+            Db = db;
             _connection = RedisConnectionPool.GetConnection(host, port, password);
             _connection.Connect();
+            SelectDb();
         }
 
         public RedisClient(RedisHostInfo hostInfo)
@@ -30,6 +32,16 @@ namespace Destrier.Redis
             this.Host = hostInfo.Host;
             this.Port = hostInfo.Port;
             this.Password = hostInfo.Password;
+            _connection = RedisConnectionPool.GetConnection(this.Host, this.Port, this.Password);
+            _connection.Connect();
+            SelectDb();
+        }
+
+        protected void SelectDb()
+        {
+            var db = this.Db ?? 0;
+            _connection.Send(cmd.SELECT, db);
+            _connection.ReadForError();
         }
 
         public RedisClient(RedisConnection connection)
@@ -48,7 +60,6 @@ namespace Destrier.Redis
         public String Host { get; set; }
         public Int32 Port { get; set; }
         public String Password { get; set; }
-
         public Int32? Db { get; set; }
 
         public void RemoveSerializedObject(Object instance)
@@ -56,7 +67,9 @@ namespace Destrier.Redis
             var key = Model.GetKey(instance);
             var searchKey = String.Format("{0}{1}*", key, Model.KeySeparator);
             var keys = this.GetKeys(searchKey).ToArray();
-            this.Remove(keys);
+
+            if(keys != null && keys.Any())
+                this.Remove(keys);
         }
 
         public void UpdateSerializedObjectValue<T, F>(T instance, Expression<Func<T, F>> expression, F value)
@@ -94,9 +107,12 @@ namespace Destrier.Redis
                     BinarySerializeObject(fullKey, value, slidingExpiration);
                 else
                 {
-                    Set(fullKey, RedisDataFormatUtil.FormatForStorage(value));
-                    if (slidingExpiration != null)
-                        ExpireMilliseconds(fullKey, (long)slidingExpiration.Value.TotalMilliseconds);
+                    if (value != null)
+                    {
+                        Set(fullKey, RedisDataFormatUtil.FormatForStorage(value));
+                        if (slidingExpiration != null)
+                            ExpireMilliseconds(fullKey, (long)slidingExpiration.Value.TotalMilliseconds);
+                    }
                 }
             }
         }
@@ -111,7 +127,7 @@ namespace Destrier.Redis
             var members = ReflectionUtil.GetMemberMap(type);
             var non_binary_keys = members.Where(m => !m.IsBinarySerialized).Select(kvp => Model.CreateKey(key, kvp.FullyQualifiedName)).ToList();
 
-            var results = MultiGetInternal(non_binary_keys.ToArray()).ToList();
+            var results = MultiGetRawValues(non_binary_keys.ToArray()).ToList();
 
             var map = new Dictionary<String, RedisValue>();
             for (int x = 0; x < non_binary_keys.Count; x++)
@@ -145,6 +161,10 @@ namespace Destrier.Redis
         {
             var bf = new BinaryFormatter();
             var buffer = GetBinary(key);
+
+            if (buffer == null)
+                return null;
+
             var ms = new MemoryStream(buffer);
             var obj = bf.Deserialize(ms);
 
@@ -167,7 +187,7 @@ namespace Destrier.Redis
                 }
                 else if (values.ContainsKey(key))
                 {
-                    var value = values[key];
+                    object value = values[key];
                     member.SetValue(instance, Convert.ChangeType(value, member.MemberType));
                 }
             }

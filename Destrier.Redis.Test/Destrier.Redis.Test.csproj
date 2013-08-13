@@ -45,6 +45,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MockObject.cs" />
+    <Compile Include="RedisBaseTest.cs" />
+    <Compile Include="RedisCache_Tests.cs" />
     <Compile Include="RedisClient_Tests.cs" />
     <Compile Include="RedisConnectionPool_Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

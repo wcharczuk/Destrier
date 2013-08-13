@@ -38,6 +38,7 @@ namespace Destrier.Redis.Core
         #endregion
 
         #region Client Interactivity
+        public Boolean IsConnected { get { return _socket.Connected; } }
         public Socket Socket { get { return _socket; } }
         public Stream Stream { get { return _stream; } }
         #endregion
@@ -135,6 +136,8 @@ namespace Destrier.Redis.Core
                 throw new RedisException("RedisConnection :: Error");
 
             var size = int.Parse(response.Substring(1));
+            if (size == -1)
+                return null;
 
             var buffer = new byte[size];
             _stream.Read(buffer, 0, size);

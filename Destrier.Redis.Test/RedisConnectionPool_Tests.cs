@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Destrier.Redis.Test
 {
-    public class RedisConnectionPool_Tests
+    public class RedisConnectionPool_Tests : RedisBaseTest
     {
         [Fact]
         public void ReUsePoolConnection_test()

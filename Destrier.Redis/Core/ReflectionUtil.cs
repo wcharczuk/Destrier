@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace Destrier.Redis.Core
 {
