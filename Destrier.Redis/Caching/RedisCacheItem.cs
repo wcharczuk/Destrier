@@ -15,7 +15,7 @@ namespace Destrier.Redis.Caching
         public DateTime Created { get; set; }
         public DateTime? LastAccessed { get; set; }
         public DateTime? Expiration { get; set; }
-        public long? SlidingExpirationMilliseconds { get; set; }
+        public long? SlidingExpirationSeconds { get; set; }
 
         [RedisBinarySerialize]
         public Object Value { get; set; }

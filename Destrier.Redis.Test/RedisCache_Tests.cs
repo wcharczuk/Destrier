@@ -31,11 +31,11 @@ namespace Destrier.Redis.Test
         public void AddItem_WithExpiration_Test()
         {
             RedisCache.Current.Connect(HostInfo);
-            RedisCache.Current.Add(MyKey, MockObject, slidingExpiration: TimeSpan.FromMilliseconds(500));
+            RedisCache.Current.Add(MyKey, MockObject, slidingExpiration: TimeSpan.FromSeconds(1));
             var retrieved = RedisCache.Current[MyKey] as MockObject;
             Assert.NotNull(retrieved);
             Assert.Equal(MockObject.EmailAddress, retrieved.EmailAddress);
-            System.Threading.Thread.Sleep(500); //wait 1/2 second.
+            System.Threading.Thread.Sleep(2000);
             retrieved = RedisCache.Current[MyKey] as MockObject;
             Assert.Null(retrieved);
         }
@@ -125,7 +125,11 @@ namespace Destrier.Redis.Test
         [Fact]
         public void Touch_Test()
         {
-            //
+            RedisCache.Current.Connect(HostInfo);
+            RedisCache.Current.Add(MyKey, MockObject, slidingExpiration: TimeSpan.FromSeconds(1));
+            var retrieved = RedisCache.Current[MyKey] as MockObject;
+            Assert.NotNull(retrieved);
+            RedisCache.Current.Touch(MyKey, newSlidingExpiration: TimeSpan.FromSeconds(1));
         }
 
         [Fact]

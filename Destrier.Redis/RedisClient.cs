@@ -104,16 +104,29 @@ namespace Destrier.Redis
                 var value = member.Value;
 
                 if (member.Key.IsBinarySerialized)
-                    BinarySerializeObject(fullKey, value, slidingExpiration);
+                {
+                    BinarySerializeObject(fullKey, value);
+                    ExpireByTimespan(fullKey, slidingExpiration);
+                }
                 else
                 {
                     if (value != null)
                     {
                         Set(fullKey, RedisDataFormatUtil.FormatForStorage(value));
-                        if (slidingExpiration != null)
-                            ExpireMilliseconds(fullKey, (long)slidingExpiration.Value.TotalMilliseconds);
+                        ExpireByTimespan(fullKey, slidingExpiration);
                     }
                 }
+            }
+        }
+
+        public void ExpireByTimespan(String key, TimeSpan? slidingExpiration)
+        {
+            if (slidingExpiration != null)
+            {
+                if (slidingExpiration.Value.TotalMilliseconds >= 1000)
+                    Expire(key, (long)slidingExpiration.Value.TotalSeconds);
+                else if (slidingExpiration.Value.TotalMilliseconds > 0)
+                    ExpireMilliseconds(key, (long)slidingExpiration.Value.TotalMilliseconds);
             }
         }
 
@@ -139,15 +152,13 @@ namespace Destrier.Redis
             return instance;
         }
 
-        public long BinarySerializeObject(String key, Object instance, TimeSpan? slidingExpiration = null)
+        public long BinarySerializeObject(String key, Object instance)
         {
             var bf = new BinaryFormatter();
             var ms = new MemoryStream();
             bf.Serialize(ms, instance);
             ms.Position = 0;
             SetBinary(key, ms);
-            if (slidingExpiration != null)
-                ExpireMilliseconds(key, (long)slidingExpiration.Value.TotalMilliseconds);
 
             return ms.Length;
         }

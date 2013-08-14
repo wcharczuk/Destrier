@@ -8,9 +8,6 @@ using Destrier.Redis.Core;
 
 namespace Destrier.Redis.Caching
 {
-    //wctodo: move 'keys' to a sorted set, with the 'score' set to the unixtimestamp for the expiration time (in seconds)
-        //on any 'key' based operation, pull the full key list, purge expired values. assume 0/-1 to be 'null' expiration.
-    //wctodo: expirations should be in seconds. timespans should resolve to seconds, not milliseconds. for < 1sec, assume 1sec. for > 1sec, assume nearest (round up) second.
     public class RedisCache : IEnumerable<KeyValuePair<String, Object>>, IDisposable
     {
         public static class Constants
@@ -93,7 +90,7 @@ namespace Destrier.Redis.Caching
             cacheItem.Key = key;
             cacheItem.Created = DateTime.UtcNow;
             cacheItem.Value = value;
-            cacheItem.SlidingExpirationMilliseconds = slidingExpiration != null ? (long?)slidingExpiration.Value.TotalMilliseconds : null;
+            cacheItem.SlidingExpirationSeconds = slidingExpiration != null ? (long?)slidingExpiration.Value.TotalMilliseconds : null;
             cacheItem.ValueSizeBytes = Model.GetObjectSizeBytes(value);
             _client.SerializeObject(cacheItem, slidingExpiration: slidingExpiration);
         }
@@ -165,17 +162,14 @@ namespace Destrier.Redis.Caching
 
         protected long? _getObjectSlidingExpriation(String key)
         {
-            return _client.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationMilliseconds))).LongValue;
+            return _client.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationSeconds))).LongValue;
         }
 
         protected void _addTrackedKey(String key, TimeSpan? slidingExpiration = null)
         {
             var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey, key);
-
             _client.Set(compositeKey, (slidingExpiration != null ? slidingExpiration.Value.TotalMilliseconds : -1).ToString());
-
-            if(slidingExpiration != null)
-                _client.ExpireMilliseconds(compositeKey, (long)slidingExpiration.Value.TotalMilliseconds);
+            _client.ExpireByTimespan(compositeKey, slidingExpiration);
         }
 
         protected void _removeTrackedKey(String key)
@@ -192,19 +186,20 @@ namespace Destrier.Redis.Caching
                 {
                     using (var rc = new RedisClient(_client.AsRedisHostInfo()))
                     {
-                        long? newSlidingExpirationMilliseconds = newSlidingExpiration != null ? (long?)newSlidingExpiration.Value.TotalMilliseconds : null;
-                        long? slidingExpiration = newSlidingExpirationMilliseconds ?? rc.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationMilliseconds))).LongValue;
+                        long? newSlidingExpirationSeconds = newSlidingExpiration != null ? (long?)newSlidingExpiration.Value.TotalSeconds : null;
+                        long? existingSlidingExpirationSeconds = rc.GetRawValue(Model.CreateKey(Constants.RootKey, key, Model.GetKeyForProperty<RedisCacheItem, long?>(ri => ri.SlidingExpirationSeconds))).LongValue;
+                        long? slidingExpiration = newSlidingExpirationSeconds ?? existingSlidingExpirationSeconds;
 
                         if (slidingExpiration != null && slidingExpiration.Value != 0)
                         {
-                            rc.ExpireMilliseconds(Model.CreateKey(Constants.RootKey, Constants.KeysKey, key), (long)slidingExpiration);
+                            rc.Expire(Model.CreateKey(Constants.RootKey, Constants.KeysKey, key), (long)slidingExpiration);
 
                             var fullPrefix = Model.CreateKey(Constants.RootKey, key);
                             var members = ReflectionUtil.GetMemberMap(typeof(RedisCacheItem));
                             foreach (var member in members)
                             {
                                 var fullKey = Model.CreateKey(fullPrefix, member.FullyQualifiedName);
-                                rc.ExpireMilliseconds(fullKey, slidingExpiration.Value);
+                                rc.Expire(fullKey, slidingExpiration.Value);
                             }
                         }
                     }

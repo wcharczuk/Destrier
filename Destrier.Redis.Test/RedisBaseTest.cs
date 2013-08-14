@@ -10,7 +10,7 @@ namespace Destrier.Redis.Test
     {
         protected static readonly RedisHostInfo HostInfo = new RedisHostInfo()
         {
-            Host = "192.168.1.228"
+            Host = "127.0.0.1"
         };
 
         protected static readonly String MyKey = "MyKey";
