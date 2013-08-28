@@ -328,5 +328,23 @@ namespace Destrier.Test
 
             Assert.NotEmpty(nullTest);
         }
+
+        [Fact]
+        public void Update_ByPropertyName()
+        {
+            var oldPerson = Database.Get<Person>(1);
+            new Update<Person>().Set("Name", "Not Ernest Hemmingway").Where(p => p.Id == 1).Execute();
+            var newPerson = Database.Get<Person>(1);
+            Assert.NotEqual(oldPerson.Name, newPerson.Name);
+            Assert.Equal("Not Ernest Hemmingway", newPerson.Name);
+
+            //case insensitive test.
+            new Update<Person>().Set("name", "Definitely Ernest Hemmingway").Where(p => p.Id == 1).Execute();
+            newPerson = Database.Get<Person>(1);
+            Assert.NotEqual(oldPerson.Name, newPerson.Name);
+            Assert.Equal("Definitely Ernest Hemmingway", newPerson.Name);
+
+            Database.Update(oldPerson);
+        }
     }
 }
