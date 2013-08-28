@@ -405,75 +405,28 @@ namespace Destrier
             }
         }
 
-        #endregion
-
-        /// <summary>
-        /// Uses the generated dynamic method to populate the instance of the <c>CurrentOutputType</c>
-        /// </summary>
-        /// <param name="instance"></param>
-        public void SetInstanceValues(object instance)
-        {
-            _setInstanceValuesFn(this, instance);
-        }
-
-        /// <summary>
-        /// Throws a data exception produced by the _setInstanceValuesFn.
-        /// </summary>
-        /// <param name="ex"></param>
-        /// <param name="columnIndex"></param>
-        /// <param name="instance"></param>
-        /// <param name="reader"></param>
-        public static void ThrowDataException(Exception ex, Int32 columnIndex, Object instance, IndexedSqlDataReader reader)
-        {
-            Exception toThrow;
-            try
-            {
-                string name = "-";
-                string value = "-";
-                string memberName = "-";
-                string memberType = "-";
-                if (reader != null && columnIndex >= 0 && columnIndex < reader.FieldCount)
-                {
-                    name = reader.GetName(columnIndex);
-                    object val = reader.GetValue(columnIndex);
-                    if (val == null || val is DBNull)
-                    {
-                        value = "null";
-                    }
-                    else
-                    {
-                        value = Convert.ToString(val) + " as " + Type.GetTypeCode(val.GetType());
-                    }
-
-                    if (reader.ColumnMemberIndexMap != null && reader.ColumnMemberIndexMap.Any())
-                    {
-                        memberName = reader.ColumnMemberIndexMap[columnIndex].Name;
-                        memberType = reader.ColumnMemberIndexMap[columnIndex].Type.ToString();
-                    }
-                }
-                toThrow = new DataException(String.Format("Exception reading column {0}: ({1} = {2}) for {3} as {4})", columnIndex, name, value, memberName, memberType), ex);
-            }
-            catch
-            {
-                toThrow = new DataException(ex.Message, ex);
-            }
-            throw toThrow;
-        }
-
-        #region List Processing
-        public dynamic ReadDynamic()
+        public dynamic GetDynamic()
         {
             var value = new ExpandoObject();
-            while (this.Read())
+            for (int i = 0; i < this.FieldCount; i++)
             {
-                for (int i = 0; i < this.FieldCount; i++)
-                {
-                    var name = this.GetName(i);
-                    ((IDictionary<string, object>)value)[name] = this.GetValue(i);
-                }
+                var name = this.GetName(i);
+                ((IDictionary<string, object>)value)[name] = this.GetValue(i);
             }
-            
             return value;
+        }
+
+        #endregion
+
+        #region List Processing
+
+        public dynamic ReadDynamic()
+        {
+            if(this.Read())
+            {
+                return GetDynamic();
+            }
+            return new ExpandoObject();
         }
 
         public List<dynamic> ReadDynamicList(Boolean advanceToNextResultAfter = false)
@@ -638,6 +591,17 @@ namespace Destrier
                 this.NextResult();
         }
 
+        public void ReadIntoParentCollectionDynamic(Action<IndexedSqlDataReader, dynamic> doStuffToAddToParent, Boolean advanceToNextResultAfter = true)
+        {
+            while (this.Read())
+            {
+                doStuffToAddToParent(this, this.GetDynamic());
+            }
+
+            if (advanceToNextResultAfter)
+                this.NextResult();
+        }
+
         public void ReadFullControl(Action<IndexedSqlDataReader> action, Boolean advanceToNextResultAfter = true)
         {
             while (this.Read())
@@ -649,6 +613,62 @@ namespace Destrier
                 this.NextResult();
         }
         #endregion
+
+        #region Util
+
+        /// <summary>
+        /// Uses the generated dynamic method to populate the instance of the <c>CurrentOutputType</c>
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <remarks>Will only set properties on the instance itself, not on any referenced objects etc.</remarks>
+        public void SetInstanceValues(object instance)
+        {
+            _setInstanceValuesFn(this, instance);
+        }
+
+        /// <summary>
+        /// Throws a data exception produced by the _setInstanceValuesFn.
+        /// </summary>
+        /// <param name="ex"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="instance"></param>
+        /// <param name="reader"></param>
+        public static void ThrowDataException(Exception ex, Int32 columnIndex, Object instance, IndexedSqlDataReader reader)
+        {
+            Exception toThrow;
+            try
+            {
+                string name = "-";
+                string value = "-";
+                string memberName = "-";
+                string memberType = "-";
+                if (reader != null && columnIndex >= 0 && columnIndex < reader.FieldCount)
+                {
+                    name = reader.GetName(columnIndex);
+                    object val = reader.GetValue(columnIndex);
+                    if (val == null || val is DBNull)
+                    {
+                        value = "null";
+                    }
+                    else
+                    {
+                        value = Convert.ToString(val) + " as " + Type.GetTypeCode(val.GetType());
+                    }
+
+                    if (reader.ColumnMemberIndexMap != null && reader.ColumnMemberIndexMap.Any())
+                    {
+                        memberName = reader.ColumnMemberIndexMap[columnIndex].Name;
+                        memberType = reader.ColumnMemberIndexMap[columnIndex].Type.ToString();
+                    }
+                }
+                toThrow = new DataException(String.Format("Exception reading column {0}: ({1} = {2}) for {3} as {4})", columnIndex, name, value, memberName, memberType), ex);
+            }
+            catch
+            {
+                toThrow = new DataException(ex.Message, ex);
+            }
+            throw toThrow;
+        }
 
         public override bool Equals(object obj)
         {
@@ -708,5 +728,6 @@ namespace Destrier
                 _dr = null;
             }
         }
+        #endregion
     }
 }

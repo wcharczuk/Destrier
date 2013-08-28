@@ -13,6 +13,8 @@ namespace Destrier
 {
     public static class Execute
     {
+        public const int COMMAND_TIMEOUT = 60;
+
         public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null, Boolean standardizeCasing = true)
         {
             using (var cmd = Command(connectionName))
@@ -80,8 +82,10 @@ namespace Destrier
             return Command(connectionString, provider);
         }
 
-        public static System.Data.Common.DbCommand Command(String connectionString, DbProviderFactory providerFactory = null)
+        public static System.Data.Common.DbCommand Command(String connectionString, DbProviderFactory providerFactory = null, int? commandTimeout = null)
         {
+            commandTimeout = commandTimeout ?? COMMAND_TIMEOUT;
+
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             providerFactory = providerFactory ?? DatabaseConfigurationContext.DefaultProviderFactory;
 

@@ -294,5 +294,48 @@ namespace Destrier
         {
             return System.Guid.NewGuid().ToString("N");
         }
+
+        public static Member MemberForPropertyName(String propertyName, Dictionary<String, Member> members)
+        {
+            Member member;
+            members.TryGetValue(propertyName, out member);
+
+            //check if casing was an issue ....
+            if (member == null)
+            {
+                member = members.Values.FirstOrDefault(m => m.FullyQualifiedName.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            return member;
+        }
+
+        public static Member MemberForExpression(MemberExpression memberExp, Dictionary<String, Member> members)
+        {
+            List<String> visitedNames = new List<String>();
+
+            var com = new ColumnMember(memberExp.Member as PropertyInfo);
+
+            visitedNames.Add(com.Name);
+
+            var visitedMemberExp = memberExp;
+            while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
+            {
+                visitedMemberExp = memberExp.Expression as MemberExpression;
+                if (visitedMemberExp.Member is PropertyInfo)
+                {
+                    ReferencedObjectMember rom = new ReferencedObjectMember(visitedMemberExp.Member as PropertyInfo);
+                    visitedNames.Add(rom.Name);
+                }
+                else
+                    return null; //abort!
+            }
+
+            visitedNames.Reverse();
+            var fullName = String.Join(".", visitedNames);
+
+            Member member;
+            members.TryGetValue(fullName, out member);
+            return member;
+        }
     }
 }
