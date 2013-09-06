@@ -32,6 +32,7 @@ namespace Destrier.Redis
         public long SortedSetAdd(String key, long score, String member, params Tuple<long, string>[] additionalValues)
         {
             var args = new List<string>();
+            args.Add(key);
             args.Add(score.ToString());
             args.Add(member);
 
@@ -44,7 +45,7 @@ namespace Destrier.Redis
                 }
             }
 
-            _connection.Send(cmd.ZADD, key, args);
+            _connection.Send(cmd.ZADD, args.ToArray());
             return _connection.ReadReply().ToInt64();
         }
 
@@ -122,7 +123,7 @@ namespace Destrier.Redis
                 args.Add(count.Value.ToString());
             }
 
-            _connection.Send(cmd.ZRANGEBYSCORE, args);
+            _connection.Send(cmd.ZRANGEBYSCORE, args.ToArray());
             return _connection.ReadMultiBulkReply().Select(r => r.ToString());
         }
 
@@ -140,7 +141,7 @@ namespace Destrier.Redis
             if (additionalMembers != null && additionalMembers.Any())
                 args = args.Concat(additionalMembers).ToList();
 
-            _connection.Send(cmd.ZREM, args);
+            _connection.Send(cmd.ZREM, args.ToArray());
             return _connection.ReadReply().ToInt64();
         }
 
@@ -187,7 +188,7 @@ namespace Destrier.Redis
                 args.Add(count.Value.ToString());
             }
 
-            _connection.Send(cmd.ZREVRANGEBYSCORE, args);
+            _connection.Send(cmd.ZREVRANGEBYSCORE, args.ToArray());
             return _connection.ReadMultiBulkReply().Select(r => r.ToString());
         }
 
@@ -228,7 +229,7 @@ namespace Destrier.Redis
                 args.Add(aggregate);
             }
 
-            _connection.Send(cmd.ZUNIONSTORE, args);
+            _connection.Send(cmd.ZUNIONSTORE, args.ToArray());
             return _connection.ReadReply().ToInt64();
         }
     }

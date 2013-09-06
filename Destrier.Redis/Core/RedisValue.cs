@@ -7,23 +7,10 @@ namespace Destrier.Redis.Core
 {
     public struct RedisValue : IConvertible
     {
+        public bool IsSuccess;
         public bool IsNull;
         public long? LongValue;
         public string StringValue;
-
-        public Boolean IsSuccess
-        {
-            get
-            {
-                if (!String.IsNullOrEmpty(this.StringValue))
-                    return !StringValue.StartsWith("-");
-
-                if (LongValue != null)
-                    return LongValue.Value.Equals(1);
-                
-                return true;
-            }
-        }
 
         public DateTime? DateTimeValue
         {
@@ -62,6 +49,9 @@ namespace Destrier.Redis.Core
         private object Convert(TypeCode toType)
         {
             if (IsNull)
+                return null;
+
+            if (!IsSuccess)
                 return null;
 
             switch (toType)

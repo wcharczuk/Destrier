@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Destrier.Redis.Caching;
+using Destrier.Redis.Cache;
 using Xunit;
 
 namespace Destrier.Redis.Test

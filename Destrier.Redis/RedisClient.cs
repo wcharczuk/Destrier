@@ -24,7 +24,7 @@ namespace Destrier.Redis
             Db = db;
             _connection = RedisConnectionPool.GetConnection(host, port, password);
             _connection.Connect();
-            SelectDb();
+            _selectDb();
         }
 
         public RedisClient(RedisHostInfo hostInfo)
@@ -32,16 +32,10 @@ namespace Destrier.Redis
             this.Host = hostInfo.Host;
             this.Port = hostInfo.Port;
             this.Password = hostInfo.Password;
+            this.Db = hostInfo.Db;
             _connection = RedisConnectionPool.GetConnection(this.Host, this.Port, this.Password);
             _connection.Connect();
-            SelectDb();
-        }
-
-        protected void SelectDb()
-        {
-            var db = this.Db ?? 0;
-            _connection.Send(cmd.SELECT, db);
-            _connection.ReadForError();
+            _selectDb();
         }
 
         public RedisClient(RedisConnection connection)
@@ -55,6 +49,13 @@ namespace Destrier.Redis
         public RedisHostInfo AsRedisHostInfo()
         {
             return new RedisHostInfo() { Host = this.Host, Port = this.Port, Password = this.Password, Db = this.Db };
+        }
+
+        protected void _selectDb()
+        {
+            var db = this.Db ?? 0;
+            _connection.Send(cmd.SELECT, db);
+            _connection.ReadForError();
         }
 
         public String Host { get; set; }

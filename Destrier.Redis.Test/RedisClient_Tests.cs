@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Destrier.Redis.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,7 @@ namespace Destrier.Redis.Test
             using (var rc = new RedisClient(HostInfo))
             {
                 Assert.True(rc.Connection.Socket.Connected);
+                Assert.True(rc.Db.HasValue && rc.Db == 2);
             }
         }
 
@@ -100,6 +102,35 @@ namespace Destrier.Redis.Test
                 rc.Remove("set_test");
                 rc.Remove("set_test2");
                 rc.Remove("set_test3");
+            }
+        }
+
+        [Fact]
+        public void SortedSets_Test()
+        {
+            using (var rc = new RedisClient(HostInfo))
+            {
+                rc.SortedSetAdd("myzset", 1, "one");
+                rc.SortedSetAdd("myzset", 2, "two");
+                rc.SortedSetAdd("myzset", 3, "three");
+
+                var size = rc.SortedSetCardinality("myzset");
+
+                Assert.Equal(3, size);
+
+                var items = rc.SortedSetRange("myzset", 0, -1);
+                Assert.NotNull(items);
+                Assert.NotEmpty(items);
+                Assert.Equal(3, items.Count());
+                Assert.True(items.First() == "one");
+
+                rc.SortedSetRemove("myzset", "one");
+
+                size = rc.SortedSetCardinality("myzset");
+
+                Assert.Equal(2, size);
+
+                rc.FlushDb();
             }
         }
     }

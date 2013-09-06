@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using Destrier.Redis.Core;
 
-namespace Destrier.Redis.Caching
+namespace Destrier.Redis.Cache
 {
     public class RedisCache : IEnumerable<KeyValuePair<String, Object>>, IDisposable
     {
@@ -14,6 +14,7 @@ namespace Destrier.Redis.Caching
         {
             public const string RootKey = "Cache";
             public const string KeysKey = "53AFF8528106408F8856902181CE5345";
+            public const string EphemeralKeysKey = "E0761FC136E34B669AEB36C1C2D3881A";
         }
 
         private static object _lock = new object();
@@ -30,6 +31,8 @@ namespace Destrier.Redis.Caching
                 return _current;
             }
         }
+
+        public RedisCache() { }
 
         protected RedisClient _client = null;
 
@@ -68,18 +71,20 @@ namespace Destrier.Redis.Caching
 
         public Boolean ContainsKey(String key)
         {
-            return _client.GetKeys(Model.CreateKey(Constants.RootKey, Constants.KeysKey, key)).Any();
+            _purgeExpiredKeys();
+            var regular = _client.SetIsMember(Model.CreateKey(Constants.RootKey, Constants.KeysKey), key);
+            var ephemeral = _client.SortedSetRank(Model.CreateKey(Constants.RootKey, Constants.KeysKey), key) != null;
+            return regular || ephemeral;
         }
 
         public IEnumerable<String> Keys
         {
             get
             {
-                foreach (var key in _client.GetKeys(String.Format("{0}*", Model.CreateKey(Constants.RootKey, Constants.KeysKey))))
-                {
-                    var keyComponents = key.Split(Model.KeySeparator[0]);
-                    yield return keyComponents.Last();
-                }
+                _purgeExpiredKeys();
+                var regularKeys = _client.SetMembers(Model.CreateKey(Constants.RootKey, Constants.KeysKey));
+                var ephemeralKeys = _client.SortedSetRange(Model.CreateKey(Constants.RootKey, Constants.KeysKey), 0, -1); //-1 is the 'last element' index in a sorted set. see http://redis.io/commands/zrange
+                return regularKeys.Concat(ephemeralKeys).Where(k => !String.IsNullOrEmpty(k));
             }
         }
 
@@ -100,7 +105,9 @@ namespace Destrier.Redis.Caching
             var item = _getCacheItemWithKeyInternal(key);
             if (item != null)
             {
-                _touchAsync(key);
+                if (item.SlidingExpirationSeconds != null)
+                    _touchAsync(key);
+                
                 return item.Value;
             }
             else
@@ -167,15 +174,41 @@ namespace Destrier.Redis.Caching
 
         protected void _addTrackedKey(String key, TimeSpan? slidingExpiration = null)
         {
-            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey, key);
-            _client.Set(compositeKey, (slidingExpiration != null ? slidingExpiration.Value.TotalMilliseconds : -1).ToString());
-            _client.ExpireByTimespan(compositeKey, slidingExpiration);
+            if (slidingExpiration != null)
+            {
+                long expiresUtc = RedisDataFormatUtil.ToUnixTimestamp(DateTime.UtcNow.Add(slidingExpiration.Value));
+                _client.SortedSetAdd(Model.CreateKey(Constants.RootKey, RedisCache.Constants.EphemeralKeysKey), expiresUtc, key);
+            }
+            else
+            {
+                _client.SetAdd(Model.CreateKey(Constants.RootKey, RedisCache.Constants.KeysKey), key);
+            }
         }
 
         protected void _removeTrackedKey(String key)
         {
-            var compositeKey = Model.CreateKey(Constants.RootKey, Constants.KeysKey, key);
-            _client.Remove(compositeKey);
+            _client.SetRemove(Model.CreateKey(Constants.RootKey, Constants.KeysKey), key);
+            _client.SortedSetRemove(Model.CreateKey(Constants.RootKey, Constants.EphemeralKeysKey), key);
+        }
+
+        protected void _purgeExpiredKeys()
+        {
+            _client.SortedSetRemoveRangeByScore(Model.CreateKey(Constants.RootKey, Constants.EphemeralKeysKey), 0, RedisDataFormatUtil.ToUnixTimestamp(DateTime.UtcNow));
+        }
+
+        protected void _purgeExpiredKeysAsync()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    using (var rc = new RedisClient(_client.AsRedisHostInfo()))
+                    {
+                        rc.SortedSetRemoveRangeByScore(Model.CreateKey(Constants.RootKey, Constants.EphemeralKeysKey), 0, RedisDataFormatUtil.ToUnixTimestamp(DateTime.UtcNow));
+                    }
+                }
+                catch { }
+            });
         }
 
         protected void _touchAsync(String key, TimeSpan? newSlidingExpiration = null)
