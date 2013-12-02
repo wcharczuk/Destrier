@@ -130,6 +130,7 @@ namespace Destrier.Redis.Test
             var retrieved = RedisCache.Current[MyKey] as MockObject;
             Assert.NotNull(retrieved);
             RedisCache.Current.Touch(MyKey, newSlidingExpiration: TimeSpan.FromSeconds(1));
+
         }
 
         [Fact]
