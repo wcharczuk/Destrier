@@ -53,6 +53,9 @@
     <Compile Include="..\Destrier NET40\ConcurrentDictionaryExtensions.cs">
       <Link>ConcurrentDictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\Destrier NET40\ModelCache.cs">
+      <Link>ModelCache.cs</Link>
+    </Compile>
     <Compile Include="..\Destrier NET40\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
@@ -161,11 +164,11 @@
     <Compile Include="..\Destrier NET40\ReferencedObjectMember.cs">
       <Link>ReferencedObjectMember.cs</Link>
     </Compile>
-    <Compile Include="..\Destrier NET40\ReflectionCache.cs">
-      <Link>ReflectionCache.cs</Link>
-    </Compile>
     <Compile Include="..\Destrier NET40\ReflectionExtensions.cs">
       <Link>ReflectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Destrier NET40\ReflectionHelper.cs">
+      <Link>ReflectionHelper.cs</Link>
     </Compile>
     <Compile Include="..\Destrier NET40\RootMember.cs">
       <Link>RootMember.cs</Link>

@@ -103,7 +103,7 @@ namespace ORMComparison
                         {
                             while (dr.Read())
                             {
-                                var testObject = Destrier.ReflectionCache.GetNewObject<TestObject>();
+                                var testObject = ReflectionHelper.GetNewObject<TestObject>();
                                
 								testObject.Id = dr.GetInt32(0);
                                 testObject.Active = dr.GetBoolean(1);

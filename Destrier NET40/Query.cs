@@ -163,7 +163,7 @@ namespace Destrier
 
                     while (dr.Read())
                     {
-                        T newObject = (T)ReflectionCache.GetNewObject(_t);
+                        T newObject = (T)ReflectionHelper.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
                         list.Add(newObject);
                     }
@@ -199,7 +199,7 @@ namespace Destrier
 
                                     //new up the collection if it hasn't been delcared yet.
                                     if (parentCollectionProperty.GetValue(parentObj) == null)
-                                        parentCollectionProperty.SetValue(parentObj, ReflectionCache.GetNewObject(cm.Type));
+                                        parentCollectionProperty.SetValue(parentObj, ReflectionHelper.GetNewObject(cm.Type));
 
                                     //set up lookup for the object
                                     Dictionary<Object, Object> objLookup = null;
@@ -238,7 +238,7 @@ namespace Destrier
                 {
                     while (dr.Read())
                     {
-                        T newObject = (T)ReflectionCache.GetNewObject(_t);
+                        T newObject = (T)ReflectionHelper.GetNewObject(_t);
                         Model.PopulateFullResults(newObject, dr, _t);
                         yield return newObject;
                     }

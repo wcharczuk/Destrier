@@ -42,10 +42,10 @@ namespace Destrier
 
             if (this.CurrentOutputType != null)
             {
-                this.HasChildCollectionMembers = ReflectionCache.HasChildCollectionMembers(this.CurrentOutputType);
-                this.HasReferencedObjectMembers = ReflectionCache.HasReferencedObjectMembers(this.CurrentOutputType);
+                this.HasChildCollectionMembers = ModelCache.HasChildCollectionMembers(this.CurrentOutputType);
+                this.HasReferencedObjectMembers = ModelCache.HasReferencedObjectMembers(this.CurrentOutputType);
 
-                ColumnMemberLookup = this.StandardizeCasing ? ReflectionCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ReflectionCache.GetColumnMemberLookup(CurrentOutputType);
+                ColumnMemberLookup = this.StandardizeCasing ? ModelCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ModelCache.GetColumnMemberLookup(CurrentOutputType);
 
                 var cm_index = new List<ColumnMember>();
                 //column member index map gen
@@ -61,12 +61,12 @@ namespace Destrier
 
                 if (!HasReferencedObjectMembers)
                 {
-                    _setInstanceValuesFn = ReflectionCache.GetSetInstanceValuesDelegate(this);
+                    _setInstanceValuesFn = ModelCache.GetSetInstanceValuesDelegate(this);
                 }
             }
         }
 
-        private ReflectionCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
+        private ModelCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
 		private IDataReader _dr = null;
 		private Int32 _resultSetIndex = 0;
 
@@ -353,7 +353,7 @@ namespace Destrier
             if (columnIndex != null)
                 return (T)Get(typeof(T), columnIndex.Value);
             else
-                return (T)ReflectionCache.GetDefault(typeof(T));
+                return (T)ReflectionHelper.GetDefault(typeof(T));
             
         }
 
@@ -369,17 +369,17 @@ namespace Destrier
             {
                 return Get(member.Type, columnIndex.Value, member.IsNullableType, member.UnderlyingGenericType);
             }
-            return ReflectionCache.GetDefault(member.Type);
+            return ReflectionHelper.GetDefault(member.Type);
         }
 
         public object Get(Type type, Int32 columnIndex, Boolean? isNullableType = null, Type underlyingType = null)
         {
-            isNullableType = isNullableType ?? ReflectionCache.IsNullableType(type);
-            if (ReflectionCache.IsNullableType(type))
+            isNullableType = isNullableType ?? ReflectionHelper.IsNullableType(type);
+            if (ReflectionHelper.IsNullableType(type))
             {
                 if (!_dr.IsDBNull(columnIndex))
                 {
-                    underlyingType = underlyingType ?? ReflectionCache.GetUnderlyingTypeForNullable(type);
+                    underlyingType = underlyingType ?? ReflectionHelper.GetUnderlyingTypeForNullable(type);
 
                     var value = this.GetValue(columnIndex);
 
@@ -401,7 +401,7 @@ namespace Destrier
                     else
                         return Convert.ChangeType(value, type);
                 }
-                return ReflectionCache.GetDefault(type);
+                return ReflectionHelper.GetDefault(type);
             }
         }
 
@@ -464,8 +464,8 @@ namespace Destrier
 
         public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : new()
         {
-            T newObject = ReflectionCache.GetNewObject<T>();
-			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
+            T newObject = ReflectionHelper.GetNewObject<T>();
+            bool hasPopulate = ReflectionHelper.HasInterface(typeof(T), typeof(IPopulate));
 
             while (this.Read())
             {
@@ -500,10 +500,10 @@ namespace Destrier
         {
             List<T> list = new List<T>();
 
-			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
+            bool hasPopulate = ReflectionHelper.HasInterface(typeof(T), typeof(IPopulate));
             while (this.Read())
             {
-                T newObject = ReflectionCache.GetNewObject<T>();
+                T newObject = ReflectionHelper.GetNewObject<T>();
 				if(hasPopulate)
 					((IPopulate)newObject).Populate(this);
 				else
@@ -521,11 +521,11 @@ namespace Destrier
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>(Func<TValue, TKey> keySelector, Boolean advanceToNextResultAfter = true) where TValue : new()
         {
             Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>();
-			bool hasPopulate = ReflectionCache.HasInterface(typeof(TValue), typeof(IPopulate));
+            bool hasPopulate = ReflectionHelper.HasInterface(typeof(TValue), typeof(IPopulate));
 
             while (this.Read())
             {
-                TValue newObject = ReflectionCache.GetNewObject<TValue>();
+                TValue newObject = ReflectionHelper.GetNewObject<TValue>();
 
 				if(hasPopulate)
 					((IPopulate)newObject).Populate(this);
@@ -547,10 +547,10 @@ namespace Destrier
 
         public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
 		{
-			bool hasPopulate = populateFullResults ? false : ReflectionCache.HasInterface(type, typeof(IPopulate));
+            bool hasPopulate = populateFullResults ? false : ReflectionHelper.HasInterface(type, typeof(IPopulate));
             while (this.Read())
             {
-                var newObject = ReflectionCache.GetNewObject(type);
+                var newObject = ReflectionHelper.GetNewObject(type);
 
                 if (populateFullResults)
                 {
@@ -574,10 +574,10 @@ namespace Destrier
 
         public void ReadIntoParentCollection<T>(Action<IndexedSqlDataReader, T> doStuffToAddToParent, Boolean advanceToNextResultAfter = true) where T : new()
         {
-			bool hasPopulate = ReflectionCache.HasInterface(typeof(T), typeof(IPopulate));
+            bool hasPopulate = ReflectionHelper.HasInterface(typeof(T), typeof(IPopulate));
             while (this.Read())
             {
-                T newObject = ReflectionCache.GetNewObject<T>();
+                T newObject = ReflectionHelper.GetNewObject<T>();
 				if(hasPopulate)
 					((IPopulate)newObject).Populate(this);
 				else

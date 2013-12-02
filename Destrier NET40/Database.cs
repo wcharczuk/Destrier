@@ -21,10 +21,10 @@ namespace Destrier
         {
             Type myObjectType = myObject.GetType();
 
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreCreate)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPreCreate)))
             	((IPreCreate)myObject).PreCreate();
 
-            if (ReflectionCache.HasInterface(myObjectType, typeof(IAuditable)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IAuditable)))
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Create, myObject);
 
             StringBuilder command = new StringBuilder();
@@ -37,7 +37,7 @@ namespace Destrier
                 command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
 
                 List<String> columnNames = new List<String>();
-                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
+                foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
                 {
                     if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
                     {
@@ -51,7 +51,7 @@ namespace Destrier
                 command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
                 command.Append(");");
 
-                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
+                foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
                 {
                     if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
                     {
@@ -78,7 +78,7 @@ namespace Destrier
                 }
             }
 
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostCreate)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPostCreate)))
 				((IPostCreate)myObject).PostCreate();
         }
 
@@ -107,13 +107,13 @@ namespace Destrier
         {
             Type myObjectType = myObject.GetType();
 
-            if (ReflectionCache.HasInterface(myObjectType, typeof(IAuditable)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IAuditable)))
             {
                 var previous = ((IAuditable)myObject).AuditGetPrevious(myObject);
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Update, myObject, previous);
             }
 
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreUpdate)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPreUpdate)))
 				((IPreUpdate)myObject).PreUpdate();
 
             StringBuilder command = new StringBuilder();
@@ -146,7 +146,7 @@ namespace Destrier
                 command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
 
                 //parameters
-                foreach (var cm in ReflectionCache.GetColumnMembers(myObjectType))
+                foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
                 {
                     if (!cm.IsForReadOnly)
                     {
@@ -157,8 +157,8 @@ namespace Destrier
                 cmd.CommandText = command.ToString();
                 cmd.ExecuteNonQuery();
             }
-            
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostUpdate)))
+
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPostUpdate)))
 				((IPostUpdate)myObject).PostUpdate();
         }
 
@@ -170,10 +170,10 @@ namespace Destrier
         {
             Type myObjectType = myObject.GetType();
 
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPreRemove)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPreRemove)))
 				((IPreRemove)myObject).PreRemove();
 
-            if (ReflectionCache.HasInterface(myObjectType, typeof(IAuditable)))
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IAuditable)))
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Delete, myObject);
             
             StringBuilder command = new StringBuilder();
@@ -199,8 +199,8 @@ namespace Destrier
                 cmd.CommandText = command.ToString();
                 cmd.ExecuteNonQuery();
             }
-            
-			if(ReflectionCache.HasInterface(myObjectType, typeof(IPostRemove)))
+
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(IPostRemove)))
 				((IPostRemove)myObject).PostRemove();
         }
 
@@ -245,8 +245,8 @@ namespace Destrier
         /// <returns></returns>
         public static T Get<T>(dynamic parameters) where T : new()
         {
-            if (ReflectionCache.HasInterface(typeof(T), typeof(IGet<T>)))
-                return ((IGet<T>)ReflectionCache.GetNewObject<T>()).Get(parameters);
+            if (ReflectionHelper.HasInterface(typeof(T), typeof(IGet<T>)))
+                return ((IGet<T>)ReflectionHelper.GetNewObject<T>()).Get(parameters);
             
             if (parameters == null)
                 throw new ArgumentNullException("parameters");
@@ -263,9 +263,9 @@ namespace Destrier
         /// <returns></returns>
         public static IEnumerable<T> All<T>() where T : new()
         {
-            if (ReflectionCache.HasInterface(typeof(T), typeof(IGetMany<T>)))
+            if (ReflectionHelper.HasInterface(typeof(T), typeof(IGetMany<T>)))
             {
-                return ((IGetMany<T>)ReflectionCache.GetNewObject<T>()).GetMany() as IEnumerable<T>;
+                return ((IGetMany<T>)ReflectionHelper.GetNewObject<T>()).GetMany() as IEnumerable<T>;
             }
 
             return new Query<T>().Execute();

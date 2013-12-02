@@ -33,9 +33,9 @@ namespace Destrier
             var provider = DatabaseConfigurationContext.GetProviderForConnection(connectionName);
 
             if (provider is Npgsql.NpgsqlFactory)
-                return ReflectionCache.GetNewObject<PostgresSqlDialectVariant>();
+                return ReflectionHelper.GetNewObject<PostgresSqlDialectVariant>();
             else
-                return ReflectionCache.GetNewObject<SqlServerSqlDialectVariant>();
+                return ReflectionHelper.GetNewObject<SqlServerSqlDialectVariant>();
         }
     }
 

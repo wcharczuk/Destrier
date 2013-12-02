@@ -27,7 +27,7 @@ namespace Destrier
         public CommandBuilder()
         {
             _t = typeof(T);
-            AsRootMember = ReflectionCache.GetRootMemberForType(_t);
+            AsRootMember = ModelCache.GetRootMemberForType(_t);
             _d = SqlDialectVariantFactory.GetSqlDialect(_t);
             Initialize();
         }
@@ -73,7 +73,7 @@ namespace Destrier
         protected List<Member> _outputMembers = new List<Member>();
 
         public Boolean HasChildCollections { get { return _includedChildCollections.Any(); } }
-        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ReflectionCache.HasChildCollectionMembers(cm.CollectionType)); } }
+        public IEnumerable<ChildCollectionMember> ChildCollections { get { return _includedChildCollections.OrderByDescending(cm => ModelCache.HasChildCollectionMembers(cm.CollectionType)); } }
         
         public class OrderByElement
         {
@@ -255,7 +255,7 @@ namespace Destrier
         private void DiscoverMembers()
         {
             this.Members = new Dictionary<String, Member>();
-            var memberList = ReflectionCache.GenerateMembersRecursive(_t); //ReflectionCache.MembersRecursiveCached(_t).ToList(); //this causes thread-safety issues. like an anti-boss.
+            var memberList = ModelCache.GenerateMembersRecursive(_t); //ReflectionCache.MembersRecursiveCached(_t).ToList(); //this causes thread-safety issues. like an anti-boss.
 
             foreach (var m in memberList)
             {
@@ -388,7 +388,7 @@ namespace Destrier
                 }
                 cm.TableAlias = tableAliases[cm.FullyQualifiedName];
 
-                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
+                if (ModelCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     cm.OutputTableName = Model.GenerateAlias();
                 }
@@ -415,7 +415,7 @@ namespace Destrier
 
         protected void AddJoins(Type t, List<Member> members, StringBuilder command)
         {
-            if (ReflectionCache.HasReferencedObjectMembers(t))
+            if (ModelCache.HasReferencedObjectMembers(t))
             {
                 foreach (var rom in members.Where(m => m is ReferencedObjectMember && !m.IsLazy &&!m.ParentAny(rm => rm is ChildCollectionMember)).Select(m => m as ReferencedObjectMember))
                 {
@@ -436,7 +436,7 @@ namespace Destrier
             List<String> tablesToDrop = new List<String>();
             foreach (var cm in ChildCollections)
             {
-                var subMembers = ReflectionCache.GenerateMembersRecursive(cm.CollectionType, new RootMember(cm));
+                var subMembers = ModelCache.GenerateMembersRecursive(cm.CollectionType, new RootMember(cm));
 
                 var tableAliases = new Dictionary<String, String>();
                 SetupTableAliases(subMembers, tableAliases);
@@ -448,7 +448,7 @@ namespace Destrier
                 var subColumnList = String.Join("\n\t, ", outputColumns);
                 Command.AppendFormat("\n\nSELECT\n\t{0}", subColumnList);
 
-                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
+                if (ModelCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     Command.AppendFormat("\nINTO {0}", _d.TempTablePrefix(cm.OutputTableName));
                     tablesToDrop.Add(cm.OutputTableName);
@@ -471,7 +471,7 @@ namespace Destrier
 
                 Command.Append(";");
 
-                if (ReflectionCache.HasChildCollectionMembers(cm.CollectionType))
+                if (ModelCache.HasChildCollectionMembers(cm.CollectionType))
                 {
                     Command.AppendFormat("\n\nSELECT * FROM {0};", _d.TempTablePrefix(cm.OutputTableName));
                 }

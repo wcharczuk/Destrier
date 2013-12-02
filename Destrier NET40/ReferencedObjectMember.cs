@@ -13,9 +13,9 @@ namespace Destrier
     {
         public ReferencedObjectMember(PropertyInfo pi) : base(pi)
         {
-            this.ReferencedObjectAttribute = ReflectionCache.GetReferencedObjectAttribute(pi);
+            this.ReferencedObjectAttribute = ModelCache.GetReferencedObjectAttribute(pi);
             this.ReferencedColumnMember = Model.ColumnMemberForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName);
-            this.ReferencedColumnIsNullable = ReflectionCache.IsNullableType(ReferencedColumnProperty.PropertyType) || ReferencedColumnAttribute.CanBeNull;
+            this.ReferencedColumnIsNullable = ReflectionHelper.IsNullableType(ReferencedColumnProperty.PropertyType) || ReferencedColumnAttribute.CanBeNull;
 
             if (this.IsLazy)
             {

@@ -13,13 +13,13 @@ namespace Destrier
         public ChildCollectionMember(PropertyInfo pi)
             : base(pi)
         {
-            var attribute = ReflectionCache.GetChildCollectionAttribute(pi);
+            var attribute = ModelCache.GetChildCollectionAttribute(pi);
             AlwaysInclude = attribute.AlwaysInclude;
 
             if (this.IsLazy)
-                this.CollectionType = ReflectionCache.GetUnderlyingTypeForCollection(this.UnderlyingGenericType);
+                this.CollectionType = ReflectionHelper.GetUnderlyingTypeForCollection(this.UnderlyingGenericType);
             else
-                this.CollectionType = ReflectionCache.GetUnderlyingTypeForCollection(this.Type);
+                this.CollectionType = ReflectionHelper.GetUnderlyingTypeForCollection(this.Type);
 
             if (!String.IsNullOrWhiteSpace(attribute.ParentColumnName))
                 this.ParentReferencedMember = Model.ColumnMemberForPropertyName(pi.DeclaringType, attribute.ParentColumnName);

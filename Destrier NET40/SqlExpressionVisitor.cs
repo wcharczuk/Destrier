@@ -22,7 +22,7 @@ namespace Destrier
             this.Buffer = new StringBuilder();
             this.Parameters = new Dictionary<string, object>();
             this.Type = typeof(T);
-            this.Members = ReflectionCache.GenerateMembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
+            this.Members = ModelCache.GenerateMembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
         }
 
         public SqlExpressionVisitor(StringBuilder buffer) : this()
@@ -183,7 +183,7 @@ namespace Destrier
             var memberType = memberExp.Member.ReflectedType;
 
             Member member = null;
-            var rootType = ReflectionCache.RootTypeForExpression(memberExp);
+            var rootType = ReflectionHelper.RootTypeForExpression(memberExp);
 
             if (rootType != null && rootType.Equals(this.Type))
             {
@@ -236,7 +236,7 @@ namespace Destrier
             if (Members != null && Members.Any() && m.Object is MemberExpression)
             {
                 var memberExp = m.Object as MemberExpression;
-                var rootType = ReflectionCache.RootTypeForExpression(memberExp);
+                var rootType = ReflectionHelper.RootTypeForExpression(memberExp);
 
                 var like = Dialect != null ? Dialect.Like : "LIKE";
                 var concat = Dialect != null ? Dialect.StringConcatOperator : " + ";
@@ -299,8 +299,8 @@ namespace Destrier
                 {
                     if (m.Arguments.Any())
                     {
-                        var argumentType = ReflectionCache.RootTypeForExpression(m.Arguments[0]);
-                        if (ReflectionCache.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
+                        var argumentType = ReflectionHelper.RootTypeForExpression(m.Arguments[0]);
+                        if (ReflectionHelper.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
                         {
                             evaluateCall = false;
                             switch (m.Method.Name)
@@ -571,7 +571,7 @@ namespace Destrier
             if (e.NodeType == ExpressionType.Convert)
             {
                 var u = (UnaryExpression)e;
-                if (ReflectionCache.IsNullableType(u.Operand.Type) && ReflectionCache.GetUnderlyingTypeForNullable(u.Operand.Type) == ReflectionCache.GetUnderlyingTypeForNullable(type))
+                if (ReflectionHelper.IsNullableType(u.Operand.Type) && ReflectionHelper.GetUnderlyingTypeForNullable(u.Operand.Type) == ReflectionHelper.GetUnderlyingTypeForNullable(type))
                 {
                     e = ((UnaryExpression)e).Operand;
                 }
@@ -580,7 +580,7 @@ namespace Destrier
             if (e.NodeType == ExpressionType.Constant)
             {
                 var ce = (ConstantExpression)e;
-                if (e.Type != type && ReflectionCache.GetUnderlyingTypeForNullable(e.Type) == ReflectionCache.GetUnderlyingTypeForNullable(type))
+                if (e.Type != type && ReflectionHelper.GetUnderlyingTypeForNullable(e.Type) == ReflectionHelper.GetUnderlyingTypeForNullable(type))
                 {
                     e = ce = Expression.Constant(ce.Value, type);
                 }

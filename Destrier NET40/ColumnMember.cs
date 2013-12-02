@@ -14,7 +14,7 @@ namespace Destrier
         public ColumnMember(PropertyInfo pi)
             : base(pi)
         {
-            this.ColumnAttribute = ReflectionCache.GetColumnAttribute(pi);
+            this.ColumnAttribute = ModelCache.GetColumnAttribute(pi);
             if (ColumnAttribute != null)
             {
                 //these are commonly accessed properties

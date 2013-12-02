@@ -29,22 +29,22 @@ namespace Destrier.Test
         [Fact]
         public void Core_Tests()
         {
-            var members = ReflectionCache.GetColumnMemberLookup(typeof(MockObject));
+            var members = ModelCache.GetColumnMemberLookup(typeof(MockObject));
 
             var notNullable = members["MockObjectId"];
             var nullable = members["NullableId"];
 
-            Assert.False(ReflectionCache.IsNullableType(notNullable.Type));
-            Assert.True(ReflectionCache.IsNullableType(nullable.Type));
+            Assert.False(ReflectionHelper.IsNullableType(notNullable.Type));
+            Assert.True(ReflectionHelper.IsNullableType(nullable.Type));
         }
 
         [Fact]
         public void TableName_Test()
         {
-            var tableAttribute = ReflectionCache.GetTableAttribute(typeof(MockObject));
+            var tableAttribute = ModelCache.GetTableAttribute(typeof(MockObject));
             Assert.NotNull(tableAttribute);
 
-            var tableAttributeFromModel = ReflectionCache.GetTableAttribute(typeof(MockObject));
+            var tableAttributeFromModel = ModelCache.GetTableAttribute(typeof(MockObject));
             Assert.Equal(tableAttributeFromModel, tableAttribute);
             var tableName = Model.TableName(typeof(MockObject));
 
@@ -61,7 +61,7 @@ namespace Destrier.Test
 
             Assert.True(tableAttribute.UseNoLock);
 
-            var idTableAttribute = ReflectionCache.GetTableAttribute(typeof(Ids));
+            var idTableAttribute = ModelCache.GetTableAttribute(typeof(Ids));
             Assert.False(idTableAttribute.UseNoLock);
             Assert.False(Model.UseNoLock(typeof(Ids)));
         }
@@ -69,7 +69,7 @@ namespace Destrier.Test
         [Fact]
         public void Members_Test()
         {
-            var members = ReflectionCache.GenerateMembersRecursive(typeof(MockObject));
+            var members = ModelCache.GenerateMembersRecursive(typeof(MockObject));
 
             Assert.NotNull(members);
             Assert.NotEmpty(members);
@@ -88,14 +88,14 @@ namespace Destrier.Test
             
             foreach (var prop in properties)
             {
-                setFunctions.Add(prop.Name, ReflectionCache.GenerateSetAction(prop));
+                setFunctions.Add(prop.Name, ReflectionHelper.GenerateSetAction(prop));
                 propertiesByName.Add(prop.Name, prop);
             }            
 
             var myObj = new PropertyTestClass();
             myObj.AnInt = 2;
 
-            setFunctions["Single"](myObj, ReflectionCache.ChangeType(2.0d, propertiesByName["Single"].PropertyType));
+            setFunctions["Single"](myObj, ReflectionHelper.ChangeType(2.0d, propertiesByName["Single"].PropertyType));
         }
     }
 }

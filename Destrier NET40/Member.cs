@@ -21,19 +21,19 @@ namespace Destrier
         {
             this.Name = pi.Name;
             this.Type = pi.PropertyType;
-            
-            this.IsNullableType = ReflectionCache.IsNullableType(this.Type);
-            if (IsNullableType)
-                this.UnderlyingGenericType = ReflectionCache.GetUnderlyingTypeForNullable(this.Type);
 
-            this.IsLazy = ReflectionCache.IsLazy(this.Type);
+            this.IsNullableType = ReflectionHelper.IsNullableType(this.Type);
+            if (IsNullableType)
+                this.UnderlyingGenericType = ReflectionHelper.GetUnderlyingTypeForNullable(this.Type);
+
+            this.IsLazy = ReflectionHelper.IsLazy(this.Type);
             if (this.IsLazy)
-                this.UnderlyingGenericType = ReflectionCache.GetUnderlyingTypeForLazy(this.Type);
+                this.UnderlyingGenericType = ReflectionHelper.GetUnderlyingTypeForLazy(this.Type);
 
             this.DeclaringType = pi.DeclaringType;
             this.Property = pi;
 
-            this._setValueCompiled = ReflectionCache.GetSetAction(pi);
+            this._setValueCompiled = ReflectionHelper.GetSetAction(pi);
             this._getValueMethod = pi.GetGetMethod();
         }
 

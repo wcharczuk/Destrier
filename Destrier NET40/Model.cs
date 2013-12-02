@@ -14,7 +14,7 @@ namespace Destrier
     {
         public static String TableName(Type t)
         {
-            var ta = ReflectionCache.GetTableAttribute(t);
+            var ta = ModelCache.GetTableAttribute(t);
 
             if (ta == null)
                 return null;
@@ -32,24 +32,24 @@ namespace Destrier
 
         public static String DatabaseName(Type t)
         {
-            var databaseName = ReflectionCache.GetTableAttribute(t).DatabaseName;
+            var databaseName = ModelCache.GetTableAttribute(t).DatabaseName;
             return !String.IsNullOrEmpty(databaseName) ? databaseName : DatabaseConfigurationContext.DefaultDatabaseName;
         }
 
         public static String SchemaName(Type t)
         {
-            var schemaName = ReflectionCache.GetTableAttribute(t).SchemaName;
+            var schemaName = ModelCache.GetTableAttribute(t).SchemaName;
             return schemaName ?? DatabaseConfigurationContext.DefaultSchemaName ?? "dbo"; //the mssql backup.
         }
 
         public static Boolean UseNoLock(Type t)
         {
-            return ReflectionCache.GetTableAttribute(t).UseNoLock;
+            return ModelCache.GetTableAttribute(t).UseNoLock;
         }
 
         public static String ColumnName(PropertyInfo pi)
         {
-            ColumnAttribute ca = ReflectionCache.GetColumnAttribute(pi);
+            ColumnAttribute ca = ModelCache.GetColumnAttribute(pi);
 
             if (ca == null) //it's not a column!
                 return null;
@@ -62,12 +62,12 @@ namespace Destrier
 
         public static ColumnMember ColumnMemberForPropertyName(Type type, String propertyName)
         {
-            return ReflectionCache.GetColumnMemberStandardizedLookup(type)[Model.StandardizeCasing(propertyName)];
+            return ModelCache.GetColumnMemberStandardizedLookup(type)[Model.StandardizeCasing(propertyName)];
         }
 
         public static String ConnectionString(Type t)
         {
-            TableAttribute ta = ReflectionCache.GetTableAttribute(t);
+            TableAttribute ta = ModelCache.GetTableAttribute(t);
 
             if (ta == null)
                 throw new InvalidOperationException("Base Model classes must have a 'Table' attribute specifying the relation in the database to interact with!");
@@ -82,18 +82,18 @@ namespace Destrier
 
         public static String ConnectionName(Type t)
         {
-            TableAttribute ta = ReflectionCache.GetTableAttribute(t);
+            TableAttribute ta = ModelCache.GetTableAttribute(t);
             return ta.ConnectionName ?? DatabaseConfigurationContext.DefaultConnectionName;
         }
 
         public static ColumnMember[] ColumnsNonPrimaryKey(Type t)
         {
-            return ReflectionCache.GetColumnMembers(t).Where(cm => !cm.IsPrimaryKey).ToArray();
+            return ModelCache.GetColumnMembers(t).Where(cm => !cm.IsPrimaryKey).ToArray();
         }
 
         public static ColumnMember[] ColumnsPrimaryKey(Type t)
         {
-            return ReflectionCache.GetColumnMembers(t).Where(cm => cm.IsPrimaryKey).ToArray();
+            return ModelCache.GetColumnMembers(t).Where(cm => cm.IsPrimaryKey).ToArray();
         }
 
         public static ColumnMember AutoIncrementColumn(Type t)
@@ -118,10 +118,10 @@ namespace Destrier
 
         public static void CheckColumns(Type t)
         {
-            if (ReflectionCache.GetTableAttribute(t) != null)
+            if (ModelCache.GetTableAttribute(t) != null)
             {
                 var databaseColumns = Schema.GetColumnsForTable(Model.TableName(t), Model.DatabaseName(t), Model.ConnectionString(t));
-                var columnMembers = ReflectionCache.GetColumnMembers(t);
+                var columnMembers = ModelCache.GetColumnMembers(t);
 
                 foreach (var cm in columnMembers)
                 {
@@ -152,7 +152,7 @@ namespace Destrier
         public static Boolean CheckNullStateForColumn(ColumnMember cm, object value)
         {
             if (!cm.ColumnAttribute.CanBeNull)
-                return ReflectionCache.IsSet(value);
+                return ReflectionHelper.IsSet(value);
             else
                 return true;
         }
@@ -202,9 +202,9 @@ namespace Destrier
 			var thisType = instance.GetType();
             var members = new Dictionary<String, ColumnMember>();
             if (dr.StandardizeCasing)
-                members = ReflectionCache.GetColumnMemberStandardizedLookup(thisType);
+                members = ModelCache.GetColumnMemberStandardizedLookup(thisType);
             else
-                members = ReflectionCache.GetColumnMemberLookup(thisType);
+                members = ModelCache.GetColumnMemberLookup(thisType);
 
 			foreach (ColumnMember col in members.Values)
 			{
@@ -216,7 +216,7 @@ namespace Destrier
         {
             if (dr.HasReferencedObjectMembers || parentMember != null)
             {
-                var members = ReflectionCache.GetColumnMembers(thisType);
+                var members = ModelCache.GetColumnMembers(thisType);
                 foreach (ColumnMember col in members)
                 {
                     var columnName = col.Name;
@@ -227,20 +227,20 @@ namespace Destrier
                 }
 
                 rootMember = rootMember ?? new RootMember(thisType);
-                foreach (ReferencedObjectMember rom in ReflectionCache.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
+                foreach (ReferencedObjectMember rom in ModelCache.Members(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.ParentAny(p => p is ChildCollectionMember)))
                 {
                     var type = rom.Type;
                     
                     if (rom.IsLazy)
                     {
-                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyReferencedObjectMember");
+                        var mi = typeof(ModelCache).GetMethod("GenerateLazyReferencedObjectMember");
                         var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
                         var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
                         rom.SetValue(instance, lazy);
                     }
                     else
                     {
-                        var newObject = ReflectionCache.GetNewObject(type);
+                        var newObject = ReflectionHelper.GetNewObject(type);
 
                         PopulateFullResults(newObject, dr, type, rootMember, rom);
                         rom.Property.SetValue(instance, newObject);
@@ -262,9 +262,9 @@ namespace Destrier
 
                 if (dr.HasChildCollectionMembers)
                 {
-                    foreach (ChildCollectionMember cm in ReflectionCache.Members(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
+                    foreach (ChildCollectionMember cm in ModelCache.Members(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
                     {
-                        var mi = typeof(ReflectionCache).GetMethod("GenerateLazyChildCollectionMember");
+                        var mi = typeof(ModelCache).GetMethod("GenerateLazyChildCollectionMember");
                         var genericMi = mi.MakeGenericMethod(cm.UnderlyingGenericType);
                         var lazy = genericMi.Invoke(null, new Object[] { cm, instance });
                         cm.SetValue(instance, lazy);
