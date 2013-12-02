@@ -61,7 +61,6 @@ namespace Destrier
 
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
-                    
                     command.Append(sqlDialectider.GenerateSelectLastId);
                     cmd.CommandText = command.ToString();
 

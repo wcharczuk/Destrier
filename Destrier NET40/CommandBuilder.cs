@@ -255,7 +255,7 @@ namespace Destrier
         private void DiscoverMembers()
         {
             this.Members = new Dictionary<String, Member>();
-            var memberList = ReflectionCache.MembersRecursiveCached(_t);
+            var memberList = ReflectionCache.GenerateMembersRecursive(_t); //ReflectionCache.MembersRecursiveCached(_t).ToList(); //this causes thread-safety issues. like an anti-boss.
 
             foreach (var m in memberList)
             {
@@ -370,7 +370,7 @@ namespace Destrier
             }
         }
 
-        protected static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
+        protected void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
         {
             foreach (ReferencedObjectMember refm in members.Where(m => m is ReferencedObjectMember && !m.IsLazy))
             {

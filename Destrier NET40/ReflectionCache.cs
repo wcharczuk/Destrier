@@ -17,6 +17,8 @@ namespace Destrier
     /// </summary>
     public class ReflectionCache
     {
+        private static ConcurrentDictionary<Type, Dictionary<String, PropertyInfo>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<String, PropertyInfo>>();
+
         //these i have to keep
         private static ConcurrentDictionary<Type, Type[]> _interfaceCache = new ConcurrentDictionary<Type, Type[]>();
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
@@ -41,7 +43,7 @@ namespace Destrier
         private static ConcurrentDictionary<Type, bool> _hasChildCollectionPropertiesCache = new ConcurrentDictionary<Type, bool>();
         private static ConcurrentDictionary<Type, bool> _hasReferencedObjectPropertiesCache = new ConcurrentDictionary<Type, bool>();
 
-        private static ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        
         private static ConcurrentDictionary<Type, PropertyInfo[]> _columnMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _referencedObjectMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static ConcurrentDictionary<Type, PropertyInfo[]> _childCollectionMemberPropertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
@@ -51,11 +53,11 @@ namespace Destrier
 
         private static Func<Type, Func<object>> _CtorHelperFunc = ConstructorCreationHelper;
 
-        public static PropertyInfo[] GetProperties(Type type)
+        public static Dictionary<String, PropertyInfo> GetProperties(Type type)
         {
             return _propertyCache.GetOrAdd(type, (t) =>
             {
-                return type.GetProperties();
+                return type.GetProperties().ToDictionary(p => p.Name);
             });
         }
 
@@ -88,7 +90,7 @@ namespace Destrier
             return _columnMemberPropertyCache.GetOrAdd(type, (t) =>
             {
                 var list = new List<PropertyInfo>();
-                PropertyInfo[] properties = GetProperties(type);
+                PropertyInfo[] properties = GetProperties(type).Values.ToArray();
                 foreach (var prop in properties)
                 {
                     if (prop.GetCustomAttributes(typeof(ColumnAttribute), false).Any())
@@ -105,7 +107,7 @@ namespace Destrier
             return _referencedObjectMemberPropertyCache.GetOrAdd(type, (t) =>
             {
                 var list = new List<PropertyInfo>();
-                PropertyInfo[] properties = GetProperties(type);
+                PropertyInfo[] properties = GetProperties(type).Values.ToArray();
                 foreach (var prop in properties)
                 {
                     if (prop.GetCustomAttributes(typeof(ReferencedObjectAttribute), false).Any())
@@ -122,7 +124,7 @@ namespace Destrier
             return _childCollectionMemberPropertyCache.GetOrAdd(type, (t) =>
             {
                 var list = new List<PropertyInfo>();
-                PropertyInfo[] properties = GetProperties(type);
+                PropertyInfo[] properties = GetProperties(type).Values.ToArray();
                 foreach (var prop in properties)
                 {
                     if (prop.GetCustomAttributes(typeof(ChildCollectionAttribute), false).Any())
