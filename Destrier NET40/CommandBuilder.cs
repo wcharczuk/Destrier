@@ -108,7 +108,7 @@ namespace Destrier
         {
             var body = (MemberExpression)expression.Body;
 
-            var columnMember = ReflectionCache.MemberForExpression(body, Members);
+            var columnMember = Model.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -120,7 +120,7 @@ namespace Destrier
         {
             var body = (MemberExpression)expression.Body;
 
-            var columnMember = ReflectionCache.MemberForExpression(body, Members);
+            var columnMember = Model.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -134,7 +134,7 @@ namespace Destrier
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
-            var columnMember = ReflectionCache.MemberForExpression(body, Members);
+            var columnMember = Model.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -148,7 +148,7 @@ namespace Destrier
                 throw new Exception("Need to run OrderBy or OrderByDescending first!");
 
             var body = (MemberExpression)expression.Body;
-            var columnMember = ReflectionCache.MemberForExpression(body, Members);
+            var columnMember = Model.MemberForExpression(body, Members);
 
             if (columnMember == null)
                 throw new Exception("Invalid Member. Members must be either marked Column or be a child of a ReferencedObject.");
@@ -163,7 +163,7 @@ namespace Destrier
                 throw new ArgumentNullException("expression");
 
             var body = (MemberExpression)expression.Body;
-            var member = ReflectionCache.MemberForExpression(body, Members) as ChildCollectionMember;
+            var member = Model.MemberForExpression(body, Members) as ChildCollectionMember;
 
             if (member != null && !member.IsLazy)
                 if (!_includedChildCollections.Any(ic => ic.Equals(member)))
@@ -188,7 +188,7 @@ namespace Destrier
                 throw new ArgumentNullException("expression");
 
             var body = (MemberExpression)expression.Body;
-            var childCollectionMember = ReflectionCache.MemberForExpression(body, Members) as ChildCollectionMember;
+            var childCollectionMember = Model.MemberForExpression(body, Members) as ChildCollectionMember;
 
             if (childCollectionMember == null)
                 throw new Exception("Invalid child collection member!");
@@ -233,12 +233,21 @@ namespace Destrier
             if (memberExp == null)
                 throw new ArgumentNullException("expression");
 
-            var member = ReflectionCache.MemberForExpression(memberExp, Members);
+            var member = Model.MemberForExpression(memberExp, Members);
 
             var paramName = System.Guid.NewGuid();
             string param = String.Format("@{0}", paramName.ToString("N"));
             Parameters.Add(paramName.ToString("N"), value);
 
+            _updateSets.Add(String.Format("{0} = {1}", member.Name, param));
+        }
+
+        public virtual void AddSet(String propertyName, Object value)
+        {
+            var member = Model.MemberForPropertyName(propertyName, Members);
+            var paramName = System.Guid.NewGuid();
+            string param = String.Format("@{0}", paramName.ToString("N"));
+            Parameters.Add(paramName.ToString("N"), value);
             _updateSets.Add(String.Format("{0} = {1}", member.Name, param));
         }
         #endregion
@@ -340,24 +349,25 @@ namespace Destrier
             return outputColumns;
         }
 
-        protected String GetOrderByClause()
+        protected String GetOrderByClause(String tableAlias = null, Boolean useTableQualifier = true, Boolean useFullyQualifiedName = false)
         {
-            var values = _orderByClause.Select(o => String.Format("{0}.{1} {2}"
-                , _d.WrapName(((ColumnMember)o.Member).TableAlias, isGeneratedAlias: true)
-                , _d.WrapName(((ColumnMember)o.Member).Name, isGeneratedAlias: false)
-                , o.Ascending ? "ASC" : "DESC")
-                );
-            return string.Join(",", values);
-        }
-
-        protected String GetOuterOrderByClause()
-        {
-            var values = _orderByClause.Select(o => String.Format("[data].{1} {2}"
-                , _d.WrapName(((ColumnMember)o.Member).TableAlias, isGeneratedAlias: true)
-                , _d.WrapName(((ColumnMember)o.Member).FullyQualifiedName, isGeneratedAlias: true)
-                , o.Ascending ? "ASC" : "DESC"));
-
-            return string.Join(",", values);
+            if (useTableQualifier)
+            {
+                var values = _orderByClause.Select(o => String.Format("{0}.{1} {2}"
+                    , _d.WrapName(tableAlias ?? ((ColumnMember)o.Member).TableAlias, isGeneratedAlias: true)
+                    , _d.WrapName(useFullyQualifiedName ? ((ColumnMember)o.Member).FullyQualifiedName : ((ColumnMember)o.Member).Name, isGeneratedAlias: !useFullyQualifiedName)
+                    , o.Ascending ? "ASC" : "DESC")
+                    );
+                return string.Join(",", values);
+            }
+            else
+            {
+                var values = _orderByClause.Select(o => String.Format("{0} {1}"
+                    , _d.WrapName(useFullyQualifiedName ? ((ColumnMember)o.Member).FullyQualifiedName : ((ColumnMember)o.Member).Name, isGeneratedAlias: !useFullyQualifiedName)
+                    , o.Ascending ? "ASC" : "DESC")
+                    );
+                return string.Join(",", values);
+            }
         }
 
         protected static void SetupTableAliases(IEnumerable<Member> members, Dictionary<String, String> tableAliases)
@@ -614,19 +624,26 @@ namespace Destrier
 
             if (Offset != null)
             {
-                Command.Append("\n) as data");
+                Command.Append("\n) as [data]");
                 Command.AppendFormat("\nWHERE [row_number_for_offset] > {0}", Offset.Value.ToString());
             }
 
             if (Offset != null && _orderByClause.Any())
             {
                 Command.Append("\nORDER BY");
-                Command.AppendFormat("\n\t{0}", GetOuterOrderByClause());
+                Command.AppendFormat("\n\t{0}", GetOrderByClause(tableAlias: "data", useFullyQualifiedName:true));
             }
 
             if (_includedChildCollections.Any())
             {
-                Command.AppendFormat("\n\nSELECT * FROM #{0};", this.OutputTableName);
+                Command.AppendFormat("\n\nSELECT * FROM #{0}", this.OutputTableName);
+
+                if (_orderByClause.Any())
+                {
+                    Command.Append("\nORDER BY");
+                    Command.AppendFormat("\n\t{0}", GetOrderByClause(useTableQualifier:false, useFullyQualifiedName:true));
+                }
+
                 ProcessChildCollections();
                 Command.AppendFormat("\nDROP TABLE #{0}", this.OutputTableName);
             }

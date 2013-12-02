@@ -10,7 +10,8 @@ namespace Destrier.Redis.Test
     {
         protected static readonly RedisHostInfo HostInfo = new RedisHostInfo()
         {
-            Host = "127.0.0.1"
+            Host = "127.0.0.1",
+            Db = 2 //we use a non-default db in case there is real data we don't want to flush.
         };
 
         protected static readonly String MyKey = "MyKey";

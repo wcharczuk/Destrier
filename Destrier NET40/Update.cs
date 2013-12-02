@@ -28,6 +28,12 @@ namespace Destrier
             return this;
         }
 
+        public Update<T> Set<F>(String propertyName, F value)
+        {
+            _builder.AddSet(propertyName, value);
+            return this;
+        }
+
         public Update<T> Where(Expression<Func<T, Boolean>> expression)
         {
             _builder.AddWhere(expression);

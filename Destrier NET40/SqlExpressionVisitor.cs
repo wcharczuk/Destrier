@@ -187,7 +187,7 @@ namespace Destrier
 
             if (rootType != null && rootType.Equals(this.Type))
             {
-                member = ReflectionCache.MemberForExpression(memberExp, this.Members) as ColumnMember;
+                member = Model.MemberForExpression(memberExp, this.Members) as ColumnMember;
 
                 if (member == null)
                     throw new Exception("Invalid Column.");
@@ -357,7 +357,10 @@ namespace Destrier
                     if (index > 0)
                         Buffer.Append(",");
 
-                    Buffer.Append(obj.ToString());
+                    if (obj.GetType().IsEnum)
+                        Buffer.Append(((int)obj).ToString());
+                    else
+                        Buffer.Append(obj.ToString());
                 }
                 index++;
             }

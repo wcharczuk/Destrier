@@ -17,6 +17,7 @@ namespace Destrier
     /// </summary>
     public class ReflectionCache
     {
+        //these i have to keep
         private static ConcurrentDictionary<Type, Type[]> _interfaceCache = new ConcurrentDictionary<Type, Type[]>();
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
         private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
@@ -422,32 +423,6 @@ namespace Destrier
             }
 
             return null;
-        }
-
-        public static Member MemberForExpression(MemberExpression memberExp, Dictionary<String, Member> members)
-        {
-            List<String> visitedNames = new List<String>();
-
-            var com = new ColumnMember(memberExp.Member as PropertyInfo);
-
-            visitedNames.Add(com.Name);
-
-            var visitedMemberExp = memberExp;
-            while (visitedMemberExp.Expression.NodeType == ExpressionType.MemberAccess)
-            {
-                visitedMemberExp = memberExp.Expression as MemberExpression;
-                if (visitedMemberExp.Member is PropertyInfo)
-                {
-                    ReferencedObjectMember rom = new ReferencedObjectMember(visitedMemberExp.Member as PropertyInfo);
-                    visitedNames.Add(rom.Name);
-                }
-                else
-                    return null; //abort!
-            }
-
-            visitedNames.Reverse();
-            var fullName = String.Join(".", visitedNames);
-            return members[fullName];
         }
 
         public static Object ChangeType(Object value, Type destinationType)

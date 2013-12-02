@@ -45,8 +45,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Caching\RedisCache.cs" />
-    <Compile Include="Caching\RedisCacheItem.cs" />
+    <Compile Include="Cache\RedisCache.cs" />
+    <Compile Include="Cache\RedisCacheItem.cs" />
+    <Compile Include="Cache\RedisCacheLock.cs" />
     <Compile Include="Core\FieldMember.cs" />
     <Compile Include="Core\Member.cs" />
     <Compile Include="Core\Model.cs" />

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Destrier.Redis.Caching
+namespace Destrier.Redis.Cache
 {
     [RedisStore(RedisCache.Constants.RootKey)]
     public class RedisCacheItem
@@ -19,6 +19,9 @@ namespace Destrier.Redis.Caching
 
         [RedisBinarySerialize]
         public Object Value { get; set; }
+
+        public bool Locked { get; set; }
+        public string LockedBy { get; set; }
 
         public long ValueSizeBytes { get; set; }
     }

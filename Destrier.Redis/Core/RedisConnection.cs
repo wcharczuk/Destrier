@@ -103,7 +103,7 @@ namespace Destrier.Redis.Core
             }
 
             if (response.StartsWith("-"))
-                return new RedisValue() { StringValue = response };
+                return new RedisValue() { IsSuccess = false, StringValue = response };
 
             var firstChar = response[0];
             switch (firstChar)
@@ -111,16 +111,16 @@ namespace Destrier.Redis.Core
                 case ':':
                     {
                         var result = Int64.Parse(response.Substring(1));
-                        return new RedisValue() { LongValue = result };
+                        return new RedisValue() { IsSuccess = true, LongValue = result };
                     }
                 case '+':
                     {
-                        return new RedisValue() { StringValue = response.Substring(1) };
+                        return new RedisValue() { IsSuccess = true, StringValue = response.Substring(1) };
                     }
                 case '$':
                     {
                         var value = _readSingleStatement();
-                        return new RedisValue() { StringValue = value };
+                        return new RedisValue() { IsSuccess = true, StringValue = value };
                     }
                 case '*':
                     throw new RedisException("MultiBlock response detected while reading a single response value.");
@@ -144,7 +144,12 @@ namespace Destrier.Redis.Core
             return buffer;
         }
 
-        public IEnumerable<RedisValue> ReadMultiBulkReply()
+        public List<RedisValue> ReadMultiBulkReply()
+        {
+            return StreamMultiBulkReply().ToList();
+        }
+
+        public IEnumerable<RedisValue> StreamMultiBulkReply()
         {
             string response = _readSingleStatement();
             if (String.IsNullOrEmpty(response))
@@ -156,7 +161,7 @@ namespace Destrier.Redis.Core
 
             if (response.StartsWith("-"))
             {
-                yield return new RedisValue() { StringValue = response };
+                yield return new RedisValue() { IsSuccess = false, StringValue = response };
             }
             else
             {
@@ -174,7 +179,7 @@ namespace Destrier.Redis.Core
                     var value_length = int.Parse(value_length_line.Substring(1));
 
                     if (value_length == -1)
-                        yield return new RedisValue() { IsNull = true };
+                        yield return new RedisValue() { IsSuccess = true, IsNull = true };
                     else
                     {
 
@@ -183,15 +188,15 @@ namespace Destrier.Redis.Core
                         {
                             case ':':
                                 var result = Int64.Parse(value_line.Substring(1));
-                                yield return new RedisValue() { LongValue = result };
+                                yield return new RedisValue() { IsSuccess = true, LongValue = result };
                                 break;
                             case '+':
-                                yield return new RedisValue() { StringValue = value_line.Substring(1) };
+                                yield return new RedisValue() { IsSuccess = true, StringValue = value_line.Substring(1) };
                                 break;
                             case '*':
                                 break;
                             default:
-                                yield return new RedisValue() { StringValue = value_line.Trim() };
+                                yield return new RedisValue() { IsSuccess = true, StringValue = value_line.Trim() };
                                 break;
                         }
                     }
