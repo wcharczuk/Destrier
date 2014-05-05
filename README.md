@@ -35,9 +35,10 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 |Dapper                | Avg:	20.06ms | 
 |EntityFramework 6.1   | Avg:   23.82ms |
 |ServiceStack ORMLite  | Avg:   47.86ms |
-|EntityFramework       | Avg:  112.37ms |
+|EntityFramework 5     | Avg:  112.37ms |
 
-It should be noted that EntityFramework had to have some members disabled because it lacks Enum support. 
+It should be noted that EntityFramework 5 had to have some members disabled because it lacks Enum support. 
+Also Entity Framework 6.1 had "AsNoTracking()" enabled on the db calls.
 Also should be noted that ORMLite failed to cast Doubles=>Singles. 
 Also PetaPoco doesn't handle nullable enums.
 
