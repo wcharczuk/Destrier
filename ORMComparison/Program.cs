@@ -72,6 +72,17 @@ namespace ORMComparison
         public Guid? NullableGuid { get; set; }
     }
 
+    public partial class TestObjectContext : DbContext
+    {
+        public TestObjectContext() : base(DatabaseConfigurationContext.DefaultConnectionString) { }
+
+        public virtual DbSet<TestObject> Objects { get; set; }
+
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+        } 
+    }
+
     public class Program
 	{
 		public const int TRIALS = 100;
@@ -152,11 +163,16 @@ namespace ORMComparison
 
 			
             Func<List<TestObject>> petaPocoAction = () =>
-                {
-                    var db = new PetaPoco.Database(DatabaseConfigurationContext.DefaultConnectionString, "System.Data.SqlClient");
-                    return db.Query<TestObject>(QUERY).ToList();
-                };
-            
+            {
+                var db = new PetaPoco.Database(DatabaseConfigurationContext.DefaultConnectionString, "System.Data.SqlClient");
+                return db.Query<TestObject>(QUERY).ToList();
+            };
+
+            Func<List<TestObject>> efAction = () =>
+            {
+                var db = new TestObjectContext();
+                return db.Objects.Take(LIMIT).ToList();
+            };
 
             Func<List<TestObject>> dapperAction = () =>
             {
@@ -191,6 +207,7 @@ namespace ORMComparison
                 { "PetaPoco", petaPocoAction },
                 { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
+                { "EF6", efAction },
             };
 
             var results = new List<Int64>();
