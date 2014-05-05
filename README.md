@@ -28,12 +28,13 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
-|Destrier (Raw Query)  | Avg:   18.44ms |
-|Raw Reader            | Avg:	18.74ms | 
-|PetaPoco              | Avg:   22.48ms | 
-|Destrier              | Avg:   23.42ms |
-|Dapper                | Avg:	29.24ms | 
-|ServiceStack ORMLite  | Avg:   67.65ms |
+|Raw Reader            | Avg:	16.24ms | 
+|PetaPoco              | Avg:   19.00ms | 
+|Destrier              | Avg:   19.25ms |
+|Destrier (Raw Query)  | Avg:   19.49ms |
+|Dapper                | Avg:	20.06ms | 
+|EntityFramework 6.1   | Avg:   23.82ms |
+|ServiceStack ORMLite  | Avg:   47.86ms |
 |EntityFramework       | Avg:  112.37ms |
 
 It should be noted that EntityFramework had to have some members disabled because it lacks Enum support. 
