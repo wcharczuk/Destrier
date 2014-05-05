@@ -84,10 +84,6 @@
       <Project>{3D5D72F5-92D2-4AD6-9ED0-B4667560F713}</Project>
       <Name>Destrier.Test</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Destrier.Test.Postgres\Destrier.Test.Postgres.csproj">
-      <Project>{D6C77B83-DD3F-4232-B87A-F888C80D2D30}</Project>
-      <Name>Destrier.Test.Postgres</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

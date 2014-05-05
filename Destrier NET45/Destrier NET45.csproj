@@ -32,13 +32,6 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Security, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\lib\npgsql\Mono.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="Npgsql">
-      <HintPath>..\lib\npgsql\Npgsql.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -181,9 +174,6 @@
     </Compile>
     <Compile Include="..\Destrier NET40\IDataReaderExtensions.cs">
       <Link>IDataReaderExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\Destrier NET40\SqlDialectVariant.cs">
-      <Link>SqlDialectVariant.cs</Link>
     </Compile>
     <Compile Include="..\Destrier NET40\SqlExpressionVisitor.cs">
       <Link>SqlExpressionVisitor.cs</Link>

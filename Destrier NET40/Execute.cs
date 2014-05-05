@@ -15,7 +15,7 @@ namespace Destrier
     {
         public const int COMMAND_TIMEOUT = 60;
 
-        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null, Boolean standardizeCasing = true)
+        public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null)
         {
             using (var cmd = Command(connectionName))
             {
@@ -29,7 +29,7 @@ namespace Destrier
 
                 using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
                 {
-                    action(new IndexedSqlDataReader(dr, standardizeCasing));
+                    action(new IndexedSqlDataReader(dr));
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace Destrier
             }
         }
 
-        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null, Boolean standardizeCasing = true)
+        public static void StatementReader(String statement, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null)
         {
             using(var cmd = Command(connectionName))
             {
@@ -62,9 +62,42 @@ namespace Destrier
                     Utility.AddParametersToCommand(parameters, cmd);
                 }
 
-                using (var dr = cmd.ExecuteReader())
+                using (var dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
                 {
-                    action(new IndexedSqlDataReader(dr, standardizeCasing));
+                    action(new IndexedSqlDataReader(dr));
+                }
+            }
+        }
+
+        public static T Statement<T>(String statement, dynamic parameters = null, String connectionName = null)
+        {
+            using (var cmd = Command(connectionName))
+            {
+                cmd.CommandType = System.Data.CommandType.Text;
+                cmd.CommandText = statement;
+
+                if (parameters != null)
+                {
+                    Utility.AddParametersToCommand(parameters, cmd);
+                }
+
+                var type = typeof(T);
+
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(CommandBehavior.CloseConnection)))
+                {
+                    if (dr.Read())
+                    {
+                        if (type.IsValueType || type.Equals(typeof(String)) || type.Equals(typeof(DateTime)))
+                        {
+                            return dr.Get<T>(0);
+                        }
+
+                        return dr.ReadObject<T>(returnNullOnEmpty: true);
+                    }
+                    else
+                    {
+                        return default(T);
+                    }
                 }
             }
         }

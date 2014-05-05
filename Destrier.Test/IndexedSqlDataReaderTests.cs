@@ -20,7 +20,7 @@ namespace Destrier.Test
             {
                 cmd.CommandText = SingleStatment;
                 cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject)))
                 {
                 }
             }
@@ -33,7 +33,7 @@ namespace Destrier.Test
             {
                 cmd.CommandText = SingleStatment;
                 cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject)))
                 {
                 }
             }
@@ -46,7 +46,7 @@ namespace Destrier.Test
             {
                 cmd.CommandText = SingleStatment;
                 cmd.CommandType = System.Data.CommandType.Text;
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject), standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(), type: typeof(TestObject)))
                 {
                     dr.ReadFullControl((reader) =>
                     {

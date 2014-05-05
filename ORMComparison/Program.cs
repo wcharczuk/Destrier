@@ -130,14 +130,14 @@ namespace ORMComparison
                 return list;
             };
 
-            /*Func<List<TestObject>> ormLiteAction = () =>
+            Func<List<TestObject>> ormLiteAction = () =>
             {
                 var dbFactory = new ServiceStack.OrmLite.OrmLiteConnectionFactory(CONNECTION_STRING, ServiceStack.OrmLite.SqlServerDialect.Provider);
                 using (System.Data.IDbConnection db = dbFactory.OpenDbConnection())
                 {
                     return ServiceStack.OrmLite.ReadConnectionExtensions.Select<TestObject>(db, q => q.Limit(LIMIT));
                 }
-            }; */
+            };
 
 
             Func<List<TestObject>> destrierAction = () =>
@@ -150,13 +150,13 @@ namespace ORMComparison
                 return new Destrier.Query<TestObject>(QUERY).StreamResults().ToList();
             };
 
-			/*
+			
             Func<List<TestObject>> petaPocoAction = () =>
                 {
-                    var db = new PetaPoco.Database(ConnectionString, "System.Data.SqlClient");
+                    var db = new PetaPoco.Database(DatabaseConfigurationContext.DefaultConnectionString, "System.Data.SqlClient");
                     return db.Query<TestObject>(QUERY).ToList();
                 };
-            */
+            
 
             Func<List<TestObject>> dapperAction = () =>
             {
@@ -188,8 +188,8 @@ namespace ORMComparison
                 { "Raw Reader", rawAction },
                 { "Destrier", destrierAction },
                 { "Destrier (Raw Query)", destrierRawQueryAction },
-                //{ "PetaPoco", petaPocoAction },
-                //{ "ServiceStack ORMLite", ormLiteAction },
+                { "PetaPoco", petaPocoAction },
+                { "ServiceStack ORMLite", ormLiteAction },
                 { "Dapper", dapperAction },
             };
 

@@ -10,9 +10,9 @@ namespace Destrier
     {
         public ReferencedObjectAttribute() { PropertyName = null; }
 
-        public ReferencedObjectAttribute(String propertyName)
+        public ReferencedObjectAttribute(String idPropertyName)
         {
-            this.PropertyName = propertyName;
+            this.PropertyName = idPropertyName;
         }
 
         /// <summary>

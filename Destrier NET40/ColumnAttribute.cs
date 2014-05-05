@@ -48,7 +48,7 @@ namespace Destrier
         /// Determines if the column needs to be a value or if it will be written / read as DBNull.Value.
         /// </summary>
         /// <remarks>
-        /// Defaults to false.
+        /// Defaults to true.
         /// </remarks>
         public Boolean CanBeNull { get; set; }
 
@@ -69,6 +69,7 @@ namespace Destrier
         /// If true, will substring the value up to the maximum length.
         /// </summary>
         /// <remarks>
+        /// Defaults to true.
         /// Will not affect anything if there is no MaxStringLength specified.
         /// </remarks>
         public Boolean ShouldTrimLongStrings { get; set; }

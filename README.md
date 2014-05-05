@@ -9,12 +9,6 @@ Destrier is a flexible yet minimal ORM for .net targeting both MSSQL and Postgre
 It is designed to leverage both strong typing and model / schema relationships and push the developer towards
 using stored procedures / functions for complicated queries.
 
-
-###Installation###
-Nuget: ```install-package Destrier```
-
-Binary: See 'Releases' for zip bundle.
-
 ###Features###
 * POCO support; use your existing objects.
 * Code first based on annotations.
@@ -34,9 +28,9 @@ The following test was performed on 100 iterations for each orm, selecting an ob
 
 | ORM                  | Timing         |
 |----------------------|----------------|
+|Destrier (Raw Query)  | Avg:   18.44ms |
 |Raw Reader            | Avg:	18.74ms | 
-|PetaPoco              | Avg:   22.48ms |
-|Destrier (Raw Query)  | Avg:   23.12ms |
+|PetaPoco              | Avg:   22.48ms | 
 |Destrier              | Avg:   23.42ms |
 |Dapper                | Avg:	29.24ms | 
 |ServiceStack ORMLite  | Avg:   67.65ms |
@@ -103,7 +97,7 @@ var results = new Query<MockObject>().Where(mo => list.Contains(mo.MockObjectId)
 ```
 You can update objects by individual properties.
 ```C#
-new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Execute();
+new Update<MockObject>().Set(mo => mo.Active, false).Where(mo => mo.MockObjectId == 2).Exeute();
 //resulting sql is UPDATE [alias] SET Active = 0 FROM MockObjects [alias] where MockObjectId = 2
 ```
 

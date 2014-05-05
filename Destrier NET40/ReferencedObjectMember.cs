@@ -9,12 +9,12 @@ namespace Destrier
     /// <summary>
     /// Represents a referenced object property, also conceptually a join.
     /// </summary>
-    public class ReferencedObjectMember : Member
+    public class ReferencedObjectMember : Member, ICloneable
     {
         public ReferencedObjectMember(PropertyInfo pi) : base(pi)
         {
-            this.ReferencedObjectAttribute = ModelCache.GetReferencedObjectAttribute(pi);
-            this.ReferencedColumnMember = Model.ColumnMemberForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName);
+            this.ReferencedObjectAttribute = ModelReflection.ReferencedObjectAttribute(pi);
+            this.ReferencedColumnMember = Model.ColumnMemberForPropertyName(DeclaringType, ReferencedObjectAttribute.PropertyName).Clone() as ColumnMember;
             this.ReferencedColumnIsNullable = ReflectionHelper.IsNullableType(ReferencedColumnProperty.PropertyType) || ReferencedColumnAttribute.CanBeNull;
 
             if (this.IsLazy)
@@ -48,6 +48,14 @@ namespace Destrier
         public Boolean UseNoLock { get; set; }
 
         public String JoinType { get { return ReferencedColumnIsNullable ? "LEFT" : "INNER"; } }
+
         public String FullyQualifiedTableName { get { return String.Format("{0}.{1}.{2}", this.DatabaseName, this.SchemaName, this.TableName); } }
+
+        public override object Clone()
+        {
+            var copy = this.MemberwiseClone() as ReferencedObjectMember;
+            copy.ReferencedColumnMember = this.ReferencedColumnMember.Clone() as ColumnMember;
+            return copy;
+        }
     }
 }

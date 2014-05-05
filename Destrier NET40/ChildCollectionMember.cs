@@ -6,30 +6,43 @@ using System.Text;
 
 namespace Destrier
 {
-    public class ChildCollectionMember : Member
+    public class ChildCollectionMember : Member, ICloneable
     {
         public ChildCollectionMember() : base() { }
 
         public ChildCollectionMember(PropertyInfo pi)
             : base(pi)
         {
-            var attribute = ModelCache.GetChildCollectionAttribute(pi);
-            AlwaysInclude = attribute.AlwaysInclude;
+            var attribute = ModelReflection.ChildCollectionAttribute(pi);
+
+            this.AlwaysInclude = attribute.AlwaysInclude;
 
             if (this.IsLazy)
+            {
                 this.CollectionType = ReflectionHelper.GetUnderlyingTypeForCollection(this.UnderlyingGenericType);
+            }
             else
+            {
                 this.CollectionType = ReflectionHelper.GetUnderlyingTypeForCollection(this.Type);
+            }
 
             if (!String.IsNullOrWhiteSpace(attribute.ParentColumnName))
-                this.ParentReferencedMember = Model.ColumnMemberForPropertyName(pi.DeclaringType, attribute.ParentColumnName);
+            {
+                this.ParentReferencedMember = Model.ColumnMemberForPropertyName(pi.DeclaringType, attribute.ParentColumnName).Clone() as ColumnMember;
+            }
             else
-                this.ParentReferencedMember = Model.ColumnsPrimaryKey(pi.DeclaringType).FirstOrDefault();
-            
-            if(!String.IsNullOrWhiteSpace(attribute.ChildColumnName))
-                this.ReferencedColumn = Model.ColumnMemberForPropertyName(this.CollectionType, attribute.ChildColumnName);
+            {
+                this.ParentReferencedMember = Model.ColumnsPrimaryKey(pi.DeclaringType).FirstOrDefault().Clone() as ColumnMember;
+            }
+
+            if (!String.IsNullOrWhiteSpace(attribute.ChildColumnName))
+            {
+                this.ReferencedColumn = Model.ColumnMemberForPropertyName(this.CollectionType, attribute.ChildColumnName).Clone() as ColumnMember;
+            }
             else
-                this.ReferencedColumn = Model.ColumnMemberForPropertyName(this.CollectionType, this.ParentReferencedColumnName);
+            {
+                this.ReferencedColumn = Model.ColumnMemberForPropertyName(this.CollectionType, this.ParentReferencedColumnName).Clone() as ColumnMember;
+            }
 
             this.TableName = Model.TableName(this.CollectionType); 
             this.DatabaseName = Model.DatabaseName(this.CollectionType);
@@ -117,8 +130,16 @@ namespace Destrier
                 if (this.Parent == null)
                     return false;
                 else
-                    return base.ParentAny(p => p.Type.Equals(this.CollectionType));
+                    return base.AnyParent(p => p.Type.Equals(this.CollectionType));
             }
+        }
+
+        public override object Clone()
+        {
+            var copy = this.MemberwiseClone() as ChildCollectionMember;
+            copy.ReferencedColumn = this.ReferencedColumn.Clone() as ColumnMember;
+            copy.ParentReferencedMember = this.ParentReferencedMember.Clone() as ColumnMember;
+            return copy;
         }
     }
 }

@@ -206,6 +206,67 @@ namespace Destrier.Test
         public String SubCollectionObjectName { get; set; }
     }
 
+    [Table(TableName="Mapping")]
+    public class Mapping
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+
+        [Column]
+        public String Name { get; set; }
+
+        public List<MappingShallowCollectionItem> ShallowCollection { get; set; }
+
+        [ChildCollection(AlwaysInclude=true)]
+        public List<MappingCollectionItem> DeepCollection { get; set; }
+    }
+
+    [Table(TableName="MappingShallowCollectionItem")]
+    public class MappingShallowCollectionItem
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+
+        [Column]
+        public String Name { get; set; }
+    }
+
+    [Table(TableName = "MappingCollectionItem")]
+    public class MappingCollectionItem
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+
+        [Column]
+        public String Name { get; set; }
+
+        [Column]
+        public Int32 MappingReferencedItemId { get; set; }
+
+        [ReferencedObject(PropertyName = "MappingReferencedItemId")]
+        public MappingReferencedItem ReferencedItem { get; set; }
+    }
+
+    [Table(TableName = "MappingReferencedItem")]
+    public class MappingReferencedItem
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+
+        [ChildCollection(AlwaysInclude=true)]
+        public List<MappingInnerCollectionItem> InnerCollection { get; set; }
+    }
+
+    [Table(TableName = "MappingInnerCollectionItem")]
+    public class MappingInnerCollectionItem
+    {
+        [Column(IsPrimaryKey=true)]
+        public Int32 Id { get; set; }
+
+        [Column]
+        public String Name { get; set; }
+    }
+
     #endregion
 
     #region Modeling Tests

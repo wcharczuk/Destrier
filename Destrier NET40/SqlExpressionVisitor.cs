@@ -22,7 +22,7 @@ namespace Destrier
             this.Buffer = new StringBuilder();
             this.Parameters = new Dictionary<string, object>();
             this.Type = typeof(T);
-            this.Members = ModelCache.GenerateMembersRecursive(this.Type).ToDictionary(m => m.FullyQualifiedName);
+            this.Members = Model.GenerateAllMembers(this.Type).ToDictionary(m => m.FullyQualifiedName);
         }
 
         public SqlExpressionVisitor(StringBuilder buffer) : this()
@@ -57,7 +57,6 @@ namespace Destrier
             this.Members = members;
         }
 
-        public ISqlDialectVariant Dialect { get; set; }
         public Type Type { get; set; }
         public StringBuilder Buffer { get; set; }
         public IDictionary<String, object> Parameters { get; set; }
@@ -238,8 +237,8 @@ namespace Destrier
                 var memberExp = m.Object as MemberExpression;
                 var rootType = ReflectionHelper.RootTypeForExpression(memberExp);
 
-                var like = Dialect != null ? Dialect.Like : "LIKE";
-                var concat = Dialect != null ? Dialect.StringConcatOperator : " + ";
+                var like = "LIKE";
+                var concat = " + ";
 
                 if (rootType != null && rootType.Equals(this.Type))
                 {
@@ -558,9 +557,6 @@ namespace Destrier
 
         private String WrapName(String name, Boolean isTableAlias = false)
         {
-            if (this.Dialect != null)
-                return this.Dialect.WrapName(name, isTableAlias);
-
             return String.Format("[{0}]", name);
         }
 

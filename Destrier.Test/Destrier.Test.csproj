@@ -59,6 +59,7 @@
     <Compile Include="CommandBuilderTests.cs" />
     <Compile Include="DatabaseTests.cs" />
     <Compile Include="IndexedSqlDataReaderTests.cs" />
+    <Compile Include="ModelCacheTests.cs" />
     <Compile Include="Objects.cs" />
     <Compile Include="QueryTests.cs" />
     <Compile Include="ReflectionTests.cs" />

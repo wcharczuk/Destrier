@@ -19,7 +19,7 @@ namespace Destrier
 			StandardizeCasing = false;
             _command = new StringBuilder();
             _parameters = new Dictionary<String, Object>();
-            _builder = CommandBuilderFactory.GetCommandBuilder<T>();
+            _builder = new CommandBuilder<T>();
             _builder.Command = _command;
             _builder.Parameters = _parameters; 
             _t = typeof(T);
@@ -155,7 +155,7 @@ namespace Destrier
                 cmd.CommandType = System.Data.CommandType.Text;
                 Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
 
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: false))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t))
                 {
                     var objectLookups = new Dictionary<Type, Dictionary<Object, Object>>();
                     var parentDict = new Dictionary<Object, Object>();
@@ -163,8 +163,8 @@ namespace Destrier
 
                     while (dr.Read())
                     {
-                        T newObject = (T)ReflectionHelper.GetNewObject(_t);
-                        Model.PopulateFullResults(newObject, dr, objectLookups: objectLookups, thisType: _t);
+                        var newObject = (T)ReflectionHelper.GetNewObject(_t);
+                        dr.DeepPopulate(newObject, objectLookups: objectLookups, thisType: _t);
                         list.Add(newObject);
                     }
 
@@ -209,13 +209,12 @@ namespace Destrier
                                         if (!objLookup.ContainsKey(objPrimaryKeyValue))
                                             objLookup.Add(objPrimaryKeyValue, obj);
                                         else
-                                            obj = objLookup[objPrimaryKeyValue] as IPopulate;
+                                            obj = objLookup[objPrimaryKeyValue];
 
                                     var collection = parentCollectionProperty.GetValue(parentObj);
                                     ((System.Collections.IList)collection).Add(obj);
                                 }
-                            }, populateFullResults: true, advanceToNextResultAfter: false);
-                            
+                            }, populateFullResults: true, advanceToNextResultAfter: false, objectLookups: objectLookups);
                         }
                     }
                 }
@@ -226,20 +225,18 @@ namespace Destrier
         private IEnumerable<T> _fastPipeline()
         {
             var connectionName = Model.ConnectionName(_t);
-            var dialect = _builder != null ? _builder.Dialect : SqlDialectVariantFactory.GetSqlDialect(connectionName);
-            var shouldStandardizeCasing = dialect.AltersOutputCasing && this.StandardizeCasing;
             
             using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
                 cmd.CommandType = System.Data.CommandType.Text;
                 Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
-                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t, standardizeCasing: shouldStandardizeCasing))
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t))
                 {
                     while (dr.Read())
                     {
                         T newObject = (T)ReflectionHelper.GetNewObject(_t);
-                        Model.PopulateFullResults(newObject, dr, _t);
+                        dr.DeepPopulate(newObject, _t);
                         yield return newObject;
                     }
                 }

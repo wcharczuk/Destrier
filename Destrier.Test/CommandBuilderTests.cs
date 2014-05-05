@@ -20,7 +20,7 @@ namespace Destrier.Test
         public void Select_Test()
         {
             var command = new StringBuilder();
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.Command = command;
             var commandText = commandBuilder.GenerateSelect();
 
@@ -32,7 +32,7 @@ namespace Destrier.Test
         public void Select_Where_Test()
         {
             var command = new StringBuilder();
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.Command = command;
             commandBuilder.AddWhere(mo => mo.MockObjectId == 1);
             var commandText = commandBuilder.GenerateSelect();
@@ -45,7 +45,7 @@ namespace Destrier.Test
         public void Select_Where_Legacy_Test()
         {
             var command = new StringBuilder();
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.Command = command;
             commandBuilder.AddWhereDynamic(new { MockObjectId = 1 });
             var commandText = commandBuilder.GenerateSelect();
@@ -58,7 +58,7 @@ namespace Destrier.Test
         public void Select_Where_ReferencedObject_Test()
         {
             var command = new StringBuilder();
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.Command = command;
             commandBuilder.AddWhere( m => m.AnotherReferencedSubObject.SubObjectName == "Test String.");
             var commandText = commandBuilder.GenerateSelect();
@@ -70,7 +70,7 @@ namespace Destrier.Test
         [Fact]
         public void Select_Include_Test()
         {
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.AddIncludedChildCollection(m => m.CollectionObjects);
 
             var commandText = commandBuilder.GenerateSelect();
@@ -83,7 +83,7 @@ namespace Destrier.Test
         [Fact]
         public void Select_IncludeByString_Test()
         {
-            var commandBuilder = new SqlServerCommandBuilder<MockObject>();
+            var commandBuilder = new CommandBuilder<MockObject>();
             commandBuilder.AddIncludedChildCollection("CollectionObjects");
             commandBuilder.AddIncludedChildCollection("CollectionObjects.SubCollectionObjects");
 
@@ -97,7 +97,7 @@ namespace Destrier.Test
         [Fact]
         public void Update_Test()
         {
-            var cb = new SqlServerCommandBuilder<MockObject>();
+            var cb = new CommandBuilder<MockObject>();
             cb.AddSet(m => m.Active, true);
             cb.AddWhere(m => m.MockObjectId == 10);
 
@@ -109,7 +109,7 @@ namespace Destrier.Test
         [Fact]
         public void Offset_Test()
         {
-            var cb = new SqlServerCommandBuilder<MockObject>();
+            var cb = new CommandBuilder<MockObject>();
             cb.Offset = 10;
             cb.Limit = 100;
             var sqlText = cb.GenerateSelect();

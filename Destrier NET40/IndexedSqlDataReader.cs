@@ -18,46 +18,45 @@ namespace Destrier
             ResultSetIndex = 0;
         }
 
-        public IndexedSqlDataReader(IDataReader hostReader, Boolean standardizeCasing = true) : this()
+        public IndexedSqlDataReader(IDataReader hostReader) : this()
         {
             _dr = hostReader;
-            StandardizeCasing = standardizeCasing;
-            InitResultSet();
+            ParseResultSet();
         }
 
-        public IndexedSqlDataReader(IDataReader hostReader, Type type, Boolean standardizeCasing = false)
+        public IndexedSqlDataReader(IDataReader hostReader, Type type)
             : this()
         {
             _dr = hostReader;
-            StandardizeCasing = standardizeCasing;
             CurrentOutputType = type;
-            InitResultSet();
+            ParseResultSet();
         }
 
-        private void InitResultSet()
+        /// <summary>
+        /// This is called for each new result set (in a multi-resultset query).
+        /// </summary>
+        private void ParseResultSet()
         {
-            //these are standard regardless of if we're using this reader to get a destrier object.
-            ColumnMap = _dr.GetColumnMap(this.StandardizeCasing);
-            ColumnIndexMap = _dr.GetColumnIndexMap(this.StandardizeCasing);
+            ColumnNameMap = _dr.GetColumnNameMap();
+            ColumnIndexMap = _dr.GetColumnIndexMap();
 
             if (this.CurrentOutputType != null)
             {
                 this.HasChildCollectionMembers = ModelCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ModelCache.HasReferencedObjectMembers(this.CurrentOutputType);
 
-                ColumnMemberLookup = this.StandardizeCasing ? ModelCache.GetColumnMemberStandardizedLookup(CurrentOutputType) : ModelCache.GetColumnMemberLookup(CurrentOutputType);
+                ColumnMemberLookup = ModelCache.GetColumnMemberStandardizedLookup(CurrentOutputType);
 
-                var cm_index = new List<ColumnMember>();
-                //column member index map gen
+                ColumnMemberIndexMap = new List<ColumnMember>();
+                
                 foreach (var name in ColumnIndexMap)
                 {
                     ColumnMember member = null;
                     if (ColumnMemberLookup.TryGetValue(name, out member))
                     {
-                        cm_index.Add(member);
+                        ColumnMemberIndexMap.Add(member);
                     }
                 }
-                ColumnMemberIndexMap = cm_index.ToArray();
 
                 if (!HasReferencedObjectMembers)
                 {
@@ -66,14 +65,9 @@ namespace Destrier
             }
         }
 
-        private ModelCache.SetInstanceValuesDelegate _setInstanceValuesFn = null;
-		private IDataReader _dr = null;
-		private Int32 _resultSetIndex = 0;
-
-        /// <summary>
-        /// Whether or not to standardize (ToLower) the casing of column names and member names.
-        /// </summary>
-        public Boolean StandardizeCasing { get; set; }
+        private SetInstanceValuesDelegate               _setInstanceValuesFn    = null;
+		private IDataReader                             _dr                     = null;
+		private Int32                                   _resultSetIndex         = 0;
 
         /// <summary>
         /// The type to map to the current result set. Is optional.
@@ -103,17 +97,17 @@ namespace Destrier
         /// <summary>
         /// If the output type is specified this is a mapping between array indices and column members.
         /// </summary>
-        public ColumnMember[] ColumnMemberIndexMap { get; set; }
+        public List<ColumnMember> ColumnMemberIndexMap { get; set; }
 
         /// <summary>
         /// This is the mapping of column names to array indices.
         /// </summary>
-        public Dictionary<String, Int32> ColumnMap { get; set; }
+        public Dictionary<String, Int32> ColumnNameMap { get; set; }
 
         /// <summary>
         /// This is the mapping of array indices to column names.
         /// </summary>
-        public string[] ColumnIndexMap { get; set; }
+        public String[] ColumnIndexMap { get; set; }
 
         /// <summary>
         /// Returns true if the result set contains the columnName
@@ -122,10 +116,7 @@ namespace Destrier
         /// <returns></returns>
         public Boolean HasColumn(String columnName)
         {
-            if (this.StandardizeCasing)
-                return ColumnMap.ContainsKey(Model.StandardizeCasing(columnName));
-            else
-                return ColumnMap.ContainsKey(columnName);
+            return ColumnNameMap.ContainsKey(columnName);
         }
 
         /// <summary>
@@ -135,22 +126,16 @@ namespace Destrier
         /// <returns></returns>
         public Int32? GetColumnIndex(String columnName)
         {
-            if (this.StandardizeCasing)
+            var standardizedName = Model.StandardizeCasing(columnName);
+
+            if (ColumnNameMap.ContainsKey(standardizedName))
             {
-                var columnNameLower = Model.StandardizeCasing(columnName);
-                if (ColumnMap.ContainsKey(columnNameLower))
-                    return ColumnMap[columnNameLower];
-                else
-                    return null;
+                return ColumnNameMap[standardizedName];
             }
             else
             {
-                if (ColumnMap.ContainsKey(columnName))
-                    return ColumnMap[columnName];
-                else
-                    return null;
+                return null;
             }
-
         }
 
         /// <summary>
@@ -188,7 +173,7 @@ namespace Destrier
         {
             var result = _dr.NextResult();
             ResultSetIndex++;
-            InitResultSet();
+            ParseResultSet();
             return result;
         }
 
@@ -365,10 +350,9 @@ namespace Destrier
         public object Get(ColumnMember member, String columnName = null)
         {
             var columnIndex = GetColumnIndex(columnName ?? member.Name);
-            if (columnIndex != null)
-            {
-                return Get(member.Type, columnIndex.Value, member.IsNullableType, member.UnderlyingGenericType);
-            }
+            
+            if (columnIndex != null) { return Get(member.Type, columnIndex.Value, member.IsNullableType, member.UnderlyingGenericType); }
+            
             return ReflectionHelper.GetDefault(member.Type);
         }
 
@@ -462,7 +446,7 @@ namespace Destrier
             return value;
         }
 
-        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true) where T : new()
+        public T ReadObject<T>(Boolean returnNullOnEmpty = false, Boolean advanceToNextResultAfter = true)
         {
             T newObject = ReflectionHelper.GetNewObject<T>();
             bool hasPopulate = ReflectionHelper.HasInterface(typeof(T), typeof(IPopulate));
@@ -545,7 +529,7 @@ namespace Destrier
             return dict;
         }
 
-        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false)
+        public void ReadIntoParentCollection(Type type, Action<IndexedSqlDataReader, object> doStuffToAddToParent, Boolean advanceToNextResultAfter = true, Boolean populateFullResults = false, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
 		{
             bool hasPopulate = populateFullResults ? false : ReflectionHelper.HasInterface(type, typeof(IPopulate));
             while (this.Read())
@@ -554,14 +538,18 @@ namespace Destrier
 
                 if (populateFullResults)
                 {
-                    Model.PopulateFullResults(newObject, this, type);
+                    DeepPopulate(newObject, type, objectLookups:objectLookups);
                 }
                 else
 				{
-					if(hasPopulate)
-						((IPopulate)newObject).Populate(this);
-					else
-						Model.Populate(newObject, this);
+                    if (hasPopulate)
+                    {
+                        ((IPopulate)newObject).Populate(this);
+                    }
+                    else
+                    {
+                        Model.Populate(newObject, this);
+                    }
 				}
 
                 doStuffToAddToParent(this, newObject);
@@ -612,6 +600,95 @@ namespace Destrier
             if (advanceToNextResultAfter)
                 this.NextResult();
         }
+
+        public void DeepPopulate(object instance, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+        {
+            if (HasReferencedObjectMembers || parentMember != null)
+            {
+                var members = ModelCache.GetColumnMembers(thisType);
+                foreach (ColumnMember col in members)
+                {
+                    var columnName = col.Name;
+                    if (parentMember != null)
+                        columnName = String.Format("{0}.{1}", parentMember.FullyQualifiedName, col.Name);
+
+                    col.SetValue(instance, Get(col, columnName));
+                }
+
+                rootMember = rootMember ?? new RootMember(thisType);
+                foreach (ReferencedObjectMember rom in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.AnyParent(p => p is ChildCollectionMember)))
+                {
+                    var type = rom.Type;
+
+                    if (!rom.IsLazy)
+                    {
+                        var newObject = ReflectionHelper.GetNewObject(type);
+
+                        DeepPopulate(newObject, type, rootMember, rom, objectLookups: objectLookups); //recursion.
+
+                        if (objectLookups != null)
+                        {
+                            if (!objectLookups.ContainsKey(rom.Type))
+                            {
+                                objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
+                            }
+
+                            var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
+                            if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
+                            {
+                                objectLookups[rom.Type].Add(pkv, newObject);
+                                rom.Property.SetValue(instance, newObject);
+                            }
+                            else
+                            {
+                                var existingObject = objectLookups[rom.Type][pkv];
+                                rom.Property.SetValue(instance, existingObject);
+                            }
+                        }
+                        else
+                        {
+                            rom.Property.SetValue(instance, newObject);
+                        }
+                    }
+                    else
+                    {
+                        var mi = typeof(Model).GetMethod("GenerateLazyReferencedObjectMember");
+                        var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
+                        var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
+                        rom.SetValue(instance, lazy);
+                    }
+                }
+
+                if (HasChildCollectionMembers)
+                {
+                    foreach (ChildCollectionMember cm in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
+                    {
+                        var mi = typeof(Model).GetMethod("GenerateLazyChildCollectionMember");
+                        var genericMi = mi.MakeGenericMethod(cm.UnderlyingGenericType);
+                        var lazy = genericMi.Invoke(null, new Object[] { cm, instance });
+                        cm.SetValue(instance, lazy);
+                    }
+                }
+            }
+            else
+            {
+                SetInstanceValues(instance);
+            }
+
+            if (HasChildCollectionMembers && objectLookups != null)
+            {
+                if (!objectLookups.ContainsKey(thisType))
+                {
+                    objectLookups.Add(thisType, new Dictionary<Object, Object>());
+                }
+                var pkv = Model.InstancePrimaryKeyValue(thisType, instance);
+                if (pkv != null && !objectLookups[thisType].ContainsKey(pkv))
+                {
+                    objectLookups[thisType].Add(pkv, instance);
+                }
+            }
+        }
+
         #endregion
 
         #region Util
@@ -623,7 +700,7 @@ namespace Destrier
         /// <remarks>Will only set properties on the instance itself, not on any referenced objects etc.</remarks>
         public void SetInstanceValues(object instance)
         {
-            _setInstanceValuesFn(this, instance);
+            _setInstanceValuesFn(this, instance); 
         }
 
         /// <summary>
@@ -667,7 +744,7 @@ namespace Destrier
             {
                 toThrow = new DataException(ex.Message, ex);
             }
-            throw toThrow;
+            throw toThrow; 
         }
 
         public override bool Equals(object obj)

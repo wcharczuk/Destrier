@@ -9,15 +9,14 @@ namespace Destrier
     /// <summary>
     /// This class is used when enumerating output columns.
     /// </summary>
-    public class ColumnMember : Member
+    public class ColumnMember : Member, ICloneable
     {
         public ColumnMember(PropertyInfo pi)
             : base(pi)
         {
-            this.ColumnAttribute = ModelCache.GetColumnAttribute(pi);
+            this.ColumnAttribute = ModelReflection.ColumnAttribute(pi);
             if (ColumnAttribute != null)
             {
-                //these are commonly accessed properties
                 this.IsPrimaryKey = ColumnAttribute.IsPrimaryKey;
                 this.IsAutoIdentity = ColumnAttribute.IsAutoIdentity;
                 this.IsForReadOnly = ColumnAttribute.IsForReadOnly;
@@ -36,5 +35,10 @@ namespace Destrier
         public Boolean Skip { get; set; }
 
         public String OutputAlias { get; set; }
+
+        public override object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 }

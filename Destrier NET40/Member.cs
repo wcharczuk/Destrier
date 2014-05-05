@@ -69,20 +69,14 @@ namespace Destrier
             _setValueCompiled(instance, value);
         }
 
-        private String _fullyQualifiedName = null;
         public String FullyQualifiedName
         {
             get
             {
-                if (!String.IsNullOrEmpty(_fullyQualifiedName))
-                    return _fullyQualifiedName;
-
                 if (Parent != null)
-                    _fullyQualifiedName = String.Format("{0}.{1}", Parent.FullyQualifiedName, Name);
+                    return String.Format("{0}.{1}", Parent.FullyQualifiedName, Name);
                 else
-                    _fullyQualifiedName = String.Format("{1}", this.DeclaringType.Name, Name);
-
-                return _fullyQualifiedName;
+                    return this.Name;
             }
         }
 
@@ -90,18 +84,18 @@ namespace Destrier
         {
             get
             {
-                return ParentAny(m => m.Type.Equals(this.Type));
+                return AnyParent(m => m.Type.Equals(this.Type));
             }
         }
 
-        public virtual Boolean ParentAny(Func<Member, Boolean> test)
+        public virtual Boolean AnyParent(Func<Member, Boolean> test)
         {
             if (this.Parent == null && this.Root != null)
                 return test(this.Root);
             else if (this.Parent != null && test(this.Parent))
                 return true;
             else if (this.Parent != null)
-                return this.Parent.ParentAny(test);
+                return this.Parent.AnyParent(test);
             else
                 return false;
         }
@@ -124,7 +118,7 @@ namespace Destrier
             return this.FullyQualifiedName;
         }
 
-        public object Clone()
+        public virtual object Clone()
         {
             return this.MemberwiseClone();
         }

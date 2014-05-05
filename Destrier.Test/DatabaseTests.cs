@@ -119,10 +119,10 @@ namespace Destrier.Test
         [Fact]
         public void CheckSchema()
         {
-            Model.CheckColumns(typeof(Person));
-            Model.CheckColumns(typeof(Book));
-            Model.CheckColumns(typeof(Chapter));
-            Model.CheckColumns<Page>(); //just another way of doing this.
+            ModelValidation.CheckColumns(typeof(Person));
+            ModelValidation.CheckColumns(typeof(Book));
+            ModelValidation.CheckColumns(typeof(Chapter));
+            ModelValidation.CheckColumns<Page>(); //just another way of doing this.
 
             Assert.NotEmpty(Schema.GetTables(DatabaseConfigurationContext.DefaultConnectionString));
         }

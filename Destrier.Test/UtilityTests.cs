@@ -176,16 +176,5 @@ namespace Destrier.Test
             Int32 notNullOrDefault = 1;
             Assert.False(notNullOrDefault.DBNullCoalese() is DBNull);
         }
-
-        [Fact]
-        public void ArrayTest()
-        {
-            var my2darray = new int[10, 10];
-
-            var mda = new List<List<int>>();
-            mda.Add(new List<int>());
-            mda[0].Add(1);
-            Assert.True(mda[0][0] == 0);
-        }
     }
 }

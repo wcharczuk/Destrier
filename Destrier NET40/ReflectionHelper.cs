@@ -14,7 +14,7 @@ namespace Destrier
 
         private static ConcurrentDictionary<Type, Type[]> _interfaceCache = new ConcurrentDictionary<Type, Type[]>();
         private static ConcurrentDictionary<Type, Func<object>> _ctorCache = new ConcurrentDictionary<Type, Func<object>>();
-        private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<object, object>>();
+        private static ConcurrentDictionary<PropertyInfo, Action<Object, Object>> _compiledSetFunctions = new ConcurrentDictionary<PropertyInfo, Action<Object, Object>>();
 
         private static ConcurrentDictionary<Type, Type> _nullableTypeCache = new ConcurrentDictionary<Type, Type>();
         private static ConcurrentDictionary<Type, Type> _collectionTypeCache = new ConcurrentDictionary<Type, Type>();
@@ -22,14 +22,26 @@ namespace Destrier
 
         private static Func<Type, Func<object>> _ctorHelperFunc = ConstructorCreationHelper;
 
+        private static Func<Type, Dictionary<String, PropertyInfo>> _propertyHelperFunc = PropertyHelper;
+
         public static Dictionary<String, PropertyInfo> GetProperties(Type type)
         {
-            return _propertyCache.GetOrAdd(type, (t) =>
-            {
-                return type.GetProperties().ToDictionary(p => p.Name);
-            });
+            return _propertyCache.GetOrAdd(type, _propertyHelperFunc);
         }
 
+        public static IEnumerable<PropertyInfo> GetPropertiesWithAttribute(Type type, Type attributeType)
+        {
+            var properties = new List<PropertyInfo>();
+            foreach (var prop in GetProperties(type).Values)
+            {
+                if (prop.GetCustomAttributes(attributeType, false).Any())
+                {
+                    properties.Add(prop);
+                }
+            }
+
+            return properties;
+        }
 
         public static object GetNewObject(Type toConstruct)
         {
@@ -42,6 +54,21 @@ namespace Destrier
             var ctor = _ctorCache.GetOrAdd(neededType, _ctorHelperFunc);
 
             return (T)ctor();
+        }
+
+        private static Dictionary<String, PropertyInfo> PropertyHelper(Type type)
+        {
+            /*
+            var dict = new Dictionary<String, PropertyInfo>();
+            
+            foreach (var prop in type.GetProperties())
+            {
+                if (!dict.ContainsKey(prop.Name))
+                    dict.Add(prop.Name, prop);
+            }
+            return dict;
+            */
+            return type.GetProperties().ToDictionary(p => p.Name);
         }
 
         public static Func<object> ConstructorCreationHelper(Type target)
@@ -122,6 +149,11 @@ namespace Destrier
             {
                 return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>);
             });
+        }
+
+        public static Boolean IsNullableTypeUnCached(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
         public static Type GetUnderlyingTypeForNullable(Type nullableType)

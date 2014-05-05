@@ -177,15 +177,15 @@ namespace Destrier
 
 		public static DbProviderFactory GetProviderFactory(String invariantName)
 		{
-			if(invariantName.Equals("pg", StringComparison.InvariantCultureIgnoreCase) 
-			   || invariantName.Equals("pgsql", StringComparison.InvariantCultureIgnoreCase)
-			   || invariantName.Equals("npgsql", StringComparison.InvariantCultureIgnoreCase) 
-			   || invariantName.Equals("psql", StringComparison.InvariantCultureIgnoreCase))
-				return Npgsql.NpgsqlFactory.Instance;
-			else if(!String.IsNullOrEmpty(invariantName))
-				return DbProviderFactories.GetFactory(invariantName);
-			else
-				return DbProviderFactories.GetFactory("System.Data.SqlClient");
+            //if(invariantName.Equals("pg", StringComparison.InvariantCultureIgnoreCase) 
+            //   || invariantName.Equals("pgsql", StringComparison.InvariantCultureIgnoreCase)
+            //   || invariantName.Equals("npgsql", StringComparison.InvariantCultureIgnoreCase) 
+            //   || invariantName.Equals("psql", StringComparison.InvariantCultureIgnoreCase))
+            //    return Npgsql.NpgsqlFactory.Instance;
+            //else if(!String.IsNullOrEmpty(invariantName))
+            //    return DbProviderFactories.GetFactory(invariantName);
+            //else
+			return DbProviderFactories.GetFactory("System.Data.SqlClient");
 		}
     }
 }

@@ -12,7 +12,7 @@ namespace Destrier
         {
             _t = typeof(T);
             _parameters = new Dictionary<String, Object>();
-            _builder = CommandBuilderFactory.GetCommandBuilder<T>();
+            _builder = new CommandBuilder<T>();
             _builder.Command = _command;
             _builder.Parameters = _parameters; 
         }

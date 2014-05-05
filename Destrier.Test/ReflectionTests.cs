@@ -69,7 +69,7 @@ namespace Destrier.Test
         [Fact]
         public void Members_Test()
         {
-            var members = ModelCache.GenerateMembersRecursive(typeof(MockObject));
+            var members = Model.GenerateAllMembers(typeof(MockObject));
 
             Assert.NotNull(members);
             Assert.NotEmpty(members);

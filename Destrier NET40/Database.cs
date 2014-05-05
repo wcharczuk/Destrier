@@ -21,6 +21,9 @@ namespace Destrier
         {
             Type myObjectType = myObject.GetType();
 
+            if (!Model.IsModel(myObjectType))
+                throw new SchemaMetadataException(String.Format("{0} : Model is Invalid", myObjectType.ToString()));
+
             if (ReflectionHelper.HasInterface(myObjectType, typeof(IPreCreate)))
             	((IPreCreate)myObject).PreCreate();
 
@@ -29,7 +32,6 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -45,7 +47,7 @@ namespace Destrier
                     }
                 }
 
-                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("{0}", sqlDialectider.WrapName(columnName, isGeneratedAlias:false)))));
+                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
                 command.Append(") VALUES (");
 
                 command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
@@ -61,7 +63,7 @@ namespace Destrier
 
                 if (Model.HasAutoIncrementColumn(myObjectType))
                 {
-                    command.Append(sqlDialectider.GenerateSelectLastId);
+                    command.Append("SELECT @@IDENTITY;");
                     cmd.CommandText = command.ToString();
 
                     object o = cmd.ExecuteScalar();
@@ -118,7 +120,6 @@ namespace Destrier
 
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -134,7 +135,7 @@ namespace Destrier
                     if (!cm.ColumnAttribute.IsForReadOnly)
                         variables.Add(cm.Name);
 
-                command.Append(string.Join(", ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
+                command.Append(string.Join(", ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
                 command.Append(" WHERE ");
 
@@ -143,7 +144,7 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
                 //parameters
                 foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
@@ -178,7 +179,6 @@ namespace Destrier
             
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -189,7 +189,7 @@ namespace Destrier
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                     variables.Add(cm.Name);
 
-                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("{0} = @{1}", sqlDialectider.WrapName(variableName, isGeneratedAlias: false), variableName))));
+                command.Append(string.Join(" and ", variables.Select(variableName => String.Format("[{0}] = @{0}", variableName))));
 
                 foreach (var cm in Model.ColumnsPrimaryKey(myObjectType))
                 {
@@ -214,7 +214,6 @@ namespace Destrier
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
             var connectionName = Model.ConnectionName(myObjectType);
-            var sqlDialectider = SqlDialectVariantFactory.GetSqlDialect(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -227,7 +226,6 @@ namespace Destrier
                     var parameters = new Dictionary<String, object>();
                     var visitor = new SqlExpressionVisitor<T>(command, parameters);
                     var body = expression.Body;
-                    visitor.Dialect = sqlDialectider;
                     visitor.Visit(body);
                     Execute.Utility.AddParametersToCommand(parameters, cmd, connectionName);
                 }
@@ -276,10 +274,10 @@ namespace Destrier
         {
             object value = cm.Property.GetValue(myObject, null).DBNullCoalese();
 
-            if (!Model.CheckNullStateForColumn(cm, value))
+            if (!ModelValidation.CheckNullStateForColumn(cm, value))
                 throw new InvalidColumnDataException(cm.ColumnAttribute, value);
 
-            if (!Model.CheckLengthForColumn(cm, value))
+            if (!ModelValidation.CheckLengthForColumn(cm, value))
                 if (cm.ColumnAttribute.MaxStringLength != default(Int32) && cm.ColumnAttribute.ShouldTrimLongStrings && value != null)
                     value = value.ToString().Substring(0, cm.ColumnAttribute.MaxStringLength - 1);
                 else

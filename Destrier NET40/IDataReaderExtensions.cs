@@ -10,24 +10,24 @@ namespace Destrier
 {
     public static class IDataReaderExtensions
     {
-        public static Dictionary<String, Int32> GetColumnMap(this IDataReader dr, Boolean standardizeCasing = false)
+        public static Dictionary<String, Int32> GetColumnNameMap(this IDataReader dr)
         {
             var hash = new Dictionary<String, Int32>();
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                var name = standardizeCasing ? Model.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
+                var name = Model.StandardizeCasing(dr.GetName(i));
                 if (!hash.ContainsKey(name))
                     hash.Add(name, i);
             }
             return hash;
         }
 
-        public static string[] GetColumnIndexMap(this IDataReader dr, Boolean standardizeCasing = false)
+        public static string[] GetColumnIndexMap(this IDataReader dr)
         {
             String[] strings = new string[dr.FieldCount];
             for (int i = 0; i < dr.FieldCount; i++)
             {
-                strings[i] = standardizeCasing ? Model.StandardizeCasing(dr.GetName(i)) : dr.GetName(i);
+                strings[i] = Model.StandardizeCasing(dr.GetName(i));
             }
             return strings;
         }
