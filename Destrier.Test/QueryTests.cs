@@ -176,6 +176,15 @@ namespace Destrier.Test
         }
 
         [Fact]
+        public void Where_Chained()
+        {
+            var books = new Query<Book>().Where(b => b.Id > 2).Where(b => b.Id < 4).Execute();
+            Assert.NotNull(books);
+            Assert.NotEmpty(books);
+            Assert.False(books.Any(b => b.Id == 1));
+            Assert.False(books.Any(b => b.Id == 4));
+        }
+        [Fact]
         public void Where_Referenced()
         {
             var books = new Query<Book>().Where(b => b.Author.Name.Contains("Ernest")).Execute();
@@ -345,6 +354,14 @@ namespace Destrier.Test
             Assert.Equal("Definitely Ernest Hemmingway", newPerson.Name);
 
             Database.Update(oldPerson);
+        }
+        [Fact]
+        public void Count()
+        {
+            var query = new Query<Book>();
+            var books = query.Execute().ToList();
+            var bookCount = query.Count();
+            Assert.Equal(books.Count(),bookCount);
         }
     }
 }

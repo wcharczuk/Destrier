@@ -43,8 +43,8 @@ namespace Destrier
         public StringBuilder                    Command { get; set; }
         public IDictionary<String, Object>      Parameters { get; set; }
 
-        protected Expression<Func<T, bool>>     _whereClause = null;
-        protected dynamic                       _whereParameters = null;
+        List<Expression<Func<T, bool>>> _whereClauses = new List<Expression<Func<T, bool>>>();
+        dynamic _whereParameters = null;
 
         #region Select
         public Int32? Limit { get; set; }
@@ -74,7 +74,7 @@ namespace Destrier
         public void AddWhere(Expression<Func<T, Boolean>> expression)
         {
             if (expression == null) { throw new ArgumentNullException("expression"); }
-            _whereClause = expression;
+            _whereClauses.Add(expression);
         }
 
         public void AddWhereDynamic(dynamic parameters)
@@ -446,10 +446,15 @@ namespace Destrier
             Command.AppendFormat("\n\t{0} [{1}] {2}", this.FullyQualifiedTableName, this.TableAlias, this.UseNoLock ? "(NOLOCK)" : String.Empty);
             _addJoins(_t, Members.Values.ToList(), Command);
 
-            if (_whereClause != null)
+            if (_whereClauses != null && _whereClauses.Any())
             {
                 Command.Append("\nWHERE\n");
-                new SqlExpressionVisitor<T>(Command, Parameters, Members).Visit(_whereClause);
+                new SqlExpressionVisitor<T>(Command, Parameters, Members).Visit(_whereClauses.First());
+                foreach (var expr in _whereClauses.Skip(1))
+                {
+                    Command.Append("\nAND\n");
+                    new SqlExpressionVisitor<T>(Command, Parameters, Members).Visit(expr);
+                }
             }
             else if (_whereParameters != null)
             {
@@ -608,6 +613,56 @@ namespace Destrier
             }
         }
 
+        void _buildWhere(bool useParameters = true)
+        {
+            if (_whereClauses != null && _whereClauses.Any())
+            {
+                Command.Append("\nWHERE\n");
+                new SqlExpressionVisitor<T>(Command, Parameters, Members).Visit(_whereClauses.First());
+                foreach (var expr in _whereClauses.Skip(1))
+                {
+                    Command.Append("\nAND\n");
+                    new SqlExpressionVisitor<T>(Command, Parameters, Members).Visit(expr);
+                }
+            }
+            else if (useParameters && _whereParameters != null)
+            {
+                Command.Append("\nWHERE\n\t1=1");
+                if (_whereParameters is ValueType)
+                {
+                    var primaryKey = Members.Values.FirstOrDefault(m => m is ColumnMember && ((ColumnMember)m).IsPrimaryKey) as ColumnMember;
+                    if (primaryKey != null)
+                    {
+                        var parameterName = System.Guid.NewGuid().ToString("N");
+                        Command.AppendLine(String.Format("\n\tAND [{0}].[{1}] = @{2}", primaryKey.TableAlias, primaryKey.FullyQualifiedName, parameterName));
+                        Parameters.Add(parameterName, ((Object)_whereParameters).DBNullCoalese());
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Trying to select an object by id without a primary key");
+                    }
+                }
+                else
+                {
+                    foreach (KeyValuePair<String, Object> kvp in Execute.Utility.DecomposeObject(_whereParameters))
+                    {
+                        if (Members.ContainsKey(kvp.Key))
+                        {
+                            var member = Members[kvp.Key];
+                            var paramName = System.Guid.NewGuid();
+                            Parameters.Add(paramName.ToString("N"), kvp.Value);
+                            Command.AppendFormat("\n\tAND [{0}].[{1}] = @{2}", member.TableAlias, member.Name, paramName.ToString("N"));
+                        }
+                        else
+                        {
+                            var paramName = System.Guid.NewGuid();
+                            Parameters.Add(paramName.ToString("N"), kvp.Value);
+                            Command.AppendFormat("\n\tAND [{0}] = @{1}", kvp.Key, paramName.ToString("N"));
+                        }
+                    }
+                }
+            }
+        }
         public virtual String GenerateUpdate()
         {
             Command = new StringBuilder();
@@ -618,14 +673,20 @@ namespace Destrier
             Command.Append(String.Format("\t{0}", String.Join(",", _updateSets)));
             Command.Append("\nFROM");
             Command.AppendFormat("\n\t{0} [{1}]", this.FullyQualifiedTableName, this.TableAlias);
-            if (_whereClause != null)
+            _buildWhere(false); // TM: This is to preserve previous behavior which didn't look at _whereParameters
+            return Command.ToString();
+        }
+        public string GenerateCount()
             {
-                Command.Append("\nWHERE\n");
+            Command = new StringBuilder();
+            Command.AppendFormat("SELECT COUNT(*)\n\t");
+            Command.Append("\nFROM");
 
-                var visitor = new SqlExpressionVisitor<T>(Command, Parameters, Members);
-                visitor.Visit(_whereClause);
-            }
+            Command.AppendFormat("\n\t{0} [{1}] {2}", FullyQualifiedTableName, TableAlias,
+                UseNoLock ? "(NOLOCK)" : String.Empty);
+            _addJoins(_t, Members.Values.ToList(), Command);
 
+            _buildWhere();
             return Command.ToString();
         }
     }

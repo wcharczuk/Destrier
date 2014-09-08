@@ -62,7 +62,7 @@ namespace Destrier
         public IDictionary<String, object> Parameters { get; set; }
         public Dictionary<String, Member> Members { get; set; }
 
-        public void Visit(Expression expression, ExpressionType? parentNodeType = null)
+        public void Visit(Expression expression, Expression parentExpression = null)
         {
             switch (expression.NodeType)
             {
@@ -79,13 +79,13 @@ namespace Destrier
                     VisitBinaryExpression(expression);
                     break;
                 case ExpressionType.MemberAccess:
-                    VisitMemberAccess(expression, parentNodeType);
+                    VisitMemberAccess(expression, parentExpression);
                     break;
                 case ExpressionType.Call:
                     VisitCallExpression(expression);
                     break;
                 case ExpressionType.Constant:
-                    VisitConstantExpression(expression);
+                    VisitConstantExpression(expression, parentExpression);
                     break;
                 case ExpressionType.Convert:
                     VisitConvertExpression(expression);
@@ -157,9 +157,9 @@ namespace Destrier
                 rightIsNull = value == null;
             }
 
-            Visit(left, expression.NodeType);
+            Visit(left, expression);
             Buffer.AppendFormat(" {0} ", GetOperator(expression.NodeType, rightIsNull));
-            Visit(right, expression.NodeType);
+            Visit(right, expression);
         }
 
         protected void VisitUnaryExpression(Expression expression)
@@ -176,8 +176,9 @@ namespace Destrier
             }
         }
 
-        protected void VisitMemberAccess(Expression expression, ExpressionType? parentNodeType = null)
+        protected void VisitMemberAccess(Expression expression, Expression parentExpression = null)
         {
+            var parentNodeType = parentExpression != null ? (ExpressionType?)parentExpression.NodeType : null;
             var memberExp = (MemberExpression)expression;
             var memberType = memberExp.Member.ReflectedType;
 
@@ -208,7 +209,7 @@ namespace Destrier
             }
         }
 
-        protected void VisitConstantExpression(Expression expression)
+        protected void VisitConstantExpression(Expression expression, Expression parentExpression = null)
         {
             var constExp = expression as ConstantExpression;
             if(constExp != null)
@@ -220,7 +221,22 @@ namespace Destrier
                 }
                 else if(constExp.Type.Equals(typeof(Boolean)))
                 {
-                    WriteLiteralValue(value);
+                    var isLiteralBoolean = false;
+                    if (parentExpression != null)
+                    {
+                        if (parentExpression.NodeType == ExpressionType.AndAlso || parentExpression.NodeType == ExpressionType.OrElse)
+                        {
+                            isLiteralBoolean = true;
+                        }
+                    }
+                    if (isLiteralBoolean)
+                    {
+                        WriteLiteralBoolean(value);
+                    }
+                    else
+                    {
+                        WriteBitComparison(value);
+                    }
                 }
                 else
                     WriteParameter(value);
@@ -298,16 +314,25 @@ namespace Destrier
                 {
                     if (m.Arguments.Any())
                     {
-                        var argumentType = ReflectionHelper.RootTypeForExpression(m.Arguments[0]);
+                        var argument = m.Arguments.First();
+                        var argumentType = ReflectionHelper.RootTypeForExpression(argument);
                         if (ReflectionHelper.HasInterface(m.Method.DeclaringType, typeof(System.Collections.IList)) && argumentType.Equals(this.Type))
                         {
                             evaluateCall = false;
                             switch (m.Method.Name)
                             {
                                 case "Contains":
+                                    var list = Evaluate(Reduce(m.Object)) as System.Collections.IList;
+                                    if (list.Count > 0)
+                                    {
                                     Visit(m.Arguments[0]);
                                     Buffer.Append(" IN ");
-                                    ListToSet(Evaluate(Reduce(m.Object)) as System.Collections.IList);
+                                        ListToSet(list);
+                                    }
+                                    else
+                                    {
+                                        Buffer.Append(" 1=0 "); //append false.
+                                    }
                                     break;
                             }
                         }
@@ -324,7 +349,7 @@ namespace Destrier
                         && (parentNodeType == null || (parentNodeType != null && parentNodeType.Value != ExpressionType.Equal && parentNodeType.Value != ExpressionType.NotEqual));
 
                 if (isDirectBooleanAccess)
-                    WriteLiteralValue(result);
+                    WriteLiteralBoolean(result);
                 else
                     WriteParameter(Evaluate(method));
             }
@@ -520,7 +545,7 @@ namespace Destrier
             return resolvedExpressions.ToArray();
         }
 
-        private void WriteLiteralValue(object literal)
+        private void WriteLiteralBoolean(object literal)
         {
             if(literal is bool)
             {
@@ -529,6 +554,13 @@ namespace Destrier
                 else
                     Buffer.Append("(1 = 0)");
             }
+        }
+        private void WriteBitComparison(object literal)
+        {
+            if ((Boolean)literal)
+                Buffer.Append("1");
+            else
+                Buffer.Append("0");
         }
 
         private void WriteName(String name)

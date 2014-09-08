@@ -13,7 +13,7 @@ namespace Destrier
 {
     public static class Execute
     {
-        public const int COMMAND_TIMEOUT = 60;
+        public const int COMMAND_TIMEOUT = 240;
 
         public static void StoredProcedureReader(String storedProcedure, Action<IndexedSqlDataReader> action, dynamic parameters = null, String connectionName = null)
         {
@@ -117,7 +117,7 @@ namespace Destrier
 
         public static System.Data.Common.DbCommand Command(String connectionString, DbProviderFactory providerFactory = null, int? commandTimeout = null)
         {
-            commandTimeout = commandTimeout ?? COMMAND_TIMEOUT;
+            commandTimeout = commandTimeout ?? DatabaseConfigurationContext.CommandTimeout;
 
             connectionString = connectionString ?? DatabaseConfigurationContext.DefaultConnectionString;
             providerFactory = providerFactory ?? DatabaseConfigurationContext.DefaultProviderFactory;
@@ -126,6 +126,10 @@ namespace Destrier
             connection.ConnectionString = connectionString;
             connection.Open();
             var cmd = providerFactory.CreateCommand();
+            if (commandTimeout != null)
+            {
+                cmd.CommandTimeout = commandTimeout.Value;
+            }
             cmd.Connection = connection;
             cmd.Disposed += new EventHandler(cmd_Disposed);
             return cmd;

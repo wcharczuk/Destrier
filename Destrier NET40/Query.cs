@@ -44,6 +44,7 @@ namespace Destrier
         private List<Member> _members = new List<Member>();
         private StringBuilder _command = null;
         private CommandBuilder<T> _builder = null;
+        private String _connectionName = null;
 
 		public Boolean StandardizeCasing { get; set; }
 
@@ -133,6 +134,27 @@ namespace Destrier
             return this;
         }
 
+        public Query<T> FromConnection(String connectionName)
+        {
+            _connectionName = connectionName;
+            return this;
+        }
+        public int Count()
+        {
+            var connectionName = _connectionName ?? Model.ConnectionName(_t);
+            int count;
+            using (var cmd = Destrier.Execute.Command(connectionName))
+            {
+                cmd.CommandText = _builder.GenerateCount();
+                cmd.CommandType = System.Data.CommandType.Text;
+                Destrier.Execute.Utility.AddParametersToCommand(_parameters, cmd, connectionName);
+                using (var dr = new IndexedSqlDataReader(cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection), type: _t))
+                {
+                    count = dr.ReadScalar<int>();
+                }
+            }
+            return count;
+        }
         /// <summary>
         /// Evaluate the query and return an enumerable for streaming results.
         /// </summary>
@@ -148,7 +170,7 @@ namespace Destrier
         private IEnumerable<T> _slowPipeline()
         {
             var list = new List<T>();
-            var connectionName = Model.ConnectionName(_t);
+            var connectionName = _connectionName ?? Model.ConnectionName(_t);
             using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = this.QueryBody;
@@ -199,17 +221,25 @@ namespace Destrier
 
                                     //new up the collection if it hasn't been delcared yet.
                                     if (parentCollectionProperty.GetValue(parentObj) == null)
+                                    {
                                         parentCollectionProperty.SetValue(parentObj, ReflectionHelper.GetNewObject(cm.Type));
+                                    }
 
                                     //set up lookup for the object
                                     Dictionary<Object, Object> objLookup = null;
                                     objectLookups.TryGetValue(cm.CollectionType, out objLookup);
 
                                     if (objLookup != null && objPrimaryKeyValue != null)
+                                    {
                                         if (!objLookup.ContainsKey(objPrimaryKeyValue))
+                                        {
                                             objLookup.Add(objPrimaryKeyValue, obj);
+                                        }
                                         else
+                                        {
                                             obj = objLookup[objPrimaryKeyValue];
+                                        }
+                                    }
 
                                     var collection = parentCollectionProperty.GetValue(parentObj);
                                     ((System.Collections.IList)collection).Add(obj);
@@ -224,7 +254,7 @@ namespace Destrier
 
         private IEnumerable<T> _fastPipeline()
         {
-            var connectionName = Model.ConnectionName(_t);
+            var connectionName = _connectionName ?? Model.ConnectionName(_t);
             
             using (var cmd = Destrier.Execute.Command(connectionName))
             {

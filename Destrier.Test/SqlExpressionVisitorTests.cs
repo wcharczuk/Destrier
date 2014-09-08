@@ -39,7 +39,7 @@ namespace Destrier.Test
             exp = (u) => u.Active == true; //this is also valid. because science.
             visitor.Visit(exp);
             sqlText = visitor.Buffer.ToString();
-            Assert.Equal(sqlText, "[Active] = (1 = 1)");
+            Assert.Equal(sqlText, "[Active] = 1");
  
             visitor = new SqlExpressionVisitor<MockObject>();
             exp = (u) => !u.Active;

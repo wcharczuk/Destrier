@@ -17,71 +17,87 @@ namespace Destrier
         /// </summary>
         /// <param name="myObject">Object to create</param>
         /// <remarks>Will fill the objects primary key property if it is set to auto increment.</remarks>
-        public static void Create(object myObject)
+        public static void Create(object myObject, String connectionName = null)
         {
             Type myObjectType = myObject.GetType();
 
             if (!Model.IsModel(myObjectType))
+            {
                 throw new SchemaMetadataException(String.Format("{0} : Model is Invalid", myObjectType.ToString()));
+            }
 
             if (ReflectionHelper.HasInterface(myObjectType, typeof(IPreCreate)))
-            	((IPreCreate)myObject).PreCreate();
+            {
+                ((IPreCreate)myObject).PreCreate();
+            }
 
             if (ReflectionHelper.HasInterface(myObjectType, typeof(IAuditable)))
+            {
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Create, myObject);
+            }
 
             StringBuilder command = new StringBuilder();
-            var connectionName = Model.ConnectionName(myObjectType);
-            using (var cmd = Execute.Command(connectionName))
+            connectionName = connectionName ?? Model.ConnectionName(myObjectType);
+
+            if (ReflectionHelper.HasInterface(myObjectType, typeof(ICreate)))
             {
-                cmd.CommandType = System.Data.CommandType.Text;
+                (myObject as ICreate).Create(connectionName);
+            }
+            else
+            {
+                using (var cmd = Execute.Command(connectionName))
+                {                
+                    cmd.CommandType = System.Data.CommandType.Text;
 
-                command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
+                    command.Append("INSERT INTO " + Model.TableNameFullyQualified(myObjectType) + " (");
 
-                List<String> columnNames = new List<String>();
-                foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
-                {
-                    if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
+                    List<String> columnNames = new List<String>();
+                    foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
                     {
-                        columnNames.Add(cm.Name);
+                        if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
+                        {
+                            columnNames.Add(cm.Name);
+                        }
                     }
-                }
 
-                command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
-                command.Append(") VALUES (");
+                    command.Append(string.Join(", ", columnNames.Select(columnName => String.Format("[{0}]", columnName))));
+                    command.Append(") VALUES (");
 
-                command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
-                command.Append(");");
+                    command.Append(string.Join(", ", columnNames.Select(s => "@" + s)));
+                    command.Append(");");
 
-                foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
-                {
-                    if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
+                    foreach (var cm in ModelCache.GetColumnMembers(myObjectType))
                     {
-                        AddColumnParameter(cm, myObject, cmd, connectionName);
+                        if (!cm.ColumnAttribute.IsForReadOnly && !(Model.HasAutoIncrementColumn(myObjectType) && cm.IsPrimaryKey))
+                        {
+                            AddColumnParameter(cm, myObject, cmd, connectionName);
+                        }
                     }
-                }
 
-                if (Model.HasAutoIncrementColumn(myObjectType))
-                {
-                    command.Append("SELECT @@IDENTITY;");
-                    cmd.CommandText = command.ToString();
-
-                    object o = cmd.ExecuteScalar();
-                    if (o != null && !(o is DBNull))
+                    if (Model.HasAutoIncrementColumn(myObjectType))
                     {
-                        var aicm = Model.AutoIncrementColumn(myObjectType);
-                        aicm.SetValue(myObject, Convert.ChangeType(o, aicm.Property.PropertyType));
+                        command.Append("SELECT @@IDENTITY;");
+                        cmd.CommandText = command.ToString();
+
+                        object o = cmd.ExecuteScalar();
+                        if (o != null && !(o is DBNull))
+                        {
+                            var aicm = Model.AutoIncrementColumn(myObjectType);
+                            aicm.SetValue(myObject, Convert.ChangeType(o, aicm.Property.PropertyType));
+                        }
                     }
-                }
-                else
-                {
-                    cmd.CommandText = command.ToString();
-                    cmd.ExecuteNonQuery();
+                    else
+                    {
+                        cmd.CommandText = command.ToString();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
 
             if (ReflectionHelper.HasInterface(myObjectType, typeof(IPostCreate)))
-				((IPostCreate)myObject).PostCreate();
+            {
+                ((IPostCreate)myObject).PostCreate();
+            }
         }
 
         /// <summary>
@@ -91,13 +107,13 @@ namespace Destrier
         /// <param name="instance">An instance of the model type.</param>
         /// <param name="whereClause">The where clause to test.</param>
         /// <remarks>Calls Create() on the instance.</remarks>
-        public static void CreateIfNotExists<T>(T instance, Expression<Func<T, bool>> whereClause) where T : new()
+        public static bool CreateIfNotExists<T>(T instance, Expression<Func<T, bool>> whereClause, String connectionName = null) where T : new()
         {
-            var query = new Query<T>().Where(whereClause);
-            if (!query.StreamResults().Any())
-            {
-                Create(instance);
-            }
+            var query = new Query<T>().FromConnection(connectionName).Where(whereClause);
+            if (query.StreamResults().Any())
+                return false;
+            Create(instance, connectionName);
+            return true;
         }
 
         /// <summary>
@@ -105,7 +121,7 @@ namespace Destrier
         /// </summary>
         /// <param name="myObject"></param>
         /// <remarks>Updates every property marked as a column.</remarks>
-        public static void Update(object myObject)
+        public static void Update(object myObject, String connectionName = null)
         {
             Type myObjectType = myObject.GetType();
 
@@ -119,7 +135,7 @@ namespace Destrier
 				((IPreUpdate)myObject).PreUpdate();
 
             StringBuilder command = new StringBuilder();
-            var connectionName = Model.ConnectionName(myObjectType);
+            connectionName = connectionName ?? Model.ConnectionName(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -167,7 +183,7 @@ namespace Destrier
         /// Remove the <paramref name="myObject"/> from the database.
         /// </summary>
         /// <param name="myObject">The instance to remove.</param>
-        public static void Remove(object myObject)
+        public static void Remove(object myObject, String connectionName = null)
         {
             Type myObjectType = myObject.GetType();
 
@@ -178,7 +194,7 @@ namespace Destrier
                 ((IAuditable)myObject).DoAudit(DatabaseAction.Delete, myObject);
             
             StringBuilder command = new StringBuilder();
-            var connectionName = Model.ConnectionName(myObjectType);
+            connectionName = connectionName ?? Model.ConnectionName(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -209,11 +225,11 @@ namespace Destrier
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="expression"></param>
-        public static void RemoveWhere<T>(Expression<Func<T, bool>> expression = null)
+        public static void RemoveWhere<T>(Expression<Func<T, bool>> expression = null, String connectionName = null)
         {
             Type myObjectType = typeof(T);
             StringBuilder command = new StringBuilder();
-            var connectionName = Model.ConnectionName(myObjectType);
+            connectionName = connectionName ?? Model.ConnectionName(myObjectType);
             using (var cmd = Execute.Command(connectionName))
             {
                 cmd.CommandType = System.Data.CommandType.Text;
@@ -241,7 +257,7 @@ namespace Destrier
         /// <typeparam name="T"></typeparam>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        public static T Get<T>(dynamic parameters) where T : new()
+        public static T Get<T>(dynamic parameters, String connectionName = null) where T : new()
         {
             if (ReflectionHelper.HasInterface(typeof(T), typeof(IGet<T>)))
                 return ((IGet<T>)ReflectionHelper.GetNewObject<T>()).Get(parameters);
@@ -249,9 +265,14 @@ namespace Destrier
             if (parameters == null)
                 throw new ArgumentNullException("parameters");
 
-            var obj = new Query<T>().Where(parameters).Limit(1).Execute();
+            var obj = new Query<T>().FromConnection(connectionName).Where(parameters).Limit(1).Execute();
 
             return System.Linq.Enumerable.FirstOrDefault(obj);
+        }
+
+        public static IEnumerable<T> All<T>() where T : new()
+        {
+            return All<T>(null);
         }
 
         /// <summary>
@@ -259,14 +280,14 @@ namespace Destrier
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static IEnumerable<T> All<T>() where T : new()
+        public static IEnumerable<T> All<T>(String connectionName) where T : new()
         {
             if (ReflectionHelper.HasInterface(typeof(T), typeof(IGetMany<T>)))
             {
                 return ((IGetMany<T>)ReflectionHelper.GetNewObject<T>()).GetMany() as IEnumerable<T>;
             }
 
-            return new Query<T>().Execute();
+            return new Query<T>().FromConnection(connectionName).Execute();
         }
 
         #region Utility

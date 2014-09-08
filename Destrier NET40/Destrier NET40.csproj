@@ -58,6 +58,7 @@
     <Compile Include="ChildCollectionMember.cs" />
     <Compile Include="ConcurrentDictionaryExtensions.cs" />
     <Compile Include="DataException.cs" />
+    <Compile Include="ICreate.cs" />
     <Compile Include="IGetMany.cs" />
     <Compile Include="IndexedSqlDataReader.cs" />
     <Compile Include="Member.cs" />

@@ -115,5 +115,15 @@ namespace Destrier.Test
             var sqlText = cb.GenerateSelect();
             Assert.NotNull(sqlText);
         }
+        [Fact]
+        public void Count_Test()
+        {
+            var command = new StringBuilder();
+            var commandBuilder = new CommandBuilder<MockObject> {Command = command};
+            commandBuilder.AddWhereDynamic(new { MockObjectId = 1 });
+            var commandText = commandBuilder.GenerateCount();
+            Assert.NotNull(commandText);
+            Assert.NotEmpty(commandText);
+        }
     }
 }

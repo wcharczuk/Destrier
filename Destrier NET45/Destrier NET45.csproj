@@ -46,6 +46,9 @@
     <Compile Include="..\Destrier NET40\ConcurrentDictionaryExtensions.cs">
       <Link>ConcurrentDictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\Destrier NET40\ICreate.cs">
+      <Link>ICreate.cs</Link>
+    </Compile>
     <Compile Include="..\Destrier NET40\ModelCache.cs">
       <Link>ModelCache.cs</Link>
     </Compile>

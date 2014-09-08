@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata schemaVersion="2">
     <id>Destrier</id>
-    <version>2.2.0</version>
+    <version>2.3.0</version>
     <authors>Will Charczuk</authors>
     <owners>Will Charcuzk</owners>
     <iconUrl>http://www.clotheshor.se/content/images/clotheshorse_logo_blk.png</iconUrl>
@@ -12,6 +12,7 @@
     <summary>A high performance mini-orm.</summary>
     <description>A high performance mini-orm enabling expressive queries and data models. Supports MSSQL.</description>
     <releaseNotes>
+	* 2.3.0         - New stuff.
       * 2.2.0         - Removing Postgres support. Now only MSSQL. Lots of bug fixes. Postgres is removed because NPGSQL has terrible performance.
       * 2.1.1         - Updating description for postgres support.
       * 2.1.0         - Lazy suppport.

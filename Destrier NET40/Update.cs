@@ -21,6 +21,7 @@ namespace Destrier
         private Type _t = null;
         private IDictionary<String, Object> _parameters = null;
 
+        private String _connectionName = null;
         private CommandBuilder<T> _builder = null;
         public Update<T> Set<F>(Expression<Func<T, F>> expression, F value)
         {
@@ -40,9 +41,14 @@ namespace Destrier
             return this;
         }
 
+        public Update<T> FromConnection(String connectionName)
+        {
+            _connectionName = connectionName;
+            return this;
+        }
         public void Execute()
         {
-            var connectionName = Model.ConnectionName(_t);
+            var connectionName = _connectionName ?? Model.ConnectionName(_t);
             using (var cmd = Destrier.Execute.Command(connectionName))
             {
                 cmd.CommandText = _builder.GenerateUpdate();

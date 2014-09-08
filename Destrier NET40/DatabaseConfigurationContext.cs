@@ -160,6 +160,10 @@ namespace Destrier
                     DbProviders.AddOrUpdate(connString.Name, provider, (name, oldProvider) => provider);
                 }
             }
+            if (ConfigurationManager.AppSettings["command_timeout"] != null)
+            {
+                CommandTimeout = Int32.Parse(ConfigurationManager.AppSettings["command_timeout"]);
+            }
         }
 
         public static DbProviderFactory GetProviderForConnection(String connectionName)
@@ -187,6 +191,7 @@ namespace Destrier
             //else
 			return DbProviderFactories.GetFactory("System.Data.SqlClient");
 		}
+        public static int? CommandTimeout { get; set; }
     }
 }
 

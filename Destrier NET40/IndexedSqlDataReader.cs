@@ -44,6 +44,7 @@ namespace Destrier
             {
                 this.HasChildCollectionMembers = ModelCache.HasChildCollectionMembers(this.CurrentOutputType);
                 this.HasReferencedObjectMembers = ModelCache.HasReferencedObjectMembers(this.CurrentOutputType);
+                this.HasPopulateInterface = ReflectionHelper.HasInterface(this.CurrentOutputType, typeof(IPopulate));
 
                 ColumnMemberLookup = ModelCache.GetColumnMemberStandardizedLookup(CurrentOutputType);
 
@@ -69,6 +70,8 @@ namespace Destrier
 		private IDataReader                             _dr                     = null;
 		private Int32                                   _resultSetIndex         = 0;
 
+        public IDataReader HostReader { get { return _dr; } }
+
         /// <summary>
         /// The type to map to the current result set. Is optional.
         /// </summary>
@@ -88,6 +91,11 @@ namespace Destrier
         /// Whether or not the output type needs to have referenced objects populated.
         /// </summary>
         public Boolean HasReferencedObjectMembers { get; set; }
+
+        /// <summary>
+        /// Whether or not the type implements the populate interface.
+        /// </summary>
+        public Boolean HasPopulateInterface { get; set; }
 
         /// <summary>
         /// If the output type is specified this is a mapping between column names and column members.
@@ -615,66 +623,87 @@ namespace Destrier
                     col.SetValue(instance, Get(col, columnName));
                 }
 
-                rootMember = rootMember ?? new RootMember(thisType);
-                foreach (ReferencedObjectMember rom in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.AnyParent(p => p is ChildCollectionMember)))
+                _processReferencedObjects(instance, thisType, rootMember, parentMember, objectLookups);
+                _processLazyChildCollections(instance, thisType, rootMember, parentMember);
+            }
+            else
+            {
+                if (HasPopulateInterface)
                 {
-                    var type = rom.Type;
+                    (instance as IPopulate).Populate(this);
+                }
+                else
+                {
+                    DynamicMethodGenerationInstancePopulate(instance);
+                }
+            }
 
-                    if (!rom.IsLazy)
+            _storeInstanceInLookup(instance, thisType, objectLookups);
+        }
+
+        protected void _processReferencedObjects(object instance, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+        {
+            rootMember = rootMember ?? new RootMember(thisType);
+            foreach (ReferencedObjectMember rom in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ReferencedObjectMember && !m.AnyParent(p => p is ChildCollectionMember)))
+            {
+                var type = rom.Type;
+
+                if (!rom.IsLazy)
+                {
+                    var newObject = ReflectionHelper.GetNewObject(type);
+
+                    DeepPopulate(newObject, type, rootMember, rom, objectLookups: objectLookups); //recursion.
+
+                    if (objectLookups != null)
                     {
-                        var newObject = ReflectionHelper.GetNewObject(type);
-
-                        DeepPopulate(newObject, type, rootMember, rom, objectLookups: objectLookups); //recursion.
-
-                        if (objectLookups != null)
+                        if (!objectLookups.ContainsKey(rom.Type))
                         {
-                            if (!objectLookups.ContainsKey(rom.Type))
-                            {
-                                objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
-                            }
+                            objectLookups.Add(rom.Type, new Dictionary<Object, Object>());
+                        }
 
-                            var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
-                            if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
-                            {
-                                objectLookups[rom.Type].Add(pkv, newObject);
-                                rom.Property.SetValue(instance, newObject);
-                            }
-                            else
-                            {
-                                var existingObject = objectLookups[rom.Type][pkv];
-                                rom.Property.SetValue(instance, existingObject);
-                            }
+                        var pkv = Model.InstancePrimaryKeyValue(rom.Type, newObject);
+                        if (pkv != null && !objectLookups[rom.Type].ContainsKey(pkv))
+                        {
+                            objectLookups[rom.Type].Add(pkv, newObject);
+                            rom.Property.SetValue(instance, newObject);
                         }
                         else
                         {
-                            rom.Property.SetValue(instance, newObject);
+                            var existingObject = objectLookups[rom.Type][pkv];
+                            rom.Property.SetValue(instance, existingObject);
                         }
                     }
                     else
                     {
-                        var mi = typeof(Model).GetMethod("GenerateLazyReferencedObjectMember");
-                        var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
-                        var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
-                        rom.SetValue(instance, lazy);
+                        rom.Property.SetValue(instance, newObject);
                     }
                 }
-
-                if (HasChildCollectionMembers)
+                else
                 {
-                    foreach (ChildCollectionMember cm in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
-                    {
-                        var mi = typeof(Model).GetMethod("GenerateLazyChildCollectionMember");
-                        var genericMi = mi.MakeGenericMethod(cm.UnderlyingGenericType);
-                        var lazy = genericMi.Invoke(null, new Object[] { cm, instance });
-                        cm.SetValue(instance, lazy);
-                    }
+                    var mi = typeof(Model).GetMethod("GenerateLazyReferencedObjectMember");
+                    var genericMi = mi.MakeGenericMethod(rom.UnderlyingGenericType);
+                    var lazy = genericMi.Invoke(null, new Object[] { rom, instance });
+                    rom.SetValue(instance, lazy);
                 }
             }
-            else
-            {
-                SetInstanceValues(instance);
-            }
+        }
 
+        protected void _processLazyChildCollections(object instance, Type thisType, Member rootMember = null, ReferencedObjectMember parentMember = null)
+        {
+            if (HasChildCollectionMembers)
+            {
+                foreach (ChildCollectionMember cm in Model.GenerateMembers(thisType, rootMember, parentMember).Where(m => m is ChildCollectionMember && m.IsLazy))
+                {
+                    var mi = typeof(Model).GetMethod("GenerateLazyChildCollectionMember");
+                    var genericMi = mi.MakeGenericMethod(cm.UnderlyingGenericType);
+                    var lazy = genericMi.Invoke(null, new Object[] { cm, instance });
+                    cm.SetValue(instance, lazy);
+                }
+            }
+        }
+
+        protected void _storeInstanceInLookup(object instance, Type thisType, Dictionary<Type, Dictionary<Object, Object>> objectLookups = null)
+        {
             if (HasChildCollectionMembers && objectLookups != null)
             {
                 if (!objectLookups.ContainsKey(thisType))
@@ -698,7 +727,7 @@ namespace Destrier
         /// </summary>
         /// <param name="instance"></param>
         /// <remarks>Will only set properties on the instance itself, not on any referenced objects etc.</remarks>
-        public void SetInstanceValues(object instance)
+        public void DynamicMethodGenerationInstancePopulate(object instance)
         {
             _setInstanceValuesFn(this, instance); 
         }

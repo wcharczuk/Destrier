@@ -262,8 +262,25 @@ namespace Destrier
             return null;
         }
 
+        public static Type GetMemberType(MemberInfo member)
+        {
+            Type memberType = null;
+            if (member is FieldInfo)
+            {
+                memberType = (member as FieldInfo).FieldType;
+            }
+            else if (member is PropertyInfo)
+            {
+                memberType = (member as PropertyInfo).PropertyType;
+            }
+            return memberType;
+        }
         public static Object ChangeType(Object value, Type destinationType)
         {
+            if (destinationType.IsEnum)
+            {
+                return Enum.ToObject(destinationType, value);
+            }
             return Convert.ChangeType(value, destinationType);
         }
     }
