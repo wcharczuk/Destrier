@@ -171,7 +171,7 @@ namespace ORMComparison
             Func<List<TestObject>> efAction = () =>
             {
                 var db = new TestObjectContext();
-                return db.Objects.Take(LIMIT).ToList();
+                return db.Objects.AsNoTracking().Take(LIMIT).ToList();
             };
 
             Func<List<TestObject>> dapperAction = () =>
